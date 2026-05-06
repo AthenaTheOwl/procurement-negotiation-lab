@@ -1,31 +1,78 @@
+"""Utility accounting + CBT tests."""
+
 from __future__ import annotations
 
-from hypothesis import given
-from hypothesis import strategies as st
+import pytest
 
-from procurement_lab.cbt import compute_transfer
-from procurement_lab.scenario_loader import ScenarioSpec
-from procurement_lab.utility_accounting import ledger_for_quantity
-
-
-def test_ledger_reconciles_components(scenario: ScenarioSpec) -> None:
-    ledger = ledger_for_quantity(scenario, quantity=80)
-    assert ledger.global_utility == ledger.buyer_utility + ledger.supplier_utility
+from procurement_lab.engine.cbt import compute_transfer
+from procurement_lab.engine.schemas import Scenario, UtilityLedger
+from procurement_lab.engine.utility import build_ledger
 
 
-def test_transfer_conserves_money_when_feasible(scenario: ScenarioSpec) -> None:
-    ledger = ledger_for_quantity(scenario, quantity=80)
-    transfer = compute_transfer(ledger)
-    assert abs(transfer.buyer_transfer + transfer.supplier_transfer) < 1e-6
+def test_ledger_global_matches_local_sum(scenario: Scenario) -> None:
+    quantities = {p.id: [400.0] for p in scenario.participants}
+    ledger = build_ledger(scenario, quantities)
+    assert ledger.global_utility == pytest.approx(sum(ledger.local.values()))
 
 
-@given(quantity=st.floats(min_value=0, max_value=140, allow_nan=False, allow_infinity=False))
-def test_transfer_no_worse_flags_match_ledger(scenario: ScenarioSpec, quantity: float) -> None:
-    ledger = ledger_for_quantity(scenario, quantity=quantity)
-    transfer = compute_transfer(ledger)
-    assert transfer.buyer_no_worse_off == (
-        transfer.buyer_after_transfer >= ledger.buyer_outside_option - 1e-6
+def test_ledger_capacity_violation_marked_infeasible(scenario: Scenario) -> None:
+    # capacity is 800; ask for 900 — supplier-side infeasible
+    quantities = {p.id: [900.0] for p in scenario.participants}
+    ledger = build_ledger(scenario, quantities)
+    assert ledger.feasible is False
+
+
+def test_ledger_at_capacity_is_feasible(scenario: Scenario) -> None:
+    quantities = {p.id: [800.0] for p in scenario.participants}
+    ledger = build_ledger(scenario, quantities)
+    assert ledger.feasible is True
+
+
+def test_cbt_proportional_split_no_worse_off() -> None:
+    ledger = UtilityLedger(
+        local={"buyer": 100.0, "supplier": 50.0},
+        outside_options={"buyer": 0.0, "supplier": 0.0},
+        global_utility=150.0,
+        feasible=True,
     )
-    assert transfer.supplier_no_worse_off == (
-        transfer.supplier_after_transfer >= ledger.supplier_outside_option - 1e-6
+    plan = compute_transfer(ledger, rule="proportional")
+    assert plan.feasible is True
+    assert all(plan.no_worse_off.values())
+    assert plan.surplus == pytest.approx(150.0)
+
+
+def test_cbt_negative_surplus_is_infeasible() -> None:
+    ledger = UtilityLedger(
+        local={"a": -10.0, "b": -5.0},
+        outside_options={"a": 0.0, "b": 0.0},
+        global_utility=-15.0,
+        feasible=True,
     )
+    plan = compute_transfer(ledger, rule="proportional")
+    assert plan.feasible is False
+    assert "negative" in plan.note
+
+
+def test_cbt_equal_split() -> None:
+    ledger = UtilityLedger(
+        local={"a": 100.0, "b": 100.0},
+        outside_options={"a": 50.0, "b": 50.0},
+        global_utility=200.0,
+        feasible=True,
+    )
+    plan = compute_transfer(ledger, rule="equal")
+    # surplus = 200 - (50 + 50) = 100; split equal = 50 each
+    assert plan.surplus == pytest.approx(100.0)
+    assert plan.transfers["a"] == pytest.approx(50.0)
+    assert plan.transfers["b"] == pytest.approx(50.0)
+
+
+def test_cbt_unknown_rule_raises() -> None:
+    ledger = UtilityLedger(
+        local={"a": 1.0},
+        outside_options={"a": 0.0},
+        global_utility=1.0,
+        feasible=True,
+    )
+    with pytest.raises(ValueError, match="unknown rule"):
+        compute_transfer(ledger, rule="bogus")
