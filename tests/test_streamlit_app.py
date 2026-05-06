@@ -11,3 +11,7 @@ def test_streamlit_app_smoke() -> None:
     app.run()
     assert not app.exception
     assert "procurement negotiation lab" in app.title[0].value.lower()
+    markdown = "\n".join(item.value for item in app.markdown)
+    assert "what this tab is" in markdown
+    assert "plain English glossary" in markdown
+    assert "The buyer wants enough units" in markdown
