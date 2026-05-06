@@ -1,0 +1,105 @@
+scenarios:
+  - id: long_lead_base
+    name: Long-lead component commitment
+    description: A buyer and synthetic supplier coordinate quantity for a long-lead component under demand and capacity uncertainty.
+    periods: 1
+    price: 128.0
+    shortage_penalty: 45.0
+    holding_cost: 12.0
+    cancellation_penalty: 22.0
+    risk_penalty: 18.0
+    source_note: deterministic synthetic scenario; not real procurement data
+    products:
+      - id: controller_asic
+        name: Controller ASIC
+        unit_value: 184.0
+        demand_mean: 82.0
+        demand_sigma: 18.0
+        lead_time_weeks: 18
+    suppliers:
+      - id: supplier_a
+        name: Synthetic supplier A
+        unit_cost: 92.0
+        capacity: 96.0
+        risk_score: 0.32
+        evidence_ids: [ev_capacity_band, ev_long_lead]
+    participants:
+      - id: buyer
+        role: buyer
+        outside_option: 1700.0
+        formula: unit_value * min(quantity, demand) - price * quantity - shortage_penalty * max(demand - quantity, 0) - holding_cost * max(quantity - demand, 0) - risk_penalty * risk_score * quantity
+      - id: supplier
+        role: supplier
+        outside_option: 1300.0
+        formula: price * quantity - unit_cost * quantity - cancellation_penalty * uncertainty * quantity - 2 * max(quantity - capacity, 0) ** 2 - risk_penalty * risk_score * quantity * 0.25
+    commitment_types: [firm, soft, forecast, option]
+
+  - id: packaging_bottleneck
+    name: Advanced packaging bottleneck
+    description: Packaging capacity is tight, so a firm commitment reduces supplier risk but increases buyer cancellation exposure.
+    periods: 1
+    price: 146.0
+    shortage_penalty: 62.0
+    holding_cost: 16.0
+    cancellation_penalty: 34.0
+    risk_penalty: 26.0
+    source_note: deterministic synthetic scenario; inspired by public semiconductor supply-chain patterns
+    products:
+      - id: hbm_interposer
+        name: HBM interposer package
+        unit_value: 238.0
+        demand_mean: 64.0
+        demand_sigma: 24.0
+        lead_time_weeks: 24
+    suppliers:
+      - id: supplier_packaging
+        name: Synthetic packaging supplier
+        unit_cost: 108.0
+        capacity: 68.0
+        risk_score: 0.54
+        evidence_ids: [ev_packaging, ev_capacity_band]
+    participants:
+      - id: buyer
+        role: buyer
+        outside_option: 1850.0
+        formula: unit_value * min(quantity, demand) - price * quantity - shortage_penalty * max(demand - quantity, 0) - holding_cost * max(quantity - demand, 0) - risk_penalty * risk_score * quantity
+      - id: supplier
+        role: supplier
+        outside_option: 1500.0
+        formula: price * quantity - unit_cost * quantity - cancellation_penalty * uncertainty * quantity - 2 * max(quantity - capacity, 0) ** 2 - risk_penalty * risk_score * quantity * 0.25
+    commitment_types: [firm, soft, forecast, option]
+
+  - id: export_control_uncertainty
+    name: Export-control uncertainty
+    description: Risk evidence raises the expected cost of overcommitting without stronger shared forecasts.
+    periods: 1
+    price: 118.0
+    shortage_penalty: 50.0
+    holding_cost: 13.0
+    cancellation_penalty: 28.0
+    risk_penalty: 35.0
+    source_note: deterministic synthetic scenario; public-style risk evidence only
+    products:
+      - id: inspection_module
+        name: Inspection module
+        unit_value: 176.0
+        demand_mean: 74.0
+        demand_sigma: 21.0
+        lead_time_weeks: 20
+    suppliers:
+      - id: supplier_export
+        name: Synthetic export-exposed supplier
+        unit_cost: 86.0
+        capacity: 82.0
+        risk_score: 0.68
+        evidence_ids: [ev_export_controls]
+    participants:
+      - id: buyer
+        role: buyer
+        outside_option: 1600.0
+        formula: unit_value * min(quantity, demand) - price * quantity - shortage_penalty * max(demand - quantity, 0) - holding_cost * max(quantity - demand, 0) - risk_penalty * risk_score * quantity
+      - id: supplier
+        role: supplier
+        outside_option: 1280.0
+        formula: price * quantity - unit_cost * quantity - cancellation_penalty * uncertainty * quantity - 2 * max(quantity - capacity, 0) ** 2 - risk_penalty * risk_score * quantity * 0.25
+    commitment_types: [firm, soft, forecast, option]

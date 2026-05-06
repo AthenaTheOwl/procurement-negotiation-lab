@@ -1,0 +1,11 @@
+procurement-negotiation-lab
+Copyright 2026 Vignesh Gopalakrishnan
+
+This project credits the public amzn/FloPro repository as the ADMM
+implementation reference:
+
+https://github.com/amzn/FloPro
+
+This repository is an independent, for-fun learning lab. It is not an
+official Amazon example, benchmark, product roadmap, endorsement, or
+production procurement recommender.

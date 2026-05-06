@@ -1,0 +1,15 @@
+name: streamlit-smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --python 3.11
+      - run: uv run pytest tests/test_streamlit_app.py
