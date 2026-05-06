@@ -48,6 +48,80 @@ INFORMATION_LABELS: dict[InformationMode, str] = {
     "full_oracle": "full oracle: everything modeled is shared",
 }
 
+METRIC_EXPLANATIONS = {
+    "quantity": "the number of units both sides are trying to agree on.",
+    "buyer utility": (
+        "the buyer's dollar score. It goes up when demand is covered and down when "
+        "the buyer overbuys, underbuys, or takes risk."
+    ),
+    "supplier utility": (
+        "the supplier's dollar score. It goes up with profitable committed volume and "
+        "down with capacity stress, cancellation exposure, and risk."
+    ),
+    "global utility": (
+        "buyer utility plus supplier utility. This is the total value created by the "
+        "deal before any transfer splits the gains."
+    ),
+    "residual": (
+        "the disagreement left between agents. Zero means their preferred quantities "
+        "match. Large residual means the mechanism has not really settled."
+    ),
+    "gap vs oracle": (
+        "how much value the chosen algorithm left on the table compared with a "
+        "central planner that sees all private information."
+    ),
+    "surplus": (
+        "global utility minus both sides' outside options. Positive surplus means a "
+        "deal can potentially make everyone better off."
+    ),
+    "transfer": (
+        "money moved after the plan is chosen. It does not change the operational "
+        "quantity; it changes who captures the value."
+    ),
+    "privacy exposure": (
+        "a rough 0-to-1 score for how much private planning information is shared. "
+        "More sharing can improve the plan, but it is not free."
+    ),
+}
+
+STEP_EXPLANATIONS = {
+    "local_objectives": (
+        "The buyer and supplier each solve for what looks best locally. The buyer is "
+        "worried about shortage. The supplier is worried about capacity and commitment.",
+        "This is why coordination is needed. Local utility can be rational while the "
+        "combined outcome is still wasteful.",
+    ),
+    "global_utility": (
+        "Now the app asks what a central planner would choose if buyer and supplier "
+        "information were visible in one place.",
+        "This is the benchmark. It is not always deployable, but it tells us how much "
+        "value the negotiation might be leaving on the table.",
+    ),
+    "commitment_terms": (
+        "The model adds risk and commitment penalties. Long-lead plans now have a cost "
+        "when the buyer cancels or the supplier overextends capacity.",
+        "This turns vague uncertainty into priced consequences. That is what makes "
+        "advance planning negotiable instead of hand-wavy.",
+    ),
+    "coordination": (
+        "The agents exchange price/proximity signals and keep updating their preferred "
+        "quantities until they get closer.",
+        "The residual chart is the important object here. Falling residual means the "
+        "mechanism is reducing disagreement.",
+    ),
+    "transfers": (
+        "After the operational quantity is chosen, the app computes whether money can "
+        "move between parties so both beat their outside option.",
+        "This separates efficiency from fairness. A good plan still may need a transfer "
+        "so both sides choose to participate.",
+    ),
+    "information_value": (
+        "The app reveals more private information and reruns the same coordination problem.",
+        "If global utility improves, the extra information bought a better joint plan. "
+        "If not, the added exposure was not worth much in this scenario.",
+    ),
+}
+
 st.set_page_config(
     page_title="procurement negotiation lab",
     page_icon="",
@@ -156,9 +230,11 @@ def render_header() -> None:
 **plain English glossary**
 
 - **quantity:** units both sides commit to.
-- **global utility:** buyer utility plus supplier utility, in dollars.
+- **utility:** dollar score for one participant. Bigger is better.
+- **global utility:** buyer utility plus supplier utility.
 - **residual:** how far the agents still disagree.
-- **oracle:** upper bound if everyone shared everything.
+- **oracle:** the best modeled plan if everyone shared everything.
+- **gap vs oracle:** value left on the table.
 - **transfer:** money moved after the plan to split the surplus.
 """
         )
@@ -174,6 +250,35 @@ def render_tab_guide(title: str, purpose: str, touch: str, look_at: str) -> None
     with col3:
         st.markdown(f"**what to look at**\n\n{look_at}")
     st.divider()
+
+
+def render_metric_glossary(*terms: str) -> None:
+    with st.expander("plain-English definitions for this screen", expanded=True):
+        for term in terms:
+            st.markdown(f"**{term}:** {METRIC_EXPLANATIONS[term]}")
+
+
+def render_step_explanation(step_id: str) -> None:
+    doing, significance = STEP_EXPLANATIONS[step_id]
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"**what this step is doing**\n\n{doing}")
+    with col2:
+        st.markdown(f"**why it matters**\n\n{significance}")
+
+
+def render_result_explainer() -> None:
+    st.markdown(
+        """
+**how to read the result table**
+
+- `quantity` is the negotiated commitment.
+- `buyer_utility` and `supplier_utility` are local dollar scores before transfers.
+- `global_utility` is the combined value created.
+- `residual` is unresolved disagreement.
+- `gap_vs_oracle` is value left on the table versus the all-knowing benchmark.
+"""
+    )
 
 
 def render_learn(scenario: ScenarioSpec) -> None:
@@ -196,6 +301,8 @@ This loop shows the whole mechanism before the sandbox opens up.
     selected_label = st.selectbox("guided step", step_labels)
     step = LEARNING_STEPS[step_labels.index(selected_label)]
     st.success(f"current lesson: {step.narrative}")
+    render_step_explanation(step.id)
+    render_metric_glossary("quantity", "global utility", "residual", "surplus")
     traces = run_learning_step(scenario, step)
     df = _trace_rows(traces)
     trace = traces[-1]
@@ -213,8 +320,17 @@ This loop shows the whole mechanism before the sandbox opens up.
         "Rule of thumb: high global utility is good. Low residual means the agents agree. "
         "Positive surplus means there is value to split."
     )
+    render_result_explainer()
     st.dataframe(df, use_container_width=True, hide_index=True)
+    st.caption(
+        "The bar chart is not a revenue chart. It is a utility chart: each bar is a "
+        "modeled dollar score after costs, risks, and penalties."
+    )
     st.plotly_chart(_utility_bar(df), use_container_width=True)
+    st.caption(
+        "The residual chart is the negotiation heartbeat. If buyer and supplier quantities "
+        "move together, the mechanism is coordinating them. If they stay apart, it is not."
+    )
     st.plotly_chart(_residual_chart(trace), use_container_width=True)
     st.info(explain_trace(trace))
 
@@ -225,6 +341,21 @@ def render_arena() -> None:
         "the sandbox. change the problem and rerun the coordination loop.",
         "start with risk score, information mode, and coordination rule. edit formulas last.",
         "compare the result row, product-period plan, and residual chart.",
+    )
+    render_metric_glossary(
+        "quantity",
+        "buyer utility",
+        "supplier utility",
+        "global utility",
+        "residual",
+        "gap vs oracle",
+    )
+    st.markdown(
+        """
+Use this tab after the guided loop. The sandbox changes the shape of the problem:
+more products, more periods, more participants, higher risk, less shared information,
+or different math for what each side values.
+"""
     )
     left, right = st.columns([1, 1])
     with left:
@@ -281,6 +412,7 @@ def render_arena() -> None:
         information_mode=information_mode,
     )
     st.subheader("result, in one row")
+    render_result_explainer()
     st.dataframe(_trace_rows([trace]), use_container_width=True, hide_index=True)
     if product_count > 1 or periods > 1:
         st.subheader("product-period plan")
@@ -296,6 +428,10 @@ def render_arena() -> None:
             "v1 solves product-period dimensions independently. Cross-product capacity "
             "coupling is the next formulation bridge."
         )
+        st.info(
+            "Read each row as one small buying decision: one product, one period, one "
+            "negotiated quantity. The total plan is the collection of those rows."
+        )
     st.plotly_chart(_residual_chart(trace), use_container_width=True)
     st.info(explain_trace(trace))
     st.caption(
@@ -310,6 +446,15 @@ def render_algorithms(scenarios: list[ScenarioSpec]) -> None:
         "same scenario, different coordination rules.",
         "pick a scenario and information-sharing mode.",
         "look for utility gap vs oracle and residual. ADMM is not assumed best.",
+    )
+    render_metric_glossary("residual", "gap vs oracle", "global utility")
+    st.markdown(
+        """
+This tab asks a narrow question: **does the coordination rule actually buy anything?**
+
+The centralized oracle is the benchmark, not a realistic negotiation. The other rules
+are ways to coordinate while preserving some separation between buyer and supplier.
+"""
     )
     scenario = st.selectbox("scenario", scenarios, format_func=lambda item: item.name)
     mode = cast(
@@ -330,6 +475,10 @@ def render_algorithms(scenarios: list[ScenarioSpec]) -> None:
         px.bar(df, x="algorithm", y="gap_vs_oracle", title="utility gap vs centralized oracle"),
         use_container_width=True,
     )
+    st.warning(
+        "Small oracle gap means the algorithm found a plan close to the benchmark. "
+        "Large oracle gap means the mechanism left modeled value on the table."
+    )
 
 
 def render_information(scenario: ScenarioSpec) -> None:
@@ -338,6 +487,16 @@ def render_information(scenario: ScenarioSpec) -> None:
         "what happens when the buyer and supplier reveal more of the planning picture.",
         "read the modes from private to full oracle.",
         "global utility rises only when the new information improves the plan.",
+    )
+    render_metric_glossary("global utility", "privacy exposure")
+    st.markdown(
+        """
+Procurement planning often fails because each side sees only part of the problem.
+The buyer knows more about demand. The supplier knows more about capacity and cost.
+
+This tab shows the trade: sharing more information can improve the joint plan, but
+it also exposes private planning details.
+"""
     )
     actual = scenario_to_context(scenario, quantity=0)
     profiles = [information_profile(mode, actual) for mode in INFORMATION_MODES]
@@ -363,6 +522,10 @@ def render_information(scenario: ScenarioSpec) -> None:
         ]
     )
     st.dataframe(profile_df, use_container_width=True, hide_index=True)
+    st.caption(
+        "The table says what each information mode reveals. It is a teaching proxy, "
+        "not a privacy model."
+    )
     st.plotly_chart(
         px.line(
             admm,
@@ -382,6 +545,16 @@ def render_transfers(scenario: ScenarioSpec) -> None:
         "change the information mode to change the negotiated plan.",
         "check the no-worse-off flags. If surplus is negative, no transfer can fix the deal.",
     )
+    render_metric_glossary("surplus", "transfer", "buyer utility", "supplier utility")
+    st.markdown(
+        """
+The best operational plan is not automatically acceptable to both sides. One side
+might create most of the value while the other side bears most of the cost.
+
+Transfers answer the participation question: **can the gains be split so both sides
+are at least as well off as walking away?**
+"""
+    )
     mode = cast(
         InformationMode,
         st.selectbox(
@@ -394,6 +567,10 @@ def render_transfers(scenario: ScenarioSpec) -> None:
     )
     trace = run_algorithm(scenario, algorithm="admm", information_mode=mode)
     st.write(explain_transfer(trace))
+    st.caption(
+        "Positive buyer transfer means supplier pays buyer. Negative buyer transfer "
+        "means buyer pays supplier. The two transfers should sum to zero."
+    )
     st.dataframe(
         pd.DataFrame(
             [
@@ -423,6 +600,14 @@ def render_tutorial() -> None:
     )
     st.markdown(
         """
+### the whole app in one paragraph
+
+The app creates a toy procurement deal. Each side has a utility function, which
+is just a dollar score for how much that side likes a plan. The algorithms try
+to find a quantity both sides can accept. The charts show whether they agree,
+how much total value the plan creates, how far it is from the best modeled plan,
+and whether a transfer can make both sides willing to participate.
+
 ### objective functions
 
 Each participant has a utility function in dollars. The buyer values fulfilled
@@ -437,6 +622,8 @@ proximity penalty to the current consensus, the system averages the proposed
 quantities, then price-like dual signals update. The residual is the distance
 between buyer and supplier preferred quantities.
 
+Plain version: residual is disagreement. Lower is better.
+
 ### why compare algorithms
 
 ADMM is useful for structured distributed optimization. It is not magic. The
@@ -444,12 +631,24 @@ lab compares it to a centralized oracle, alternating best response, price-only
 dual updates, and consensus averaging so users can see runtime, residuals, and
 utility gaps.
 
+Plain version: ADMM is one coordination rule. It is allowed to lose.
+
 ### certainty and long-lead planning
 
 Long lead times convert forecasts into commitments before demand is fully known.
 Firm commitments reduce supplier risk but can create buyer cancellation risk.
 Soft commitments preserve option value but may fail to reserve capacity. The
 right plan depends on penalties, information, and how the surplus is split.
+
+### terms you will see in the tables
+
+- `quantity`: units committed.
+- `buyer_utility`: buyer dollar score before transfers.
+- `supplier_utility`: supplier dollar score before transfers.
+- `global_utility`: buyer plus supplier utility.
+- `residual`: remaining disagreement.
+- `gap_vs_oracle`: value left on the table.
+- `feasible`: whether the plan violates the simple capacity/coverage checks.
 """
     )
 

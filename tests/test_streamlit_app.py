@@ -15,3 +15,7 @@ def test_streamlit_app_smoke() -> None:
     assert "what this tab is" in markdown
     assert "plain English glossary" in markdown
     assert "The buyer wants enough units" in markdown
+    assert "what this step is doing" in markdown
+    assert "how to read the result table" in markdown
+    assert "residual is disagreement" in markdown
+    assert "utility function" in markdown
