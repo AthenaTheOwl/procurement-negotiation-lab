@@ -14,8 +14,9 @@ def test_streamlit_app_smoke() -> None:
     markdown = "\n".join(item.value for item in app.markdown)
     assert "what this tab is" in markdown
     assert "plain English glossary" in markdown
-    assert "The buyer wants enough units" in markdown
+    assert "You are the buyer / procurement planner" in markdown
     assert "what this step is doing" in markdown
     assert "how to read the result table" in markdown
-    assert "residual is disagreement" in markdown
+    assert "risk knob" in markdown
+    assert "unresolved disagreement in units" in markdown
     assert "utility function" in markdown

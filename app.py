@@ -50,6 +50,11 @@ INFORMATION_LABELS: dict[InformationMode, str] = {
 
 METRIC_EXPLANATIONS = {
     "quantity": "the number of units both sides are trying to agree on.",
+    "risk score": (
+        "a synthetic 0-to-1 disruption knob. 0 means the supplier looks stable in this "
+        "toy model. 1 means the supplier looks very exposed to delay, capacity, or "
+        "policy risk. It is not a real credit score or probability."
+    ),
     "buyer utility": (
         "the buyer's dollar score. It goes up when demand is covered and down when "
         "the buyer overbuys, underbuys, or takes risk."
@@ -63,8 +68,8 @@ METRIC_EXPLANATIONS = {
         "deal before any transfer splits the gains."
     ),
     "residual": (
-        "the disagreement left between agents. Zero means their preferred quantities "
-        "match. Large residual means the mechanism has not really settled."
+        "the difference in units between what the buyer wants and what the supplier "
+        "is willing to commit. Zero means agreement. Large residual means disagreement."
     ),
     "gap vs oracle": (
         "how much value the chosen algorithm left on the table compared with a "
@@ -86,39 +91,38 @@ METRIC_EXPLANATIONS = {
 
 STEP_EXPLANATIONS = {
     "local_objectives": (
-        "The buyer and supplier each solve for what looks best locally. The buyer is "
-        "worried about shortage. The supplier is worried about capacity and commitment.",
-        "This is why coordination is needed. Local utility can be rational while the "
-        "combined outcome is still wasteful.",
+        "You are the buyer. You pick a quantity that protects you from shortage. "
+        "The simulated supplier separately picks a quantity that protects its capacity.",
+        "This is why the two sides can disagree even when both are being reasonable.",
     ),
     "global_utility": (
-        "Now the app asks what a central planner would choose if buyer and supplier "
-        "information were visible in one place.",
-        "This is the benchmark. It is not always deployable, but it tells us how much "
-        "value the negotiation might be leaving on the table.",
+        "The app asks what an all-knowing planner would choose if buyer demand and "
+        "supplier capacity/cost were visible together.",
+        "This is the benchmark. If the real negotiation is far below it, coordination "
+        "is leaving value on the table.",
     ),
     "commitment_terms": (
-        "The model adds risk and commitment penalties. Long-lead plans now have a cost "
-        "when the buyer cancels or the supplier overextends capacity.",
-        "This turns vague uncertainty into priced consequences. That is what makes "
-        "advance planning negotiable instead of hand-wavy.",
+        "The app adds a risk score and penalties. If you underbuy, you pay shortage "
+        "costs. If the supplier overcommits, it pays capacity/cancellation costs.",
+        "Long-lead planning only becomes negotiable once uncertainty has a dollar shape.",
     ),
     "coordination": (
-        "The agents exchange price/proximity signals and keep updating their preferred "
-        "quantities until they get closer.",
-        "The residual chart is the important object here. Falling residual means the "
-        "mechanism is reducing disagreement.",
+        "The buyer and supplier repeatedly revise their preferred quantities after "
+        "seeing a price-like coordination signal.",
+        "Watch residual: it is the gap between their preferred quantities. Falling "
+        "residual means they are moving toward agreement.",
     ),
     "transfers": (
-        "After the operational quantity is chosen, the app computes whether money can "
-        "move between parties so both beat their outside option.",
-        "This separates efficiency from fairness. A good plan still may need a transfer "
-        "so both sides choose to participate.",
+        "After the quantity is chosen, the app asks whether one side should pay the "
+        "other so both beat their walk-away option.",
+        "A plan can create total value and still be unacceptable to one party unless "
+        "the surplus is split.",
     ),
     "information_value": (
-        "The app reveals more private information and reruns the same coordination problem.",
-        "If global utility improves, the extra information bought a better joint plan. "
-        "If not, the added exposure was not worth much in this scenario.",
+        "The app reveals more information: risk, capacity bands, cost bands, and buyer "
+        "forecast bands.",
+        "If global utility improves, the extra information bought a better plan. If "
+        "not, the extra disclosure was not useful in this toy case.",
     ),
 }
 
@@ -209,9 +213,10 @@ def render_header() -> None:
     st.title("procurement negotiation lab")
     st.caption("a learning app for long-lead buying plans. synthetic data only.")
     st.info(
-        "Start here: a buyer wants capacity reserved before demand is certain. "
-        "A supplier wants commitment before spending capacity. The lab shows how "
-        "coordination rules turn those private incentives into a shared plan."
+        "In the guided walkthrough, **you are the buyer / procurement planner**. "
+        "You need to reserve long-lead component capacity before demand is perfectly "
+        "known. The app simulates the supplier, then shows whether the two sides can "
+        "agree on a quantity and split the gains."
     )
     with st.sidebar:
         st.header("how to read this")
@@ -232,7 +237,8 @@ def render_header() -> None:
 - **quantity:** units both sides commit to.
 - **utility:** dollar score for one participant. Bigger is better.
 - **global utility:** buyer utility plus supplier utility.
-- **residual:** how far the agents still disagree.
+- **residual:** buyer/supplier disagreement in units.
+- **risk score:** synthetic 0-to-1 disruption knob.
 - **oracle:** the best modeled plan if everyone shared everything.
 - **gap vs oracle:** value left on the table.
 - **transfer:** money moved after the plan to split the surplus.
@@ -253,18 +259,45 @@ def render_tab_guide(title: str, purpose: str, touch: str, look_at: str) -> None
 
 
 def render_metric_glossary(*terms: str) -> None:
-    with st.expander("plain-English definitions for this screen", expanded=True):
+    with st.expander("what do these words mean?", expanded=True):
         for term in terms:
             st.markdown(f"**{term}:** {METRIC_EXPLANATIONS[term]}")
 
 
 def render_step_explanation(step_id: str) -> None:
     doing, significance = STEP_EXPLANATIONS[step_id]
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown(f"**what this step is doing**\n\n{doing}")
+        st.markdown("**your role**\n\nYou are the buyer. You want enough units, but not waste.")
     with col2:
-        st.markdown(f"**why it matters**\n\n{significance}")
+        st.markdown(
+            "**supplier role**\n\nThe supplier is simulated. It wants profitable "
+            "volume without overcommitting."
+        )
+    with col3:
+        st.markdown(f"**what this step is doing**\n\n{doing}")
+    st.markdown(f"**why it matters**\n\n{significance}")
+
+
+def render_scenario_card(scenario: ScenarioSpec) -> None:
+    product = scenario.products[0]
+    supplier = scenario.suppliers[0]
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(
+            f"**you need**\n\nAbout **{product.demand_mean:.0f} units** of "
+            f"`{product.name}`. Demand is uncertain."
+        )
+    with col2:
+        st.markdown(
+            f"**supplier can handle**\n\nAbout **{supplier.capacity:.0f} units** before "
+            "capacity stress gets expensive."
+        )
+    with col3:
+        st.markdown(
+            f"**risk knob**\n\nRisk score is **{supplier.risk_score:.2f}**. "
+            "Higher means delay/capacity/policy disruption is more expensive in this toy model."
+        )
 
 
 def render_result_explainer() -> None:
@@ -272,10 +305,11 @@ def render_result_explainer() -> None:
         """
 **how to read the result table**
 
-- `quantity` is the negotiated commitment.
+- `quantity` is the negotiated commitment: how many units you and the supplier settle on.
 - `buyer_utility` and `supplier_utility` are local dollar scores before transfers.
 - `global_utility` is the combined value created.
-- `residual` is unresolved disagreement.
+- `residual` is unresolved disagreement in units: buyer preferred quantity minus
+  supplier preferred quantity.
 - `gap_vs_oracle` is value left on the table versus the all-knowing benchmark.
 """
     )
@@ -291,18 +325,22 @@ def render_learn(scenario: ScenarioSpec) -> None:
     st.subheader("the situation")
     st.markdown(
         """
-The buyer wants enough units to avoid a shortage. The supplier wants enough
-certainty to reserve capacity. They do not start with the same information.
+You are the buyer / procurement planner.
+
+You need to decide how many units to commit to before demand is fully certain.
+The supplier is simulated. It decides how much capacity it is willing to reserve.
+You do not start with the same information.
 
 This loop shows the whole mechanism before the sandbox opens up.
 """
     )
+    render_scenario_card(scenario)
     step_labels = [step.title for step in LEARNING_STEPS]
     selected_label = st.selectbox("guided step", step_labels)
     step = LEARNING_STEPS[step_labels.index(selected_label)]
     st.success(f"current lesson: {step.narrative}")
     render_step_explanation(step.id)
-    render_metric_glossary("quantity", "global utility", "residual", "surplus")
+    render_metric_glossary("quantity", "risk score", "global utility", "residual", "surplus")
     traces = run_learning_step(scenario, step)
     df = _trace_rows(traces)
     trace = traces[-1]
@@ -313,7 +351,7 @@ This loop shows the whole mechanism before the sandbox opens up.
     with col2:
         _metric_row("global utility", f"${trace.ledger.global_utility:,.0f}")
     with col3:
-        _metric_row("residual", f"{trace.metrics.residual:.2f}")
+        _metric_row("disagreement left", f"{trace.metrics.residual:.2f} units")
     with col4:
         _metric_row("surplus", f"${trace.transfer.surplus:,.0f}")
     st.caption(
@@ -362,7 +400,21 @@ or different math for what each side values.
         product_count = st.slider("products", 1, 5, 2)
         periods = st.slider("periods", 1, 12, 4)
         participant_count = st.slider("participants", 2, 5, 2)
-        risk_score = st.slider("risk score", 0.0, 1.0, 0.35, 0.05)
+        risk_score = st.slider(
+            "risk score",
+            0.0,
+            1.0,
+            0.35,
+            0.05,
+            help=(
+                "Synthetic 0-to-1 disruption knob. Higher means delay, capacity, or "
+                "policy risk is more expensive in the utility math."
+            ),
+        )
+        st.caption(
+            "Risk score is not a real supplier rating. It is a toy-model knob for "
+            "how costly uncertainty is."
+        )
         information_mode = cast(
             InformationMode,
             st.selectbox(
@@ -643,10 +695,11 @@ right plan depends on penalties, information, and how the surplus is split.
 ### terms you will see in the tables
 
 - `quantity`: units committed.
+- `risk_score`: synthetic disruption/cost knob from 0 to 1.
 - `buyer_utility`: buyer dollar score before transfers.
 - `supplier_utility`: supplier dollar score before transfers.
 - `global_utility`: buyer plus supplier utility.
-- `residual`: remaining disagreement.
+- `residual`: remaining buyer/supplier disagreement in units.
 - `gap_vs_oracle`: value left on the table.
 - `feasible`: whether the plan violates the simple capacity/coverage checks.
 """
