@@ -9,7 +9,11 @@ htmlcov/
 .streamlit/secrets.toml
 dist/
 build/
+node_modules/
 *.egg-info/
 streamlit-*.log
 streamlit-*.out.log
 streamlit-*.err.log
+vite-*.log
+vite-*.out.log
+vite-*.err.log

@@ -1,4 +1,4 @@
-name: streamlit-smoke
+name: python-entrypoint-smoke
 
 on:
   pull_request:
@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --python 3.11
-      - name: Streamlit app imports cleanly
+      - name: Python compatibility app imports cleanly
         run: |
           uv run python -c "
           import importlib.util
@@ -23,5 +23,3 @@ jobs:
           spec.loader.exec_module(mod)
           print('app.py imports OK; procurement_lab v' + procurement_lab.__version__)
           "
-      # Full Streamlit AppTest re-enables once Phase 3 (views/) lands;
-      # see C:/Users/Vignesh/.claude/plans/codex-briefs/06-procurement-lab-redesign.md

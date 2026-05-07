@@ -19,3 +19,5 @@ jobs:
         run: uv run ruff check .
       - name: mypy
         run: uv run mypy src
+      - name: spec check
+        run: uv run python scripts/spec_check.py

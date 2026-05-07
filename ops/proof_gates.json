@@ -2,12 +2,14 @@
   "status": "local green",
   "last_updated": "2026-05-07",
   "gates": [
+    {"name": "spec-check", "status": "passed", "command": "python -m uv run python scripts/spec_check.py"},
+    {"name": "frontend-build", "status": "passed", "command": "npm.cmd run build"},
+    {"name": "frontend-tests", "status": "passed", "command": "npm.cmd run test -- --run"},
     {"name": "pytest", "status": "passed", "command": "python -m uv run pytest"},
     {"name": "ruff", "status": "passed", "command": "python -m uv run ruff check ."},
     {"name": "mypy", "status": "passed", "command": "python -m uv run mypy src"},
     {"name": "bandit", "status": "passed", "command": "python -m uv run bandit -q -r src"},
     {"name": "pip-audit", "status": "passed", "command": "python -m uv run pip-audit"},
-    {"name": "play-browser-qa", "status": "passed", "command": "manual browser pass on localhost:8518 clicked balanced PLAY path to convergent settlement"},
-    {"name": "lab-study-smoke", "status": "passed", "command": "manual browser pass on localhost:8518?mode=LAB and ?mode=STUDY"}
+    {"name": "browser-qa", "status": "passed", "command": "manual/browser-use pass on http://127.0.0.1:5173/ across PLAY, LAB, and STUDY"}
   ]
 }

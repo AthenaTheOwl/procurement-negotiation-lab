@@ -1,19 +1,15 @@
-"""Streamlit shell for procurement-negotiation-lab."""
+"""Legacy Streamlit entrypoint.
+
+The polished simulator is now the React/TypeScript app in ``web/``. This file
+stays importable because older Streamlit Community Cloud and CI checks may still
+point at ``app.py`` while the Vercel deployment is being wired.
+"""
 
 from __future__ import annotations
-
-from pathlib import Path
 
 import streamlit as st
 
 from procurement_lab import __version__
-from procurement_lab.views.lab_view import render_lab
-from procurement_lab.views.play_view import render_play
-from procurement_lab.views.study_view import render_study
-
-ROOT = Path(__file__).resolve().parent
-DATA_DIR = ROOT / "data"
-DOCS_DIR = ROOT / "docs"
 
 
 def main() -> None:
@@ -23,38 +19,20 @@ def main() -> None:
         layout="wide",
     )
     st.title("procurement-negotiation-lab")
-    st.caption(f"v{__version__} - a Beer Game-style lab for long-lead procurement")
+    st.caption(f"v{__version__} - Python reference engine")
+    st.info(
+        "The polished learning simulator is the React/TypeScript app in `web/`. "
+        "Run `npm.cmd run dev` from the repo root and open the Vite URL."
+    )
+    st.markdown(
+        """
+This Streamlit page is intentionally small. It exists as a compatibility
+entrypoint while the public demo moves to a Vercel-friendly frontend.
 
-    with st.sidebar:
-        st.markdown("### mode")
-        requested_mode = str(st.query_params.get("mode", "PLAY")).upper()
-        modes = ["PLAY", "LAB", "STUDY"]
-        mode = st.radio(
-            "choose mode",
-            modes,
-            index=modes.index(requested_mode) if requested_mode in modes else 0,
-            captions=[
-                "guided story simulator",
-                "algorithm and information sandbox",
-                "math, data, and mental models",
-            ],
-        )
-        st.divider()
-        st.markdown(
-            """
-**PLAY first.** You are the buyer. Cinder is simulated.
-
-Each beat asks for one decision, then reveals consequences: response, residual,
-utility, surplus, and ending.
+The Python package still owns the reference math engine, scenario validation,
+formula safety checks, and regression tests.
 """
-        )
-
-    if mode == "PLAY":
-        render_play(DATA_DIR)
-    elif mode == "LAB":
-        render_lab(DATA_DIR)
-    else:
-        render_study(DATA_DIR, DOCS_DIR)
+    )
 
 
 if __name__ == "__main__":

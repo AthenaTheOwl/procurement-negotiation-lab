@@ -1,0 +1,24 @@
+# specs
+
+This repo uses a lightweight spec-driven loop. The spec is not decorative; it is
+the source of truth for what the demo must teach, what the app must render, and
+which proof gates have to pass before a checkpoint is called done.
+
+Current active spec:
+
+- `0001-polished-simulator/requirements.md`
+- `0001-polished-simulator/design.md`
+- `0001-polished-simulator/tasks.md`
+- `0001-polished-simulator/acceptance.md`
+- `0001-polished-simulator/research.md`
+- `0001-polished-simulator/traceability.md`
+
+The development loop is:
+
+1. Write or update requirements in testable language.
+2. Update the design so each requirement has a named surface or module.
+3. Implement only tasks traceable to the current spec.
+4. Run proof gates: Python engine tests, frontend tests, type checks, and browser QA.
+5. Update traceability and docs before committing.
+
+If a requested change does not fit the active spec, update the spec first.

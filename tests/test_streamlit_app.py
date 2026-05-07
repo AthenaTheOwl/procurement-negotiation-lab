@@ -12,8 +12,5 @@ def test_streamlit_play_surface_renders() -> None:
     assert not app.exception
     assert "procurement-negotiation-lab" in app.title[0].value
     markdown = "\n".join(item.value for item in app.markdown).lower()
-    assert "play first" in markdown
-    assert "the substrate crunch" in markdown
-    assert "you are maya chen" in markdown
-    assert "choose one move" in markdown
-    assert "why this is a simulator" in markdown
+    assert "public demo moves to a vercel-friendly frontend" in markdown
+    assert "python package still owns the reference math engine" in markdown
