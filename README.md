@@ -1,11 +1,17 @@
 # procurement-negotiation-lab
 
-a small learning lab for long-lead procurement commitments. editable
-utilities, synthetic suppliers, two-sided penalties, information-sharing
-modes, and negotiated certainty.
+a Beer Game-style learning lab for long-lead procurement commitments. you play
+the buyer, Cinder is simulated, and each beat turns one decision into visible
+consequences.
 
 uses the open-source [FloPro](https://github.com/amzn/FloPro) repo as the
 ADMM implementation reference. not an official Amazon example.
+
+## surfaces
+
+- **PLAY:** six-beat narrative simulator, `The Substrate Crunch`
+- **LAB:** algorithm, information, and transfer sandbox
+- **STUDY:** objective functions, solver notes, synthetic-data boundary, mental models
 
 ## what it teaches
 
@@ -35,8 +41,8 @@ python -m uv run bandit -q -r src
 python -m uv run pip-audit
 ```
 
-The app has a visible **Tests** tab so the public demo shows what is checked,
-not just what is claimed.
+The rebuilt app has a browser-QA gate: the PLAY path must be clicked through in
+a real browser before a phase is called done.
 
 ## public boundary
 

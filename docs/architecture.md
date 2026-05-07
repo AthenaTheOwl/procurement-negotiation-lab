@@ -1,21 +1,23 @@
 # architecture
 
-The app has two surfaces and five engines.
+The rebuilt app has three surfaces and three internal layers.
 
-The **Learning** surface is fixed. It walks one procurement problem through
-private utilities, global utility, commitment terms, coordination, transfers,
-and information value.
+## surfaces
 
-The **Arena** surface is editable. Users change formulas, products, periods,
-participant count, risk, and information-sharing mode.
+- **PLAY:** default landing experience. A six-beat story, one decision per beat,
+  consequences after each decision, and one of three endings.
+- **LAB:** sandbox for algorithm comparison, information modes, and transfers.
+- **STUDY:** objective functions, solver notes, data boundary, and mental models.
 
-The engines:
+## layers
 
-- scenario engine: validates YAML/JSON into typed scenario specs
-- formula engine: evaluates user math through an AST whitelist
-- coordination engine: runs ADMM-style coordination and comparison baselines
-- information engine: changes what each agent knows before local solve
-- transfer engine: splits surplus after the operational plan
+- **engine:** typed scenarios, safe formula evaluation, utility ledgers,
+  information modes, and CBT surplus splitting.
+- **algorithms:** oracle, ADMM, alternating best response, price-only dual, and
+  consensus averaging.
+- **narrative:** story arc, counterparty persona, run state, coach debriefs, and
+  ending detection.
+- **views:** Streamlit surfaces. `app.py` is only routing.
 
-The app evaluates optimized plans against the actual scenario, not just the
-agents' perceived scenario. That is where information value becomes visible.
+The app evaluates plans against the actual scenario, not only the agents'
+perceived scenario. That is where information value becomes visible.

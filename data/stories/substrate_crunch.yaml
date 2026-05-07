@@ -1,0 +1,353 @@
+id: substrate_crunch
+title: The Substrate Crunch
+subtitle: A Beer Game-style simulator for long-lead procurement commitments.
+player_role: Maya Chen, lead procurement planner at Northstar Substrates
+setup: >
+  You are Maya Chen, lead procurement planner at Northstar Substrates. It is
+  week 1 of Q3. Your largest AI accelerator customer pulled demand forward by
+  three months. Your CFO wants a 12-week procurement plan by Friday. Cinder
+  Lithography Services is the only viable supplier for a critical substrate
+  input, and Cinder has started hinting that capacity is tight.
+scenario:
+  id: substrate_crunch_base
+  title: The Substrate Crunch model
+  n_periods: 1
+  products:
+    - id: ai_substrate_a
+      name: AI accelerator substrate package
+      demand_mean: 500.0
+      demand_std: 95.0
+      unit_value: 125.0
+  capacity:
+    ai_substrate_a: 800.0
+  risk_score: 0.25
+  evidence_ids:
+    - ev_capacity_band
+    - ev_long_lead
+  participants:
+    - id: buyer-northstar
+      name: Northstar Substrates
+      role: buyer
+      outside_option: 0.0
+      utility_formula: >
+        service_level_value * min(q, demand) - unit_price * q
+        - shortage_penalty * max(demand - q, 0)
+        - inventory_penalty * max(q - demand, 0)
+        - risk_penalty * risk_score * q
+      parameters:
+        service_level_value: 125.0
+        unit_price: 55.0
+        shortage_penalty: 90.0
+        inventory_penalty: 7.0
+        risk_penalty: 10.0
+    - id: supplier-cinder
+      name: Cinder Lithography Services
+      role: supplier
+      outside_option: 0.0
+      utility_formula: >
+        revenue_per_unit * q - production_cost * q
+        - holding_cost * max(q - demand, 0)
+        - stockout_penalty * max(demand - q, 0)
+        - risk_premium * risk_score * q
+        - 0.03 * max(q - capacity, 0) * max(q - capacity, 0)
+      parameters:
+        revenue_per_unit: 55.0
+        production_cost: 34.0
+        holding_cost: 4.0
+        stockout_penalty: 8.0
+        risk_premium: 11.0
+beats:
+  - id: open_forecast
+    week: 1
+    title: Open with a forecast
+    situation: >
+      Your customer pulled the launch forward. Demand is not locked, but if you
+      wait for perfect certainty, the supplier will allocate capacity elsewhere.
+    buyer_prompt: >
+      What opening commitment do you send to Cinder?
+    supplier_private_context: >
+      Cinder has room, but not enough to absorb every customer's pull-forward.
+      They want a signal that your demand is real before reserving capacity.
+    learning_goal: >
+      See the basic tension: buyer wants protection; supplier wants credible
+      commitment before holding capacity.
+    study_links: [option_value, residuals]
+    options:
+      - id: cautious_forecast
+        label: Send a cautious forecast
+        summary: Ask for a low reservation and keep budget flexible.
+        consequence_hint: Less budget pressure, but higher shortage risk.
+        quantity_multiplier: 0.72
+        information_mode: private
+        commitment_type: forecast
+        relationship_delta: 1
+        sla_risk_delta: 0.8
+        budget_pressure_delta: -0.2
+        privacy_delta: 0.05
+      - id: balanced_forecast
+        label: Send a balanced forecast band
+        summary: Ask near expected demand and admit the forecast is a band.
+        consequence_hint: Gives Cinder enough signal without overpromising.
+        quantity_multiplier: 0.98
+        information_mode: forecast_band
+        commitment_type: soft
+        relationship_delta: 1
+        sla_risk_delta: 0.1
+        budget_pressure_delta: 0.1
+        privacy_delta: 0.25
+      - id: aggressive_forecast
+        label: Over-reserve to protect the launch
+        summary: Ask above demand because shortage is politically worse than excess.
+        consequence_hint: Better SLA protection, but Cinder sees a capacity grab.
+        quantity_multiplier: 1.25
+        information_mode: private
+        commitment_type: firm
+        relationship_delta: -1
+        sla_risk_delta: -0.3
+        budget_pressure_delta: 0.6
+        privacy_delta: 0.05
+  - id: counteroffer
+    week: 3
+    title: Cinder counters
+    situation: >
+      Cinder replies with a higher price and a smaller capacity band than you
+      wanted. They say another customer is trying to lock the same weeks.
+    buyer_prompt: >
+      Do you accept the premium, push back, or create a split-source hedge?
+    supplier_private_context: >
+      Cinder can support you, but only if you either pay for priority or reduce
+      the amount of unprotected optionality you are asking them to carry.
+    learning_goal: >
+      Notice that a supplier counteroffer can be rational even when it feels
+      adversarial.
+    study_links: [dual_prices, cbt]
+    options:
+      - id: accept_premium
+        label: Accept Cinder's premium
+        summary: Pay more to reserve capacity now.
+        consequence_hint: Strong relationship, higher budget pressure.
+        quantity_multiplier: 1.02
+        information_mode: capacity_band
+        commitment_type: firm
+        relationship_delta: 1
+        sla_risk_delta: -0.3
+        budget_pressure_delta: 0.7
+        privacy_delta: 0.15
+      - id: push_back
+        label: Push back on price
+        summary: Keep your quantity but refuse the 1.4x quote.
+        consequence_hint: Saves budget if it works; risks delay if it does not.
+        quantity_multiplier: 1.0
+        information_mode: private
+        commitment_type: soft
+        relationship_delta: -1
+        sla_risk_delta: 0.4
+        budget_pressure_delta: -0.1
+        privacy_delta: 0.05
+      - id: split_source
+        label: Hedge with a split-source option
+        summary: Lock part of the volume with Cinder and keep an option elsewhere.
+        consequence_hint: Reduces single-supplier exposure but lowers Cinder's confidence.
+        quantity_multiplier: 0.88
+        information_mode: risk_only
+        commitment_type: option
+        relationship_delta: 0
+        sla_risk_delta: 0.2
+        budget_pressure_delta: 0.2
+        privacy_delta: 0.2
+  - id: risk_evidence
+    week: 5
+    title: Risk evidence drops
+    situation: >
+      A public filing-style note flags tighter advanced packaging capacity and
+      longer qualification cycles. Your old forecast assumed smoother supply.
+    buyer_prompt: >
+      Do you increase buffer, hold the line, or ask Cinder for more transparency?
+    supplier_private_context: >
+      Cinder knows the risk is real. They are watching whether Northstar treats
+      the risk as shared planning data or as a bargaining weapon.
+    learning_goal: >
+      Translate risk evidence into a planning choice without pretending the
+      risk score is a real-world truth.
+    study_links: [risk_score, information_value]
+    options:
+      - id: increase_buffer
+        label: Add a risk buffer
+        summary: Reserve more capacity because the risk evidence is credible.
+        consequence_hint: Better coverage, but more cancellation exposure.
+        quantity_multiplier: 1.14
+        information_mode: risk_only
+        commitment_type: firm
+        relationship_delta: 0
+        sla_risk_delta: -0.4
+        budget_pressure_delta: 0.5
+        privacy_delta: 0.1
+      - id: hold_line
+        label: Hold the line
+        summary: Treat the filing as noise and keep the current ask.
+        consequence_hint: Saves budget now but may underprice the supply shock.
+        quantity_multiplier: 0.96
+        information_mode: private
+        commitment_type: soft
+        relationship_delta: -1
+        sla_risk_delta: 0.5
+        budget_pressure_delta: -0.1
+        privacy_delta: 0.05
+      - id: ask_transparency
+        label: Ask for a capacity band
+        summary: Share your forecast band if Cinder shares rough capacity.
+        consequence_hint: More disclosure, better coordination.
+        quantity_multiplier: 1.02
+        information_mode: forecast_band
+        commitment_type: soft
+        relationship_delta: 1
+        sla_risk_delta: -0.1
+        budget_pressure_delta: 0.2
+        privacy_delta: 0.35
+  - id: oscillation
+    week: 7
+    title: The negotiation oscillates
+    situation: >
+      The quantity keeps bouncing. Your team wants protection; Cinder keeps
+      pulling the number back toward a safer capacity reservation.
+    buyer_prompt: >
+      How do you stabilize the negotiation?
+    supplier_private_context: >
+      Cinder is not refusing the business. They are refusing to absorb unlimited
+      uncertainty without either a transfer or a firmer commitment.
+    learning_goal: >
+      Learn why convergence matters: a good average is not useful if the parties
+      cannot actually settle on it.
+    study_links: [admm, residuals]
+    options:
+      - id: offer_cbt
+        label: Offer a cost-benefit transfer
+        summary: Keep the operational plan and move dollars after the fact.
+        consequence_hint: Makes the surplus split explicit.
+        quantity_multiplier: 1.0
+        information_mode: cost_band
+        commitment_type: firm
+        relationship_delta: 1
+        sla_risk_delta: -0.1
+        budget_pressure_delta: 0.3
+        privacy_delta: 0.25
+      - id: stand_firm
+        label: Stand firm
+        summary: Demand the original quantity and force Cinder to decide.
+        consequence_hint: May protect your local goal but risks no-deal.
+        quantity_multiplier: 1.2
+        information_mode: private
+        commitment_type: firm
+        relationship_delta: -2
+        sla_risk_delta: 0.6
+        budget_pressure_delta: 0.0
+        privacy_delta: 0.0
+      - id: reduce_scope
+        label: Reduce scope
+        summary: Lower the requested quantity and preserve the relationship.
+        consequence_hint: Easier agreement, higher customer shortage risk.
+        quantity_multiplier: 0.82
+        information_mode: capacity_band
+        commitment_type: soft
+        relationship_delta: 1
+        sla_risk_delta: 0.6
+        budget_pressure_delta: -0.2
+        privacy_delta: 0.15
+  - id: demand_revision
+    week: 10
+    title: Demand moves earlier
+    situation: >
+      The customer confirms demand but moves the needed date two weeks earlier.
+      The forecast is now more certain, but the schedule is worse.
+    buyer_prompt: >
+      Do you firm the band, pay for expediting, or accept shortage exposure?
+    supplier_private_context: >
+      Cinder can pull in some capacity, but only if the economics compensate
+      for disruption to other customers.
+    learning_goal: >
+      See how certainty can arrive too late. Better information is valuable,
+      but timing matters.
+    study_links: [option_value, path_dependence]
+    options:
+      - id: firm_band
+        label: Firm the forecast band
+        summary: Convert the band into a firm reservation.
+        consequence_hint: Locks supply, less optionality.
+        quantity_multiplier: 1.0
+        information_mode: forecast_band
+        commitment_type: firm
+        relationship_delta: 1
+        sla_risk_delta: -0.2
+        budget_pressure_delta: 0.2
+        privacy_delta: 0.2
+      - id: pay_expedite
+        label: Pay for expediting
+        summary: Offer more money to pull the date in.
+        consequence_hint: Protects SLA but spends hard.
+        quantity_multiplier: 1.08
+        information_mode: cost_band
+        commitment_type: firm
+        relationship_delta: 0
+        sla_risk_delta: -0.5
+        budget_pressure_delta: 0.8
+        privacy_delta: 0.15
+      - id: accept_shortage
+        label: Accept some shortage exposure
+        summary: Do not chase every unit; protect budget instead.
+        consequence_hint: Preserves margin, risks customer pain.
+        quantity_multiplier: 0.84
+        information_mode: private
+        commitment_type: forecast
+        relationship_delta: 0
+        sla_risk_delta: 0.9
+        budget_pressure_delta: -0.3
+        privacy_delta: 0.0
+  - id: settle
+    week: 12
+    title: Settle the plan
+    situation: >
+      Friday arrives. The CFO needs the plan. Cinder needs a signed commitment.
+      Your customer needs confidence that the launch is covered.
+    buyer_prompt: >
+      What final posture do you take?
+    supplier_private_context: >
+      Cinder will sign a balanced firm plan, tolerate a shared-risk option, or
+      walk away from a one-sided demand.
+    learning_goal: >
+      Tie together operational quantity, local utility, global utility,
+      transfers, and no-worse-off participation.
+    study_links: [cbt, oracle_gap]
+    options:
+      - id: settle_balanced
+        label: Settle balanced
+        summary: Sign a firm plan near the negotiated quantity with CBT.
+        consequence_hint: Best chance of mutual acceptance.
+        quantity_multiplier: 1.0
+        information_mode: forecast_band
+        commitment_type: firm
+        relationship_delta: 1
+        sla_risk_delta: -0.3
+        budget_pressure_delta: 0.2
+        privacy_delta: 0.1
+      - id: settle_hard
+        label: Push a hard final demand
+        summary: Try to force the launch-protecting quantity through.
+        consequence_hint: Can become locally rational, globally brittle.
+        quantity_multiplier: 1.22
+        information_mode: private
+        commitment_type: firm
+        relationship_delta: -2
+        sla_risk_delta: 0.4
+        budget_pressure_delta: 0.0
+        privacy_delta: 0.0
+      - id: settle_option
+        label: Settle with an option band
+        summary: Keep some option value and share more risk.
+        consequence_hint: Preserves flexibility but may not fully protect the launch.
+        quantity_multiplier: 0.9
+        information_mode: cost_band
+        commitment_type: option
+        relationship_delta: 0
+        sla_risk_delta: 0.3
+        budget_pressure_delta: -0.1
+        privacy_delta: 0.2

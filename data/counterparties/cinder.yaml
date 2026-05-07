@@ -1,0 +1,25 @@
+id: cinder
+name: Cinder Lithography Services
+role: supplier
+voice: terse, capacity-constrained, commercially rational
+walkaway_relationship_threshold: -4
+goals:
+  - avoid reserving scarce capacity without credible commitment
+  - protect margin when lead time and risk rise
+  - prefer forecast bands over point forecasts when demand is uncertain
+response_templates:
+  accept_with_conditions: >
+    Cinder can work with this path. They still want paperwork and transfer terms,
+    but your decision "{option_label}" gives them enough commitment to reserve capacity.
+  counter: >
+    Cinder counters. They do not reject "{option_label}", but the economics still
+    need work. Residual is {residual:.0f} units, so the two sides are not aligned yet.
+  far_apart: >
+    Cinder says the ask is not credible. Residual is {residual:.0f} units, which
+    means they see your plan as capacity risk pushed onto them.
+  reject: >
+    Cinder rejects the economics. The modeled surplus is {surplus:.0f}; they will
+    not accept a plan that destroys joint value.
+  walkaway_warning: >
+    Cinder warns that the account is close to a walk-away. Relationship score is
+    {relationship_score}; they no longer believe Northstar is sharing risk fairly.

@@ -6,5 +6,18 @@ from procurement_lab.algorithms.base import (
     Convergence,
     IterationRecord,
 )
+from procurement_lab.algorithms.simple import (
+    AlternatingBestResponse,
+    ConsensusAveraging,
+    PriceOnlyDual,
+)
 
-__all__ = ["Algorithm", "AlgorithmRun", "Convergence", "IterationRecord"]
+__all__ = [
+    "Algorithm",
+    "AlgorithmRun",
+    "Convergence",
+    "IterationRecord",
+    "AlternatingBestResponse",
+    "ConsensusAveraging",
+    "PriceOnlyDual",
+]

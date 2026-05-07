@@ -54,6 +54,10 @@ warn_return_any = true
 disallow_untyped_defs = true
 packages = ["procurement_lab"]
 
+[[tool.mypy.overrides]]
+module = ["pandas.*", "plotly.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=src/procurement_lab --cov-report=term-missing"

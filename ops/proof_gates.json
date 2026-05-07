@@ -1,12 +1,13 @@
 {
   "status": "local green",
-  "last_updated": "2026-05-06",
+  "last_updated": "2026-05-07",
   "gates": [
     {"name": "pytest", "status": "passed", "command": "python -m uv run pytest"},
     {"name": "ruff", "status": "passed", "command": "python -m uv run ruff check ."},
     {"name": "mypy", "status": "passed", "command": "python -m uv run mypy src"},
     {"name": "bandit", "status": "passed", "command": "python -m uv run bandit -q -r src"},
     {"name": "pip-audit", "status": "passed", "command": "python -m uv run pip-audit"},
-    {"name": "streamlit-smoke", "status": "passed", "command": "temporary local server on port 8517 returned HTTP 200"}
+    {"name": "play-browser-qa", "status": "passed", "command": "manual browser pass on localhost:8518 clicked balanced PLAY path to convergent settlement"},
+    {"name": "lab-study-smoke", "status": "passed", "command": "manual browser pass on localhost:8518?mode=LAB and ?mode=STUDY"}
   ]
 }
