@@ -22,17 +22,21 @@ describe("simulation model", () => {
     }
   });
 
-  it("compares ADMM against four alternatives and an oracle", () => {
+  it("compares local JIT, CPP mechanisms, baselines, and an oracle", () => {
     const runs = algorithmResults(makeScenario());
     expect(runs.map((run) => run.id)).toEqual([
+      "jit-baseline",
       "centralized-oracle",
-      "admm",
+      "cpp-vcg",
+      "cpp-admm",
+      "menu-contracts",
       "alternating-best-response",
       "price-only",
       "consensus-averaging",
     ]);
-    expect(runs[0].oracleGap).toBe(0);
+    expect(runs.find((run) => run.id === "centralized-oracle")!.oracleGap).toBe(0);
     expect(runs.every((run) => Number.isFinite(run.globalUtility))).toBe(true);
+    expect(runs.every((run) => run.incentiveStory.length > 10)).toBe(true);
   });
 
   it("shows more information as a tradeoff between value and privacy", () => {

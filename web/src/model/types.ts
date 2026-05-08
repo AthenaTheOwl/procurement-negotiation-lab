@@ -8,9 +8,12 @@ export type InfoMode =
   | "forecast-band"
   | "full-oracle";
 
-export type AlgorithmId =
+export type MechanismId =
+  | "jit-baseline"
   | "centralized-oracle"
-  | "admm"
+  | "cpp-admm"
+  | "cpp-vcg"
+  | "menu-contracts"
   | "alternating-best-response"
   | "price-only"
   | "consensus-averaging";
@@ -76,8 +79,34 @@ export interface RoundResult {
   nextScores: ScoreState;
 }
 
+export interface AgentArchetype {
+  id: string;
+  side: "buyer" | "supplier" | "either";
+  name: string;
+  shortName: string;
+  oneLine: string;
+  objective: string;
+  privateInfo: string;
+  strategy: string;
+  parameters: {
+    urgency: number;
+    flexibility: number;
+    truthfulness: number;
+    privacyPreference: number;
+    riskAversion: number;
+  };
+}
+
+export interface ScenarioPreset {
+  id: string;
+  name: string;
+  oneLine: string;
+  soWhat: string;
+  defaults: Partial<LabScenario>;
+}
+
 export interface AlgorithmResult {
-  id: AlgorithmId;
+  id: MechanismId;
   name: string;
   plainEnglish: string;
   iterations: number;
@@ -85,16 +114,29 @@ export interface AlgorithmResult {
   runtimeMs: number;
   globalUtility: number;
   oracleGap: number;
+  privacyExposure: number;
+  incentiveStory: string;
+  informationRequired: string;
   feasible: boolean;
   quality: "best benchmark" | "strong" | "mixed" | "weak";
 }
 
 export interface LabScenario {
+  presetId: string;
   demand: number;
   volatility: number;
   capacityTightness: number;
+  leadTimeWeeks: number;
+  fulfillmentCenterCount: number;
   participantCount: number;
   productCount: number;
   periodCount: number;
   infoMode: InfoMode;
+  buyerAgentId: string;
+  supplierAgentId: string;
+  customBuyerUrgency: number;
+  customSupplierFlexibility: number;
+  customTruthfulness: number;
+  customPrivacyPreference: number;
+  customRiskAversion: number;
 }

@@ -4,7 +4,7 @@ This repo uses a lightweight spec-driven loop. The spec is not decorative; it is
 the source of truth for what the demo must teach, what the app must render, and
 which proof gates have to pass before a checkpoint is called done.
 
-Current active spec:
+Current active specs:
 
 - `0001-polished-simulator/requirements.md`
 - `0001-polished-simulator/design.md`
@@ -12,6 +12,12 @@ Current active spec:
 - `0001-polished-simulator/acceptance.md`
 - `0001-polished-simulator/research.md`
 - `0001-polished-simulator/traceability.md`
+- `0002-lab-authoring-workbench/requirements.md`
+- `0002-lab-authoring-workbench/design.md`
+- `0002-lab-authoring-workbench/tasks.md`
+- `0002-lab-authoring-workbench/acceptance.md`
+- `0002-lab-authoring-workbench/research.md`
+- `0002-lab-authoring-workbench/traceability.md`
 
 The development loop is:
 

@@ -1,13 +1,14 @@
 import type {
-  AlgorithmId,
   AlgorithmResult,
   Beat,
   Choice,
   InfoMode,
   LabScenario,
+  MechanismId,
   RoundResult,
   ScoreState,
 } from "./types";
+import { presetById } from "../data/scenarios";
 
 export const initialScores: ScoreState = {
   relationship: 0,
@@ -141,27 +142,72 @@ export function detectEnding(results: RoundResult[], scores: ScoreState): {
 }
 
 export function makeScenario(overrides: Partial<LabScenario> = {}): LabScenario {
+  const presetId = overrides.presetId ?? "substrate-crunch";
+  const preset = presetById(presetId);
   return {
+    presetId,
     demand: 500,
     volatility: 0.26,
     capacityTightness: 0.72,
+    leadTimeWeeks: 12,
+    fulfillmentCenterCount: 3,
     participantCount: 2,
     productCount: 1,
     periodCount: 1,
     infoMode: "forecast-band",
+    buyerAgentId: "launch-protector",
+    supplierAgentId: "capacity-guard",
+    customBuyerUrgency: 0.75,
+    customSupplierFlexibility: 0.45,
+    customTruthfulness: 0.78,
+    customPrivacyPreference: 0.68,
+    customRiskAversion: 0.68,
+    ...preset.defaults,
     ...overrides,
   };
 }
 
 export function algorithmResults(scenario: LabScenario): AlgorithmResult[] {
-  const oracle = algorithmScore("centralized-oracle", scenario);
+  const oracle = mechanismScore("centralized-oracle", scenario);
   return [
+    mechanismScore("jit-baseline", scenario, oracle.globalUtility),
     oracle,
-    algorithmScore("admm", scenario, oracle.globalUtility),
-    algorithmScore("alternating-best-response", scenario, oracle.globalUtility),
-    algorithmScore("price-only", scenario, oracle.globalUtility),
-    algorithmScore("consensus-averaging", scenario, oracle.globalUtility),
+    mechanismScore("cpp-vcg", scenario, oracle.globalUtility),
+    mechanismScore("cpp-admm", scenario, oracle.globalUtility),
+    mechanismScore("menu-contracts", scenario, oracle.globalUtility),
+    mechanismScore("alternating-best-response", scenario, oracle.globalUtility),
+    mechanismScore("price-only", scenario, oracle.globalUtility),
+    mechanismScore("consensus-averaging", scenario, oracle.globalUtility),
   ];
+}
+
+export function labTakeaway(scenario: LabScenario): {
+  title: string;
+  soWhat: string;
+  coordinationGap: number;
+  bestMechanism: AlgorithmResult;
+  informationValue: number;
+} {
+  const runs = algorithmResults(scenario);
+  const jit = runs.find((run) => run.id === "jit-baseline") ?? runs[0];
+  const oracle = runs.find((run) => run.id === "centralized-oracle") ?? runs[0];
+  const implementable = runs
+    .filter((run) => run.id !== "centralized-oracle" && run.id !== "jit-baseline")
+    .sort((a, b) => a.oracleGap - b.oracleGap)[0];
+  const privateScenario = makeScenario({ ...scenario, infoMode: "private" });
+  const fullScenario = makeScenario({ ...scenario, infoMode: "full-oracle" });
+  const informationValue =
+    mechanismScore("cpp-vcg", fullScenario).globalUtility -
+    mechanismScore("cpp-vcg", privateScenario).globalUtility;
+  return {
+    title: "The so-what",
+    soWhat:
+      `Local planning leaves about ${money(jit.oracleGap)} on the table in this setup. ` +
+      `${implementable.name} recovers most of that gap while exposing less private data than the oracle.`,
+    coordinationGap: oracle.globalUtility - jit.globalUtility,
+    bestMechanism: implementable,
+    informationValue,
+  };
 }
 
 export function informationSweep(base: LabScenario): Array<{
@@ -181,7 +227,7 @@ export function informationSweep(base: LabScenario): Array<{
   ];
   return modes.map((mode) => {
     const scenario = { ...base, infoMode: mode };
-    const admm = algorithmScore("admm", scenario);
+    const admm = mechanismScore("cpp-vcg", scenario);
     return {
       mode,
       label: infoModeLabel(mode),
@@ -227,43 +273,113 @@ export function transferLedger(globalUtility: number): Array<{
   ];
 }
 
-function algorithmScore(
-  id: AlgorithmId,
+function mechanismScore(
+  id: MechanismId,
   scenario: LabScenario,
   oracleUtility?: number,
 ): AlgorithmResult {
   const complexity =
-    (scenario.participantCount - 2) * 0.06 +
-    (scenario.productCount - 1) * 0.05 +
-    (scenario.periodCount - 1) * 0.035 +
+    (scenario.participantCount - 2) * 0.07 +
+    (scenario.productCount - 1) * 0.06 +
+    (scenario.periodCount - 1) * 0.04 +
+    (scenario.fulfillmentCenterCount - 3) * 0.025 +
+    (scenario.leadTimeWeeks - 6) * 0.012 +
     scenario.volatility * 0.3 +
     scenario.capacityTightness * 0.22;
   const info = infoQuality[scenario.infoMode];
-  const base = 21500 + scenario.demand * 18 - complexity * 4200 + info * 2600;
-  const table: Record<AlgorithmId, { name: string; residual: number; loss: number; iters: number; runtime: number; plain: string }> = {
+  const agentDiscipline =
+    scenario.customTruthfulness * 0.44 +
+    scenario.customSupplierFlexibility * 0.24 +
+    (1 - scenario.customPrivacyPreference) * 0.16 +
+    scenario.customBuyerUrgency * 0.08 +
+    (1 - scenario.customRiskAversion) * 0.08;
+  const base =
+    18800 +
+    scenario.demand * 16 +
+    scenario.fulfillmentCenterCount * 260 +
+    scenario.productCount * 520 -
+    complexity * 3900 +
+    info * 2600 +
+    agentDiscipline * 1800;
+  const table: Record<
+    MechanismId,
+    {
+      name: string;
+      residual: number;
+      loss: number;
+      iters: number;
+      runtime: number;
+      privacy: number;
+      plain: string;
+      incentive: string;
+      infoRequired: string;
+    }
+  > = {
+    "jit-baseline": {
+      name: "JIT baseline",
+      residual: 250 * (1 - info * 0.25) + complexity * 180,
+      loss: 4100 + 2400 * complexity + 1100 * (1 - agentDiscipline),
+      iters: 1,
+      runtime: 3,
+      privacy: privacyExposure[scenario.infoMode] * 0.25,
+      plain: "Buyer issues its local best order; supplier reacts later. Simple, private, and often jointly wasteful.",
+      incentive: "No mechanism: each side can act locally and push cost to the other side.",
+      infoRequired: "Buyer order only; supplier economics stay hidden and unused.",
+    },
     "centralized-oracle": {
       name: "Centralized oracle",
       residual: 0,
       loss: 0,
       iters: 1,
       runtime: 4,
-      plain: "All information is pooled and one planner chooses the best joint plan. Great benchmark, unrealistic governance.",
+      privacy: 1,
+      plain: "All information is pooled and one planner chooses the best joint plan. Useful benchmark, unrealistic governance.",
+      incentive: "Efficient if everyone reveals truthfully, but it assumes away strategic privacy.",
+      infoRequired: "Full buyer demand, inventory, transport, supplier cost, capacity, and production curves.",
     },
-    admm: {
-      name: "ADMM",
-      residual: 130 * (1 - info) + complexity * 90,
-      loss: 900 * (1 - info) + complexity * 1200,
+    "cpp-vcg": {
+      name: "CPP + VCG/CBT",
+      residual: 52 * (1 - info) + complexity * 58 + (1 - scenario.customTruthfulness) * 44,
+      loss: 420 * (1 - info) + complexity * 760 + (1 - scenario.customTruthfulness) * 430,
+      iters: Math.round(20 + complexity * 34 - info * 6),
+      runtime: 42 + complexity * 72,
+      privacy: privacyExposure[scenario.infoMode] * 0.74 + 0.11,
+      plain: "Agents respond to coordination queries, then a VCG-style transfer prices the externality each side imposes.",
+      incentive: "Designed to make truthful local optimization the attractive strategy when agents respond honestly.",
+      infoRequired: "Iterative best responses plus a counterfactual run for transfer calculation; not full cost disclosure.",
+    },
+    "cpp-admm": {
+      name: "CPP / ADMM",
+      residual: 130 * (1 - info) + complexity * 90 + (1 - agentDiscipline) * 30,
+      loss: 900 * (1 - info) + complexity * 1200 + (1 - agentDiscipline) * 620,
       iters: Math.round(14 + complexity * 30 - info * 5),
       runtime: 24 + complexity * 55,
+      privacy: privacyExposure[scenario.infoMode] * 0.62 + 0.08,
       plain: "Parties keep local objectives, exchange coordination signals, and iterate toward agreement.",
+      incentive: "Good coordination protocol, but without VCG pricing it does not by itself solve incentive compatibility.",
+      infoRequired: "Local best responses to prices or consensus quantities.",
+    },
+    "menu-contracts": {
+      name: "Menu of contracts",
+      residual: 78 * (1 - info) + complexity * 86 + Math.max(0, scenario.productCount - 2) * 36,
+      loss: 520 * (1 - info) + complexity * 930 + Math.max(0, scenario.productCount - 2) * 460,
+      iters: 2,
+      runtime: 12 + complexity * 28,
+      privacy: privacyExposure[scenario.infoMode] * 0.42 + 0.18,
+      plain: "Buyer offers priced plan options; supplier chooses the plan that maximizes its own utility.",
+      incentive: "Transparent and strong in low-dimensional cases; menus become hard to design as choices explode.",
+      infoRequired: "A finite menu of candidate plans and prices.",
     },
     "alternating-best-response": {
       name: "Alternating best response",
-      residual: 180 * (1 - info) + complexity * 120,
-      loss: 1400 * (1 - info) + complexity * 1800,
+      residual: 180 * (1 - info) + complexity * 120 + (1 - scenario.customSupplierFlexibility) * 34,
+      loss: 1400 * (1 - info) + complexity * 1800 + (1 - agentDiscipline) * 700,
       iters: Math.round(9 + complexity * 18),
       runtime: 18 + complexity * 35,
       plain: "Each side responds to the last move. Simple and legible, but can bounce when incentives diverge.",
+      privacy: privacyExposure[scenario.infoMode] * 0.36,
+      incentive: "Legible negotiation heuristic, not incentive compatible.",
+      infoRequired: "Last offer and local response.",
     },
     "price-only": {
       name: "Price-only coordination",
@@ -272,6 +388,9 @@ function algorithmScore(
       iters: Math.round(11 + complexity * 22),
       runtime: 16 + complexity * 42,
       plain: "Only price-like signals move. Useful when privacy matters, weak when quantity constraints dominate.",
+      privacy: privacyExposure[scenario.infoMode] * 0.32 + 0.04,
+      incentive: "Protects private details, but prices may not encode binding capacity or timing constraints.",
+      infoRequired: "Price or penalty signal, not full planning state.",
     },
     "consensus-averaging": {
       name: "Consensus averaging",
@@ -280,6 +399,9 @@ function algorithmScore(
       iters: Math.round(5 + complexity * 8),
       runtime: 9 + complexity * 20,
       plain: "Average the plans. Fast and easy, but it can average away the actual constraint.",
+      privacy: privacyExposure[scenario.infoMode] * 0.22,
+      incentive: "No strategic protection; averaging can reward inflated asks or understated capacity.",
+      infoRequired: "Plan proposals only.",
     },
   };
   const spec = table[id];
@@ -295,6 +417,9 @@ function algorithmScore(
     runtimeMs: Math.round(spec.runtime),
     globalUtility: Math.round(utility),
     oracleGap: Math.round(gap),
+    privacyExposure: clamp(spec.privacy, 0, 1),
+    incentiveStory: spec.incentive,
+    informationRequired: spec.infoRequired,
     feasible: spec.residual < 260,
     quality:
       id === "centralized-oracle"
@@ -305,6 +430,10 @@ function algorithmScore(
             ? "mixed"
             : "weak",
   };
+}
+
+function money(value: number): string {
+  return `$${Math.round(Math.abs(value)).toLocaleString()}`;
 }
 
 function supplierComfortQuantity(choice: Choice, scores: ScoreState): number {

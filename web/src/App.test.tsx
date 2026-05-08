@@ -27,8 +27,11 @@ describe("App", () => {
     render(<App />);
     await user.click(screen.getAllByRole("button", { name: /lab arena/i })[0]);
     expect(screen.getByTestId("lab-surface")).toBeInTheDocument();
-    expect(screen.getByText(/does ADMM actually beat simpler rules/i)).toBeInTheDocument();
+    expect(screen.getByTestId("lab-so-what")).toBeInTheDocument();
+    expect(screen.getByText(/make your own agents/i)).toBeInTheDocument();
+    expect(screen.getByText(/coordination gap/i)).toBeInTheDocument();
     expect(screen.getAllByText(/centralized oracle/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/CPP \+ VCG\/CBT/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/alternating best response/i).length).toBeGreaterThan(0);
   });
 

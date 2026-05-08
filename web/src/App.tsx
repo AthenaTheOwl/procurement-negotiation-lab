@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { agentById, agentsForSide } from "./data/agents";
 import { glossary, termOrder } from "./data/glossary";
+import { presetById, scenarioPresets } from "./data/scenarios";
 import { substrateCrunch } from "./data/story";
 import {
   algorithmResults,
@@ -9,6 +11,7 @@ import {
   infoModeLabel,
   informationSweep,
   initialScores,
+  labTakeaway,
   makeScenario,
   transferLedger,
 } from "./model/simulation";
@@ -283,26 +286,104 @@ function LabSurface() {
   const [scenario, setScenario] = useState<LabScenario>(() => makeScenario());
   const runs = useMemo(() => algorithmResults(scenario), [scenario]);
   const info = useMemo(() => informationSweep(scenario), [scenario]);
-  const best = runs[0];
+  const takeaway = useMemo(() => labTakeaway(scenario), [scenario]);
+  const selectedPreset = presetById(scenario.presetId);
+  const buyerAgent = agentById(scenario.buyerAgentId);
+  const supplierAgent = agentById(scenario.supplierAgentId);
+  const best = takeaway.bestMechanism;
+  function applyPreset(presetId: string) {
+    setScenario(makeScenario({ presetId }));
+  }
   return (
     <section className="lab-shell" data-testid="lab-surface">
       <div className="surface-intro">
         <div className="section-label">Lab arena</div>
-        <h2>Freeze the case. Change the coordination rule.</h2>
+        <h2>Build agents. Set the problem. Compare mechanisms.</h2>
         <p>
-          The story taught the mechanics. The lab answers controlled questions:
-          does ADMM actually beat simpler rules, what does more information buy,
-          and can a transfer make both parties no worse off?
+          The lab is the point: create a buyer, a supplier, a planning problem,
+          and a coordination rule. Then ask the mechanism-design question:
+          does the rule recover joint value without forcing everyone to reveal
+          private cost and capacity data?
         </p>
+      </div>
+      <div className="so-what-panel" data-testid="lab-so-what">
+        <div>
+          <div className="section-label">{takeaway.title}</div>
+          <h3>{takeaway.soWhat}</h3>
+          <p>
+            Selected setup: <strong>{selectedPreset.name}</strong>. {selectedPreset.soWhat}
+          </p>
+        </div>
+        <div className="so-what-metrics">
+          <ExplainedMetric label="Coordination gap" value={money(takeaway.coordinationGap)} help="Value lost when local JIT planning is compared with the centralized oracle." />
+          <ExplainedMetric label="Best non-oracle rule" value={best.name} help="Best mechanism in this synthetic run after excluding the all-knowing oracle." />
+          <ExplainedMetric label="Info value" value={money(takeaway.informationValue)} help="Gain from full information versus private information under CPP+VCG." />
+        </div>
       </div>
       <div className="lab-grid">
         <div className="control-card">
-          <h3>Scenario knobs</h3>
+          <h3>1. Choose or make a problem</h3>
+          <p className="muted">
+            Presets are canonical coordination failures. Use them as starting
+            points, then change the structure below.
+          </p>
+          <div className="preset-grid">
+            {scenarioPresets.map((preset) => (
+              <button
+                className={scenario.presetId === preset.id ? "preset-card active" : "preset-card"}
+                key={preset.id}
+                onClick={() => applyPreset(preset.id)}
+              >
+                <strong>{preset.name}</strong>
+                <span>{preset.oneLine}</span>
+              </button>
+            ))}
+          </div>
           <Slider label="Demand volatility" value={scenario.volatility} min={0.05} max={0.6} step={0.01} onChange={(volatility) => setScenario({ ...scenario, volatility })} />
           <Slider label="Capacity tightness" value={scenario.capacityTightness} min={0.2} max={1.0} step={0.01} onChange={(capacityTightness) => setScenario({ ...scenario, capacityTightness })} />
+          <Slider label="Lead time weeks" value={scenario.leadTimeWeeks} min={2} max={24} step={1} onChange={(leadTimeWeeks) => setScenario({ ...scenario, leadTimeWeeks })} />
+          <Slider label="Fulfillment centers" value={scenario.fulfillmentCenterCount} min={1} max={8} step={1} onChange={(fulfillmentCenterCount) => setScenario({ ...scenario, fulfillmentCenterCount })} />
           <Slider label="Participants" value={scenario.participantCount} min={2} max={5} step={1} onChange={(participantCount) => setScenario({ ...scenario, participantCount })} />
           <Slider label="Products" value={scenario.productCount} min={1} max={4} step={1} onChange={(productCount) => setScenario({ ...scenario, productCount })} />
           <Slider label="Periods" value={scenario.periodCount} min={1} max={6} step={1} onChange={(periodCount) => setScenario({ ...scenario, periodCount })} />
+        </div>
+        <div className="control-card">
+          <h3>2. Make your own agents</h3>
+          <p className="muted">
+            Pick canonical strategies, then tune the behavioral knobs. These are
+            not LLM agents; they are inspectable optimization personas.
+          </p>
+          <SelectControl label="Buyer agent" value={scenario.buyerAgentId} onChange={(buyerAgentId) => setScenario({ ...scenario, buyerAgentId })}>
+            {agentsForSide("buyer").map((agent) => (
+              <option key={agent.id} value={agent.id}>
+                {agent.name}
+              </option>
+            ))}
+          </SelectControl>
+          <AgentCard title="Buyer strategy" agent={buyerAgent} />
+          <SelectControl label="Supplier agent" value={scenario.supplierAgentId} onChange={(supplierAgentId) => setScenario({ ...scenario, supplierAgentId })}>
+            {agentsForSide("supplier").map((agent) => (
+              <option key={agent.id} value={agent.id}>
+                {agent.name}
+              </option>
+            ))}
+          </SelectControl>
+          <AgentCard title="Supplier strategy" agent={supplierAgent} />
+          <Slider label="Buyer urgency" value={scenario.customBuyerUrgency} min={0} max={1} step={0.01} onChange={(customBuyerUrgency) => setScenario({ ...scenario, customBuyerUrgency })} />
+          <Slider label="Supplier flexibility" value={scenario.customSupplierFlexibility} min={0} max={1} step={0.01} onChange={(customSupplierFlexibility) => setScenario({ ...scenario, customSupplierFlexibility })} />
+          <Slider label="Truthful response tendency" value={scenario.customTruthfulness} min={0} max={1} step={0.01} onChange={(customTruthfulness) => setScenario({ ...scenario, customTruthfulness })} />
+          <Slider label="Privacy preference" value={scenario.customPrivacyPreference} min={0} max={1} step={0.01} onChange={(customPrivacyPreference) => setScenario({ ...scenario, customPrivacyPreference })} />
+          <Slider label="Risk aversion" value={scenario.customRiskAversion} min={0} max={1} step={0.01} onChange={(customRiskAversion) => setScenario({ ...scenario, customRiskAversion })} />
+        </div>
+      </div>
+      <div className="lab-grid">
+        <div className="results-card wide">
+          <h3>3. Compare mechanisms</h3>
+          <p className="muted">
+            The useful comparison is not "is ADMM good?" It is: local JIT versus
+            oracle, then which practical mechanism recovers the most welfare for
+            the least privacy exposure.
+          </p>
           <label className="select-label">
             Information mode
             <select value={scenario.infoMode} onChange={(event) => setScenario({ ...scenario, infoMode: event.target.value as InfoMode })}>
@@ -313,28 +394,30 @@ function LabSurface() {
               ))}
             </select>
           </label>
-        </div>
-        <div className="results-card">
-          <h3>Algorithm comparison</h3>
-          <p className="muted">Quality is measured against the centralized oracle, an all-knowing benchmark rather than a realistic negotiating party.</p>
           <AlgorithmTable runs={runs} />
           <BarList
-            title="Oracle gap by algorithm"
-            rows={runs.slice(1).map((run) => ({ label: run.name, value: run.oracleGap }))}
+            title="Oracle gap by mechanism"
+            rows={runs.filter((run) => run.id !== "centralized-oracle").map((run) => ({ label: run.name, value: run.oracleGap }))}
             formatter={money}
           />
         </div>
       </div>
       <div className="lab-grid">
         <div className="results-card">
-          <h3>Value of information</h3>
-          <p className="muted">More information usually improves joint value, but it also exposes more private planning data.</p>
+          <h3>4. What does information buy?</h3>
+          <p className="muted">
+            More information should improve joint utility, but it also exposes
+            private negotiating posture. This is the core privacy/efficiency trade.
+          </p>
           <BarList title="Joint utility by information mode" rows={info.map((row) => ({ label: row.label, value: row.globalUtility }))} formatter={money} />
           <BarList title="Privacy exposure" rows={info.map((row) => ({ label: row.label, value: row.privacy * 100 }))} formatter={(value) => `${Math.round(value)}%`} />
         </div>
         <div className="results-card">
-          <h3>CBT and no-worse-off proof</h3>
-          <p className="muted">{glossary.CBT}</p>
+          <h3>5. Can CBT make participation rational?</h3>
+          <p className="muted">
+            {glossary.CBT} The table checks whether each party beats its outside
+            option after the transfer.
+          </p>
           <TransferTable rows={transferLedger(best.globalUtility)} />
         </div>
       </div>
@@ -472,6 +555,8 @@ function AlgorithmTable({ runs }: { runs: AlgorithmResult[] }) {
             <th>What it means</th>
             <th>Agreement gap</th>
             <th>Oracle gap</th>
+            <th>Privacy</th>
+            <th>Incentive story</th>
             <th>Quality</th>
           </tr>
         </thead>
@@ -482,12 +567,51 @@ function AlgorithmTable({ runs }: { runs: AlgorithmResult[] }) {
               <td>{run.plainEnglish}</td>
               <td>{run.residual} units</td>
               <td>{money(run.oracleGap)}</td>
+              <td>{Math.round(run.privacyExposure * 100)}%</td>
+              <td>{run.incentiveStory}</td>
               <td>{run.quality}</td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function AgentCard({ title, agent }: { title: string; agent: ReturnType<typeof agentById> }) {
+  return (
+    <article className="agent-card">
+      <div className="section-label">{title}</div>
+      <h4>{agent.shortName}</h4>
+      <p>{agent.oneLine}</p>
+      <details>
+        <summary>Objective and private information</summary>
+        <p><strong>Objective:</strong> {agent.objective}</p>
+        <p><strong>Private information:</strong> {agent.privateInfo}</p>
+        <p><strong>Strategy:</strong> {agent.strategy}</p>
+      </details>
+    </article>
+  );
+}
+
+function SelectControl({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: ReactNode;
+}) {
+  return (
+    <label className="select-label">
+      {label}
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        {children}
+      </select>
+    </label>
   );
 }
 
