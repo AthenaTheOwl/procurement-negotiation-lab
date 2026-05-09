@@ -17,6 +17,7 @@ import {
   transferLedger,
 } from "./model/simulation";
 import type { AlgorithmResult, Choice, InfoMode, LabScenario, RoundResult, ScoreState, Surface } from "./model/types";
+import { ArcSurface } from "./surfaces/ArcSurface";
 
 type PlayPhase = "briefing" | "reveal" | "finished";
 
@@ -30,7 +31,7 @@ const infoModes: InfoMode[] = [
 ];
 
 export default function App() {
-  const [surface, setSurface] = useState<Surface>("play");
+  const [surface, setSurface] = useState<Surface>(initialSurface);
   return (
     <div className="app-shell">
       <Hero onStartArc={() => setSurface("arc")} onOpenLab={() => setSurface("lab")} onOpenPlay={() => setSurface("play")} />
@@ -49,7 +50,7 @@ export default function App() {
         </button>
       </nav>
       <main>
-        {surface === "arc" && <ArcPlaceholderSurface onOpenLab={() => setSurface("lab")} onOpenPlay={() => setSurface("play")} />}
+        {surface === "arc" && <ArcSurface onOpenLab={() => setSurface("lab")} />}
         {surface === "play" && <PlaySurface onOpenLab={() => setSurface("lab")} onOpenStudy={() => setSurface("study")} />}
         {surface === "lab" && <LabSurface />}
         {surface === "study" && <StudySurface />}
@@ -58,44 +59,9 @@ export default function App() {
   );
 }
 
-function ArcPlaceholderSurface({ onOpenLab, onOpenPlay }: { onOpenLab: () => void; onOpenPlay: () => void }) {
-  const scenario = useMemo(() => makeScenario(), []);
-  const takeaway = useMemo(() => labTakeaway(scenario), [scenario]);
-
-  return (
-    <section className="arc-shell" data-testid="arc-surface">
-      <article className="surface-intro">
-        <div className="section-label">Walk the arc</div>
-        <h2>The eight-step Bergemann arc starts here.</h2>
-        <p>
-          Pass B will replace this scaffold with the full guided sequence:
-          coordination gap, private information, VCG incentives, CPP/ADMM,
-          convergence alternatives, authored agents, joint-optimality cases,
-          and CBT transfers.
-        </p>
-        <div className="metric-grid">
-          <ExplainedMetric
-            label="Coordination gap"
-            value={money(takeaway.coordinationGap)}
-            help="Value lost when the buyer and supplier optimize separately instead of coordinating around a joint plan."
-          />
-          <ExplainedMetric
-            label="Best implementable mechanism"
-            value={takeaway.bestMechanism.name}
-            help="The best non-oracle option in the current default scenario."
-          />
-        </div>
-        <div className="button-row">
-          <button className="primary" onClick={onOpenLab}>
-            Open lab with this scenario
-          </button>
-          <button className="secondary" onClick={onOpenPlay}>
-            Play the case first
-          </button>
-        </div>
-      </article>
-    </section>
-  );
+function initialSurface(): Surface {
+  const hash = window.location.hash.replace("#", "");
+  return hash === "arc" || hash === "play" || hash === "lab" || hash === "study" ? hash : "play";
 }
 
 function PlaySurface({ onOpenLab, onOpenStudy }: { onOpenLab: () => void; onOpenStudy: () => void }) {

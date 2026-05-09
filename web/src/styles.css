@@ -383,6 +383,145 @@ strong {
   margin-bottom: 1rem;
 }
 
+.arc-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 1rem;
+}
+
+.arc-progress,
+.arc-card,
+.arc-widget {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.7);
+  padding: 1rem;
+}
+
+.arc-progress {
+  align-self: start;
+  position: sticky;
+  top: 1rem;
+}
+
+.arc-progress ol {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.arc-progress button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  text-align: left;
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.arc-progress button span {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.34);
+}
+
+.arc-progress button.active,
+.tab-row button.active,
+button.active {
+  background: #2563eb;
+  border-color: #60a5fa;
+}
+
+.arc-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.arc-card-head h2 {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.arc-widget {
+  background: rgba(2, 6, 23, 0.28);
+}
+
+.arc-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.three-col {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.formula-label {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.75rem 0;
+  color: #dbeafe;
+  font-weight: 800;
+}
+
+textarea {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: #e5edf8;
+  background: #0f172a;
+  font: 0.95rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.formula-result,
+.formula-error {
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  font-weight: 800;
+}
+
+.formula-result {
+  background: rgba(22, 101, 52, 0.24);
+  color: #bbf7d0;
+}
+
+.formula-error {
+  background: rgba(127, 29, 29, 0.28);
+  color: #fecaca;
+}
+
+.tab-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.tab-row button {
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
 .so-what-panel {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
@@ -543,15 +682,21 @@ pre {
 
 @media (max-width: 900px) {
   .surface-grid,
+  .arc-layout,
   .lab-grid,
   .so-what-panel,
   .study-grid,
   .hero,
-  .two-col {
+  .two-col,
+  .three-col {
     grid-template-columns: 1fr;
   }
 
   .side-panel {
+    position: static;
+  }
+
+  .arc-progress {
     position: static;
   }
 

@@ -44,6 +44,48 @@ describe("App", () => {
     expect(screen.getByText(/Week 3 of 12/i)).toBeInTheDocument();
   });
 
+  it("walks the arc through algorithms, formula authoring, joint cases, and CBT", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(within(screen.getByTestId("hero-actions")).getByRole("button", { name: /walk the arc/i }));
+    expect(screen.getByTestId("arc-step-gap")).toBeInTheDocument();
+    expect(screen.getAllByText(/coordination gap/i).length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole("button", { name: /^next$/i }));
+    expect(screen.getByTestId("arc-step-privacy")).toBeInTheDocument();
+    expect(screen.getByText(/utility rises, privacy exposure rises too/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^next$/i }));
+    expect(screen.getByTestId("arc-step-truth")).toBeInTheDocument();
+    expect(screen.getAllByText(/CPP \+ VCG\/CBT/i).length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole("button", { name: /^next$/i }));
+    expect(screen.getByTestId("arc-step-admm")).toBeInTheDocument();
+    expect(screen.getByText(/residual path/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^next$/i }));
+    expect(screen.getByTestId("arc-step-algorithms")).toBeInTheDocument();
+    expect(screen.getAllByText(/price-only coordination/i).length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole("button", { name: /^next$/i }));
+    expect(screen.getByTestId("arc-step-author")).toBeInTheDocument();
+    const formulaEditor = screen.getByLabelText(/utility formula/i);
+    await user.clear(formulaEditor);
+    await user.type(formulaEditor, "__import__('os')");
+    expect(screen.getByText(/private\/dunder|not allowed/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^next$/i }));
+    expect(screen.getByTestId("arc-step-joint-cases")).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: /ADMM oscillates/i }));
+    expect(screen.getAllByText(/oscillating/i).length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole("button", { name: /^next$/i }));
+    expect(screen.getByTestId("arc-step-cbt")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /equal split/i }));
+    expect(screen.getAllByText(/no worse off/i).length).toBeGreaterThan(0);
+  });
+
   it("renders lab explanations and algorithm comparison", async () => {
     const user = userEvent.setup();
     render(<App />);

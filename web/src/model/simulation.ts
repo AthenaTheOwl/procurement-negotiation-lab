@@ -300,7 +300,8 @@ function mechanismScore(
     scenario.productCount * 520 -
     complexity * 3900 +
     info * 2600 +
-    agentDiscipline * 1800;
+    agentDiscipline * 1800 -
+    (scenario.presetId === "joint-does-not-exist" ? 9600 : 0);
   const table: Record<
     MechanismId,
     {
@@ -405,22 +406,37 @@ function mechanismScore(
     },
   };
   const spec = table[id];
-  const utility = id === "centralized-oracle" ? base : base - spec.loss;
+  const override = mechanismOverride(id, scenario);
+  const residual = override.residual ?? spec.residual;
+  const loss = override.loss ?? spec.loss;
+  const iters = override.iters ?? spec.iters;
+  const runtime = override.runtime ?? spec.runtime;
+  const utility = id === "centralized-oracle" ? base : base - loss;
   const benchmark = oracleUtility ?? base;
   const gap = Math.max(0, benchmark - utility);
+  const convergence =
+    override.convergence ??
+    (id === "centralized-oracle"
+      ? "benchmark"
+      : residual > 260
+        ? "stalled"
+        : residual > 145
+          ? "oscillating"
+          : "converged");
   return {
     id,
     name: spec.name,
     plainEnglish: spec.plain,
-    iterations: spec.iters,
-    residual: Math.round(spec.residual),
-    runtimeMs: Math.round(spec.runtime),
+    convergence,
+    iterations: Math.round(iters),
+    residual: Math.round(residual),
+    runtimeMs: Math.round(runtime),
     globalUtility: Math.round(utility),
     oracleGap: Math.round(gap),
     privacyExposure: clamp(spec.privacy, 0, 1),
     incentiveStory: spec.incentive,
     informationRequired: spec.infoRequired,
-    feasible: spec.residual < 260,
+    feasible: residual < 260 && utility > 13600,
     quality:
       id === "centralized-oracle"
         ? "best benchmark"
@@ -430,6 +446,33 @@ function mechanismScore(
             ? "mixed"
             : "weak",
   };
+}
+
+function mechanismOverride(
+  id: MechanismId,
+  scenario: LabScenario,
+): Partial<{
+  residual: number;
+  loss: number;
+  iters: number;
+  runtime: number;
+  convergence: AlgorithmResult["convergence"];
+}> {
+  if (scenario.presetId === "joint-exists-admm-converges" && id === "cpp-admm") {
+    return { residual: 38, loss: 540, iters: 24, runtime: 39, convergence: "converged" };
+  }
+  if (scenario.presetId === "joint-exists-admm-oscillates") {
+    if (id === "cpp-admm") {
+      return { residual: 420, loss: 2600, iters: 64, runtime: 118, convergence: "oscillating" };
+    }
+    if (id === "alternating-best-response") {
+      return { residual: 82, loss: 880, iters: 22, runtime: 53, convergence: "converged" };
+    }
+  }
+  if (scenario.presetId === "joint-does-not-exist" && id !== "centralized-oracle") {
+    return { residual: 310, loss: 4200, iters: 34, runtime: 66, convergence: "stalled" };
+  }
+  return {};
 }
 
 function money(value: number): string {

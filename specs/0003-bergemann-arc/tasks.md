@@ -42,46 +42,46 @@ the TS formula engine.)
 
 ### Surface scaffold
 
-- [ ] **B1**: Create `web/src/surfaces/ArcSurface.tsx` with a `useReducer`
+- [x] **B1**: Create `web/src/surfaces/ArcSurface.tsx` with a `useReducer`
   managing `currentStep` and per-step widget state. Render the active step's
   component plus forward/back navigation and a progress indicator.
   *(R-ARC-002)*
-- [ ] **B2**: Add Arc route to `web/src/App.tsx` nav and surface dispatch.
+- [x] **B2**: Add Arc route to `web/src/App.tsx` nav and surface dispatch.
   *(R-ARC-002)*
-- [ ] **B3**: Create `web/src/data/arc.ts` listing the 8 steps with
+- [x] **B3**: Create `web/src/data/arc.ts` listing the 8 steps with
   title, plain-English copy (≤80 words each), interactive-widget config
   reference, and deep-link target. *(R-ARC-002)*
 
 ### Step components
 
-- [ ] **B4**: `Step1CoordinationGap.tsx` — render the gap on the default
+- [x] **B4**: `Step1CoordinationGap.tsx` — render the gap on the default
   scenario. Reuse `labTakeaway`. *(R-ARC-002)*
-- [ ] **B5**: `Step2PrivacyCost.tsx` — privacy slider. On change run
+- [x] **B5**: `Step2PrivacyCost.tsx` — privacy slider. On change run
   `informationSweep(scenario)` and render utility-vs-privacy. *(R-ARC-002)*
-- [ ] **B6**: `Step3TruthDominant.tsx` — side-by-side incentive comparison
+- [x] **B6**: `Step3TruthDominant.tsx` — side-by-side incentive comparison
   showing price-only-dual vs CPP+VCG. Reuse `algorithmResults`. *(R-ARC-002)*
-- [ ] **B7**: `Step4ADMMEngine.tsx` — animate residual converging. Reuse the
+- [x] **B7**: `Step4ADMMEngine.tsx` — animate residual converging. Reuse the
   ADMM iteration trace from `algorithmResults`. *(R-ARC-002)*
-- [ ] **B8**: `Step5ConvergencePaths.tsx` — side-by-side comparison of ADMM,
+- [x] **B8**: `Step5ConvergencePaths.tsx` — side-by-side comparison of ADMM,
   alternating-best-response, price-only, consensus-averaging on the same
   scenario; surface iterations, runtime, oracle gap. *(R-ARC-003)*
-- [ ] **B9**: `Step6AuthorAgent.tsx` — formula editor for buyer or supplier
+- [x] **B9**: `Step6AuthorAgent.tsx` — formula editor for buyer or supplier
   utility. Bind to TS formula engine from C1. Persist to localStorage. Reset
   button. Add scenario knob sliders (volatility, capacity tightness, lead
   time). Save-as-JSON and Load-from-JSON paths. *(R-ARC-004 + R-ARC-005)*
-- [ ] **B10**: `Step7JointOptimumCases.tsx` — three tabs, one per case. Each
+- [x] **B10**: `Step7JointOptimumCases.tsx` — three tabs, one per case. Each
   tab shows scenario description, algorithm output, CBT ledger row.
   *(R-ARC-006)*
-- [ ] **B11**: `Step8CBT.tsx` — transfer ledger with split-rule toggle. Reuse
+- [x] **B11**: `Step8CBT.tsx` — transfer ledger with split-rule toggle. Reuse
   `transferLedger`. *(R-ARC-002)*
 
 ### Joint-optimality scenarios
 
-- [ ] **B12**: Add 3 new entries to `web/src/data/scenarios.ts`:
+- [x] **B12**: Add 3 new entries to `web/src/data/scenarios.ts`:
   `joint-exists-admm-converges`, `joint-exists-admm-oscillates`,
   `joint-does-not-exist`. Calibrate parameters so each case behaves as
   specified. *(R-ARC-006)*
-- [ ] **B13**: AppTest assertions per case: A converges within 30 iterations;
+- [x] **B13**: AppTest assertions per case: A converges within 30 iterations;
   B shows ADMM residual not converging while alternating BR does; C produces
   `transferLedger.feasible = false` with non-empty explanation. *(R-ARC-006)*
 

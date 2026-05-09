@@ -109,6 +109,7 @@ export interface AlgorithmResult {
   id: MechanismId;
   name: string;
   plainEnglish: string;
+  convergence: "converged" | "oscillating" | "stalled" | "benchmark";
   iterations: number;
   residual: number;
   runtimeMs: number;
