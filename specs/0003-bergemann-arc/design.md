@@ -35,7 +35,7 @@ edited in this pass:
   web/src/styles.css               hero + arc layout
 
 new in repo for deploy:
-  vercel.json                      framework config (Vite, root web/)
+  vercel.json                      framework config (Vite, root . repo root)
   README.md                        live URL after deploy
 ```
 
@@ -174,9 +174,10 @@ proportional and equal.
 gh repo create AthenaTheOwl/procurement-negotiation-lab --public --source=. --push
 ```
 
-Vercel: import the repo, root directory `web/`, framework Vite, build
-`npm run build`, output `dist/`. The repo's `web/package.json` already
-declares the right scripts.
+Vercel: import the repo, root directory `.` (repo root, where the root
+`package.json` and `vite.config.ts` live), framework Vite, build
+`npm run build`, output `dist/`. The repo's root `package.json` declares
+the right scripts (`build`, `dev`, `preview`).
 
 After URL exists:
 - update repo `README.md` with the live URL

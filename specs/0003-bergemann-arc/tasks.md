@@ -89,7 +89,8 @@ the TS formula engine.)
 
 - [ ] **D1**: `gh repo create AthenaTheOwl/procurement-negotiation-lab
   --public --source=. --push`. *(R-ARC-007)*
-- [ ] **D2**: Vercel: import repo; root `web/`; framework Vite; build
+- [ ] **D2**: Vercel: import repo; root directory `.` (repo root, where
+  `package.json` and `vite.config.ts` live); framework Vite; build
   `npm run build`; output `dist/`. *(R-ARC-007)*
 - [ ] **D3**: Update repo `README.md` with the Vercel URL. *(R-ARC-007)*
 - [ ] **D4**: Add door N° 17 to
