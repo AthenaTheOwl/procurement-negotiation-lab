@@ -1,4 +1,4 @@
-export type Surface = "play" | "lab" | "study";
+export type Surface = "arc" | "play" | "lab" | "study";
 
 export type InfoMode =
   | "private"

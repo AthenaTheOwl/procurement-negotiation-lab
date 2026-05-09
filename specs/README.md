@@ -18,6 +18,12 @@ Current active specs:
 - `0002-lab-authoring-workbench/acceptance.md`
 - `0002-lab-authoring-workbench/research.md`
 - `0002-lab-authoring-workbench/traceability.md`
+- `0003-bergemann-arc/requirements.md`
+- `0003-bergemann-arc/design.md`
+- `0003-bergemann-arc/tasks.md`
+- `0003-bergemann-arc/acceptance.md`
+- `0003-bergemann-arc/research.md`
+- `0003-bergemann-arc/traceability.md`
 
 The development loop is:
 

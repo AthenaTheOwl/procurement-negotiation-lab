@@ -1,6 +1,7 @@
 {
   "status": "local green",
-  "last_updated": "2026-05-08",
+  "last_updated": "2026-05-09",
+  "last_pass": "0003-pass-a-hero",
   "gates": [
     {"name": "spec-check", "status": "passed", "command": "python -m uv run python scripts/spec_check.py"},
     {"name": "frontend-build", "status": "passed", "command": "npm.cmd run build"},
@@ -10,6 +11,7 @@
     {"name": "mypy", "status": "passed", "command": "python -m uv run mypy src"},
     {"name": "bandit", "status": "passed", "command": "python -m uv run bandit -q -r src"},
     {"name": "pip-audit", "status": "passed", "command": "python -m uv run pip-audit"},
-    {"name": "browser-qa", "status": "passed", "command": "manual/browser-use pass on http://127.0.0.1:5173/ across PLAY, LAB, STUDY, and LAB authoring workbench"}
+    {"name": "browser-qa", "status": "passed", "command": "manual/browser-use pass on http://127.0.0.1:5173/ across PLAY, LAB, STUDY, and LAB authoring workbench"},
+    {"name": "0003-pass-a-browser-qa", "status": "passed", "command": "Browser plugin verified hero copy, Bergemann link, and primary CTA to arc; headless Chrome saved ops/qa-evidence/0003-pass-a-hero.png"}
   ]
 }

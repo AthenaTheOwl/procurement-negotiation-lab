@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { Hero } from "./components/Hero";
 import { agentById, agentsForSide } from "./data/agents";
 import { glossary, termOrder } from "./data/glossary";
 import { presetById, scenarioPresets } from "./data/scenarios";
@@ -32,31 +33,68 @@ export default function App() {
   const [surface, setSurface] = useState<Surface>("play");
   return (
     <div className="app-shell">
-      <header className="hero">
-        <div className="eyebrow">procurement-negotiation-lab</div>
-        <h1>A management simulator for long-lead buying decisions.</h1>
-        <p>
-          Play the fixed case first. Then use the lab to test algorithms,
-          information sharing, and surplus transfers on the same problem.
-        </p>
-        <nav aria-label="Main sections">
-          <button className={surface === "play" ? "active" : ""} onClick={() => setSurface("play")}>
-            Play the case
-          </button>
-          <button className={surface === "lab" ? "active" : ""} onClick={() => setSurface("lab")}>
-            Lab arena
-          </button>
-          <button className={surface === "study" ? "active" : ""} onClick={() => setSurface("study")}>
-            Tutorial
-          </button>
-        </nav>
-      </header>
+      <Hero onStartArc={() => setSurface("arc")} onOpenLab={() => setSurface("lab")} onOpenPlay={() => setSurface("play")} />
+      <nav className="app-nav" aria-label="Main sections">
+        <button className={surface === "arc" ? "active" : ""} onClick={() => setSurface("arc")}>
+          Walk the arc
+        </button>
+        <button className={surface === "play" ? "active" : ""} onClick={() => setSurface("play")}>
+          Play the case
+        </button>
+        <button className={surface === "lab" ? "active" : ""} onClick={() => setSurface("lab")}>
+          Lab arena
+        </button>
+        <button className={surface === "study" ? "active" : ""} onClick={() => setSurface("study")}>
+          Tutorial
+        </button>
+      </nav>
       <main>
+        {surface === "arc" && <ArcPlaceholderSurface onOpenLab={() => setSurface("lab")} onOpenPlay={() => setSurface("play")} />}
         {surface === "play" && <PlaySurface onOpenLab={() => setSurface("lab")} onOpenStudy={() => setSurface("study")} />}
         {surface === "lab" && <LabSurface />}
         {surface === "study" && <StudySurface />}
       </main>
     </div>
+  );
+}
+
+function ArcPlaceholderSurface({ onOpenLab, onOpenPlay }: { onOpenLab: () => void; onOpenPlay: () => void }) {
+  const scenario = useMemo(() => makeScenario(), []);
+  const takeaway = useMemo(() => labTakeaway(scenario), [scenario]);
+
+  return (
+    <section className="arc-shell" data-testid="arc-surface">
+      <article className="surface-intro">
+        <div className="section-label">Walk the arc</div>
+        <h2>The eight-step Bergemann arc starts here.</h2>
+        <p>
+          Pass B will replace this scaffold with the full guided sequence:
+          coordination gap, private information, VCG incentives, CPP/ADMM,
+          convergence alternatives, authored agents, joint-optimality cases,
+          and CBT transfers.
+        </p>
+        <div className="metric-grid">
+          <ExplainedMetric
+            label="Coordination gap"
+            value={money(takeaway.coordinationGap)}
+            help="Value lost when the buyer and supplier optimize separately instead of coordinating around a joint plan."
+          />
+          <ExplainedMetric
+            label="Best implementable mechanism"
+            value={takeaway.bestMechanism.name}
+            help="The best non-oracle option in the current default scenario."
+          />
+        </div>
+        <div className="button-row">
+          <button className="primary" onClick={onOpenLab}>
+            Open lab with this scenario
+          </button>
+          <button className="secondary" onClick={onOpenPlay}>
+            Play the case first
+          </button>
+        </div>
+      </article>
+    </section>
   );
 }
 

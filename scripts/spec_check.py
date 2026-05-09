@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SPECS = [
     ROOT / "specs" / "0001-polished-simulator",
     ROOT / "specs" / "0002-lab-authoring-workbench",
+    ROOT / "specs" / "0003-bergemann-arc",
 ]
 
 REQUIRED_FILE_NAMES = [
@@ -33,9 +34,17 @@ REQUIREMENT_IDS = [
     "R-LAB-007",
     "R-LAB-008",
     "R-LAB-009",
+    "R-ARC-001",
+    "R-ARC-002",
+    "R-ARC-003",
+    "R-ARC-004",
+    "R-ARC-005",
+    "R-ARC-006",
+    "R-ARC-007",
     "R-STUDY-001",
     "R-SPEC-001",
     "R-SPEC-002",
+    "R-SPEC-003",
 ]
 
 

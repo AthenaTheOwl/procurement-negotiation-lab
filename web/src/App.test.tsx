@@ -1,9 +1,31 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import App from "./App";
+import { BERGEMANN_ARTICLE_URL } from "./components/Hero";
+import { labTakeaway, makeScenario } from "./model/simulation";
 
 describe("App", () => {
+  it("claims the mechanism-design field with a live dollar gap and source link", async () => {
+    const user = userEvent.setup();
+    const expectedGap = `$${Math.round(labTakeaway(makeScenario()).coordinationGap).toLocaleString()}`;
+    render(<App />);
+
+    expect(screen.getByText(/mechanism design/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: new RegExp(expectedGap.replace("$", "\\$")) })).toBeInTheDocument();
+    const sourceLink = screen.getByRole("link", { name: /read the source article/i });
+    expect(sourceLink).toHaveAttribute("href", BERGEMANN_ARTICLE_URL);
+    expect(sourceLink).toHaveAttribute("target", "_blank");
+    expect(sourceLink).toHaveAttribute("rel", "noreferrer");
+
+    const heroActions = within(screen.getByTestId("hero-actions"));
+    expect(heroActions.getAllByRole("button")).toHaveLength(3);
+    expect(heroActions.getByRole("button", { name: /walk the arc/i })).toBeInTheDocument();
+
+    await user.click(heroActions.getByRole("button", { name: /walk the arc/i }));
+    expect(screen.getByTestId("arc-surface")).toBeInTheDocument();
+  });
+
   it("opens with the player role and the procurement job", () => {
     render(<App />);
     expect(screen.getByText(/you are the buyer/i)).toBeInTheDocument();
@@ -29,7 +51,7 @@ describe("App", () => {
     expect(screen.getByTestId("lab-surface")).toBeInTheDocument();
     expect(screen.getByTestId("lab-so-what")).toBeInTheDocument();
     expect(screen.getByText(/make your own agents/i)).toBeInTheDocument();
-    expect(screen.getByText(/coordination gap/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/coordination gap/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/centralized oracle/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/CPP \+ VCG\/CBT/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/alternating best response/i).length).toBeGreaterThan(0);
