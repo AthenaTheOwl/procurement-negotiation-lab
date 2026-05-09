@@ -22,17 +22,17 @@ the TS formula engine.)
 
 ## Pass C — TS formula engine (~2 hrs)
 
-- [ ] **C1**: Create `web/src/model/formula.ts` mirroring the Python AST
+- [x] **C1**: Create `web/src/model/formula.ts` mirroring the Python AST
   whitelist at `src/procurement_lab/engine/formula.py`. Use `acorn` for
   parsing. Implement `compileFormula(source, allowedVars?)` and
   `compiled.evaluate(namespace)`. *(R-ARC-004)*
-- [ ] **C2**: Whitelist exactly these functions: `min`, `max`, `abs`, `sqrt`,
+- [x] **C2**: Whitelist exactly these functions: `min`, `max`, `abs`, `sqrt`,
   `log`, `exp`, `clip`, `pow`. Match the Python implementation's safety
   guards (log requires positive arg, sqrt requires non-negative, pow exponent
   capped at ±10, division by zero raises). *(R-ARC-004)*
-- [ ] **C3**: Limits: max length 2000, max AST nodes 200, max call depth 5,
+- [x] **C3**: Limits: max length 2000, max AST nodes 200, max call depth 5,
   reject identifiers containing `__` or starting with `_`. *(R-ARC-004)*
-- [ ] **C4**: Tests at `web/src/model/formula.test.ts` mirroring the Python
+- [x] **C4**: Tests at `web/src/model/formula.test.ts` mirroring the Python
   test suite. Cover happy path (`q * 2`, `min(q, 100)`, `max(q, 0)`,
   `clip(q, 0, 10)`, conditional expressions) and refusal path (`__import__`,
   `os.system`, attribute access, comprehensions, lambdas, oversized
