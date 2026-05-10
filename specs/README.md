@@ -24,6 +24,12 @@ Current active specs:
 - `0003-bergemann-arc/acceptance.md`
 - `0003-bergemann-arc/research.md`
 - `0003-bergemann-arc/traceability.md`
+- `0004-operational-mechanism-refinements/requirements.md`
+- `0004-operational-mechanism-refinements/design.md`
+- `0004-operational-mechanism-refinements/tasks.md`
+- `0004-operational-mechanism-refinements/acceptance.md`
+- `0004-operational-mechanism-refinements/research.md`
+- `0004-operational-mechanism-refinements/traceability.md`
 
 The development loop is:
 
