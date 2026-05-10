@@ -4,6 +4,8 @@ A for-fun learning simulator for long-lead procurement commitments. You play
 the buyer, Cinder is the simulated supplier, and each round turns one decision
 into a visible consequence before the math appears.
 
+**Live demo:** [procurement-negotiation-lab.vercel.app](https://procurement-negotiation-lab.vercel.app/)
+
 This is not FloPro-branded and not an official Amazon example. It credits the
 public [amzn/FloPro](https://github.com/amzn/FloPro) repo as an ADMM
 implementation reference only.
