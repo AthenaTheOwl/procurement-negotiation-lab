@@ -20,7 +20,7 @@ import {
   multiPartyLedger,
   transferLedger,
 } from "./model/simulation";
-import type { AlgorithmResult, Choice, FrontierPlan, InfoMode, LabScenario, RoundResult, ScoreState, SplitRule, Surface } from "./model/types";
+import type { AlgorithmResult, Choice, FrontierPlan, InfoMode, LabScenario, Participant, RoundResult, ScoreState, SplitRule, Surface } from "./model/types";
 import { ArcSurface } from "./surfaces/ArcSurface";
 import { ReportSurface } from "./surfaces/report/ReportSurface";
 import { deriveParticipants } from "./model/participants";
@@ -32,6 +32,8 @@ import { RunReportPanel } from "./components/RunReportPanel";
 import { CSVImportPanel } from "./components/CSVImportPanel";
 import { BridgePanel } from "./components/BridgePanel";
 import { ProvenanceBadge } from "./components/ProvenanceBadge";
+import { ScenarioImportExportPanel } from "./components/ScenarioImportExportPanel";
+import { ParticipantBuilder } from "./components/ParticipantBuilder";
 import { SourceGraph } from "./surfaces/arena/SourceGraph";
 import { tag as tagProvenance, mergeProvenance } from "./model/bridges/sourceProvenance";
 import type { RunReport } from "./model/runReportSchema";
@@ -397,6 +399,24 @@ function LabSurface() {
     });
   }
 
+  function applyParticipantChange(updated: Participant[]) {
+    setScenario({
+      ...scenario,
+      participants: updated.slice(0, 8),
+      participantCount: Math.min(8, Math.max(2, updated.length)),
+    });
+  }
+
+  function applyScenarioLoad(loaded: LabScenario) {
+    setScenario({
+      ...loaded,
+      provenance: loaded.provenance ?? tagProvenance("user-imported"),
+    });
+    setSelectedPlanId("");
+    setEvidence(null);
+    setImportSummary(null);
+  }
+
   function applyReplay(report: RunReport) {
     const rebuilt = makeScenario({ ...(report.scenario as Partial<LabScenario>) });
     setScenario({
@@ -464,6 +484,9 @@ function LabSurface() {
               }}
             />
           )}
+        </div>
+        <div className="control-card">
+          <ParticipantBuilder participants={participants} onChange={applyParticipantChange} />
         </div>
       </div>
       <div className="lab-grid">
@@ -694,6 +717,7 @@ function LabSurface() {
       )}
       <div className="lab-grid">
         <RunReportPanel scenario={scenario} auditMode={auditMode} onReplay={applyReplay} />
+        <ScenarioImportExportPanel scenario={scenario} onLoad={applyScenarioLoad} />
       </div>
     </section>
   );
