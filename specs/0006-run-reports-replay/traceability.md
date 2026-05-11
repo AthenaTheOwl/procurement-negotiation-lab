@@ -6,7 +6,7 @@
 | **R-REPORT-002** one-click markdown export | C1, C2, C3, C4 | Pass C: valid markdown; <80 lines; templates fire; idempotent | done |
 | **R-REPORT-003** replay from JSON | A3, D3, D7 | Pass A: parseRunReport; Pass D: textarea + load + round-trip | done |
 | **R-REPORT-004** run ledger in localStorage | D1, D2, D4, D5, D6 | Pass D: save/list/load/delete; cap at 20; auto-save | done |
-| **R-REPORT-005** screenshot-safe summary | A2, E1, E2, E3, E4, E5 | Pass E: /report?id route; 1200×800 fits; read-only | deferred (saveRun + listRuns + loadRun ship; dedicated summary route deferred) |
+| **R-REPORT-005** screenshot-safe summary | A2, E1, E2, E3, E4, E5 | Pass E: /report?id route; 1200×800 fits; read-only | done (ReportSurface; `?report=<id>` and `?json=<encoded>`; read-only) |
 | **R-SPEC-006** discipline | S1, S2, S3 | Spec entry; this file; run-ledger | in progress |
 
 ## Update protocol
@@ -24,7 +24,7 @@ Pass A — shape + schema       done (runReport.ts, runReportSchema.ts)
 Pass B — JSON export          done (RunReportPanel + assembleReport + clipboard)
 Pass C — markdown export      done (reportMarkdown.ts + 4 templates)
 Pass D — replay + ledger      done (reportStorage.ts + parseRunReport + RunReportPanel)
-Pass E — summary view         deferred (storage layer + JSON shape ready; /report route deferred to next pass)
+Pass E — summary view         done (ReportSurface + ?report=<id> + ?json=<encoded>)
 Spec discipline               in progress (this file)
 ```
 

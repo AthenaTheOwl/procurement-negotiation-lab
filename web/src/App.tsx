@@ -22,6 +22,7 @@ import {
 } from "./model/simulation";
 import type { AlgorithmResult, Choice, FrontierPlan, InfoMode, LabScenario, RoundResult, ScoreState, SplitRule, Surface } from "./model/types";
 import { ArcSurface } from "./surfaces/ArcSurface";
+import { ReportSurface } from "./surfaces/report/ReportSurface";
 import { deriveParticipants } from "./model/participants";
 import { redactForView, type ViewMode } from "./model/views";
 import { ViewPicker } from "./components/ViewPicker";
@@ -51,6 +52,17 @@ const infoModes: InfoMode[] = [
 
 export default function App() {
   const [surface, setSurface] = useState<Surface>(initialSurface);
+  const reportRouteId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("report") : null;
+  const reportRouteJson = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("json") : null;
+  if (reportRouteId || reportRouteJson) {
+    return (
+      <div className="app-shell report-shell">
+        <main>
+          <ReportSurface />
+        </main>
+      </div>
+    );
+  }
   return (
     <div className="app-shell">
       <Hero onStartArc={() => setSurface("arc")} onOpenLab={() => setSurface("lab")} onOpenPlay={() => setSurface("play")} />

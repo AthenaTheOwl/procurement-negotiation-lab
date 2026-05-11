@@ -141,6 +141,15 @@ export function RunReportPanel({ scenario, auditMode, onReplay }: RunReportPanel
                 >
                   load
                 </button>
+                <a
+                  className="link-button"
+                  href={`?report=${encodeURIComponent(run.id)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  data-testid={`open-${run.id}`}
+                >
+                  open as page
+                </a>
                 <button
                   className="link-button"
                   onClick={() => handleDeleteFromLedger(run.id)}

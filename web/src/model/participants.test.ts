@@ -16,7 +16,18 @@ describe("deriveParticipants", () => {
     const participants = deriveParticipants(scenario);
     expect(participants.length).toBe(5);
     expect(participantsByRole(participants, "buyer")).toHaveLength(1);
-    expect(participantsByRole(participants, "supplier").length).toBeGreaterThanOrEqual(4);
+    expect(participantsByRole(participants, "supplier").length).toBeGreaterThanOrEqual(1);
+    // role rotation introduces packager / logistics / distributor for extras
+    const distinctRoles = new Set(participants.map((p) => p.role));
+    expect(distinctRoles.size).toBeGreaterThanOrEqual(3);
+  });
+
+  it("preset-specific role rotation seeds packager + logistics for advanced-packaging-bottleneck", () => {
+    const scenario = makeScenario({ presetId: "advanced-packaging-bottleneck" });
+    const participants = deriveParticipants(scenario);
+    expect(participants.length).toBeGreaterThanOrEqual(3);
+    const roles = new Set(participants.map((p) => p.role));
+    expect(roles.has("packager")).toBe(true);
   });
 
   it("uses explicit participants when provided", () => {
