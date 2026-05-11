@@ -1,0 +1,67 @@
+"""Task YAML loader tests."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from scripts.factory.task import GateSpec, load_task
+
+
+def _write(path: Path, contents: str) -> Path:
+    path.write_text(contents, encoding="utf-8")
+    return path
+
+
+def test_load_task_minimal(tmp_path: Path) -> None:
+    task_file = _write(
+        tmp_path / "min.yaml",
+        """
+id: t-1
+title: minimal
+target_repo: /tmp/repo
+goal: do the thing
+""",
+    )
+    task = load_task(task_file)
+    assert task.id == "t-1"
+    assert task.title == "minimal"
+    assert task.risk == "low"
+    assert task.gates == []
+    assert task.review.reviewer == "claude_code"
+    assert task.pr.open is False
+
+
+def test_load_task_gates_normalize(tmp_path: Path) -> None:
+    task_file = _write(
+        tmp_path / "gates.yaml",
+        """
+id: t-2
+title: gates
+target_repo: /tmp/repo
+goal: g
+gates:
+  - pytest
+  - cmd: npm test
+    name: vitest
+""",
+    )
+    task = load_task(task_file)
+    assert len(task.gates) == 2
+    assert isinstance(task.gates[0], GateSpec) and task.gates[0].cmd == "pytest"
+    assert task.gates[1].display_name() == "vitest"
+
+
+def test_load_task_missing_required(tmp_path: Path) -> None:
+    task_file = _write(
+        tmp_path / "broken.yaml", "id: only\ntitle: only\n"
+    )
+    with pytest.raises(ValueError, match="missing required field"):
+        load_task(task_file)
+
+
+def test_load_task_rejects_non_mapping(tmp_path: Path) -> None:
+    task_file = _write(tmp_path / "list.yaml", "- 1\n- 2\n")
+    with pytest.raises(ValueError, match="mapping"):
+        load_task(task_file)

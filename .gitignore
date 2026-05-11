@@ -18,3 +18,7 @@ vite-*.log
 vite-*.out.log
 vite-*.err.log
 .gstack/
+
+# factory state + per-task worktrees
+ops/factory.db
+ops/factory.db-journal

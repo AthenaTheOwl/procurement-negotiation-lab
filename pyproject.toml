@@ -61,6 +61,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "--cov=src/procurement_lab --cov-report=term-missing"
 
 [build-system]
