@@ -30,6 +30,30 @@ Current active specs:
 - `0004-operational-mechanism-refinements/acceptance.md`
 - `0004-operational-mechanism-refinements/research.md`
 - `0004-operational-mechanism-refinements/traceability.md`
+- `0005-multi-party-portal/requirements.md`
+- `0005-multi-party-portal/design.md`
+- `0005-multi-party-portal/tasks.md`
+- `0005-multi-party-portal/acceptance.md`
+- `0005-multi-party-portal/research.md`
+- `0005-multi-party-portal/traceability.md`
+- `0006-run-reports-replay/requirements.md`
+- `0006-run-reports-replay/design.md`
+- `0006-run-reports-replay/tasks.md`
+- `0006-run-reports-replay/acceptance.md`
+- `0006-run-reports-replay/research.md`
+- `0006-run-reports-replay/traceability.md`
+- `0007-production-hardening/requirements.md`
+- `0007-production-hardening/design.md`
+- `0007-production-hardening/tasks.md`
+- `0007-production-hardening/acceptance.md`
+- `0007-production-hardening/research.md`
+- `0007-production-hardening/traceability.md`
+- `0008-data-bridges/requirements.md`
+- `0008-data-bridges/design.md`
+- `0008-data-bridges/tasks.md`
+- `0008-data-bridges/acceptance.md`
+- `0008-data-bridges/research.md`
+- `0008-data-bridges/traceability.md`
 
 The development loop is:
 
