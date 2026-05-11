@@ -120,6 +120,9 @@ export interface AlgorithmResult {
   informationRequired: string;
   feasible: boolean;
   quality: "best benchmark" | "strong" | "mixed" | "weak";
+  transferMagnitude: number;
+  buyerEffectiveCapacity: number;
+  supplierEffectiveCapacity: number;
 }
 
 export interface LabScenario {
@@ -140,4 +143,56 @@ export interface LabScenario {
   customTruthfulness: number;
   customPrivacyPreference: number;
   customRiskAversion: number;
+  alpha: number;
+  buyerReliability: number;
+  supplierReliability: number;
+  epsilon: number;
+}
+
+export interface CapacityView {
+  party: "buyer" | "supplier";
+  stated: number;
+  reliability: number;
+  effective: number;
+}
+
+export interface TransferRow {
+  party: string;
+  utilityBeforeTransfer: number;
+  outsideOption: number;
+  transfer: number;
+  utilityAfterTransfer: number;
+  noWorseOff: boolean;
+}
+
+export interface FrontierPlan {
+  id: string;
+  label: string;
+  mechanismId: MechanismId;
+  mechanismName: string;
+  globalUtility: number;
+  buyerUtility: number;
+  supplierUtility: number;
+  surplus: number;
+  residual: number;
+  oracleGap: number;
+  robustnessNote: string;
+  transferRows: TransferRow[];
+}
+
+export interface Frontier {
+  plans: FrontierPlan[];
+  epsilon: number;
+  K: number;
+  optimalUtility: number;
+}
+
+export interface DecoyAuditResult {
+  decoyId: string;
+  title: string;
+  match: boolean;
+  expectedPattern: string;
+  actualPattern: string;
+  catchesMisreportKind: string;
+  explanation: string;
 }

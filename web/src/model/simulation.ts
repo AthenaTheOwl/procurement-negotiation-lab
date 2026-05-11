@@ -1,12 +1,16 @@
 import type {
   AlgorithmResult,
   Beat,
+  CapacityView,
   Choice,
+  Frontier,
+  FrontierPlan,
   InfoMode,
   LabScenario,
   MechanismId,
   RoundResult,
   ScoreState,
+  TransferRow,
 } from "./types";
 import { presetById } from "../data/scenarios";
 
@@ -162,6 +166,10 @@ export function makeScenario(overrides: Partial<LabScenario> = {}): LabScenario 
     customTruthfulness: 0.78,
     customPrivacyPreference: 0.68,
     customRiskAversion: 0.68,
+    alpha: 1,
+    buyerReliability: 1,
+    supplierReliability: 1,
+    epsilon: 0,
     ...preset.defaults,
     ...overrides,
   };
@@ -238,21 +246,23 @@ export function informationSweep(base: LabScenario): Array<{
   });
 }
 
-export function transferLedger(globalUtility: number): Array<{
-  party: string;
-  utilityBeforeTransfer: number;
-  outsideOption: number;
-  transfer: number;
-  utilityAfterTransfer: number;
-  noWorseOff: boolean;
-}> {
+export function transferLedger(
+  input: number | LabScenario,
+  options: { alpha?: number; planUtility?: number } = {},
+): TransferRow[] {
+  const scenario = typeof input === "number" ? undefined : input;
+  const globalUtility =
+    typeof input === "number"
+      ? input
+      : options.planUtility ?? labTakeaway(input).bestMechanism.globalUtility;
+  const alpha = clamp(options.alpha ?? scenario?.alpha ?? 1, 0, 1);
   const buyerBefore = globalUtility * 0.56;
   const supplierBefore = globalUtility * 0.44;
   const outsideBuyer = 8400;
   const outsideSupplier = 5200;
   const surplus = globalUtility - outsideBuyer - outsideSupplier;
-  const buyerTransfer = surplus > 0 ? -surplus * 0.12 : 0;
-  const supplierTransfer = surplus > 0 ? surplus * 0.12 : 0;
+  const buyerTransfer = surplus > 0 ? -surplus * 0.12 * alpha : 0;
+  const supplierTransfer = surplus > 0 ? surplus * 0.12 * alpha : 0;
   return [
     {
       party: "Northstar buyer",
@@ -273,11 +283,104 @@ export function transferLedger(globalUtility: number): Array<{
   ];
 }
 
+export function statedCapacity(party: "buyer" | "supplier", scenario: LabScenario): number {
+  if (party === "buyer") {
+    return Math.round(scenario.demand * (1.04 + scenario.customBuyerUrgency * 0.22));
+  }
+  return Math.round(
+    scenario.demand *
+      (1.34 - scenario.capacityTightness * 0.42 + scenario.customSupplierFlexibility * 0.28),
+  );
+}
+
+export function effectiveCapacity(party: "buyer" | "supplier", scenario: LabScenario): CapacityView {
+  const reliability = clamp(
+    party === "buyer" ? scenario.buyerReliability : scenario.supplierReliability,
+    0,
+    1,
+  );
+  const stated = statedCapacity(party, scenario);
+  return {
+    party,
+    stated,
+    reliability,
+    effective: Math.round(stated * reliability),
+  };
+}
+
+export function vcgTransfer(
+  scenario: LabScenario,
+  party: "buyer" | "supplier",
+  alpha = scenario.alpha,
+): number {
+  const oracle = mechanismScore("centralized-oracle", scenario);
+  const jit = mechanismScore("jit-baseline", scenario, oracle.globalUtility);
+  const externalityShare = party === "buyer" ? 0.42 : 0.58;
+  return Math.round(clamp(alpha, 0, 1) * Math.max(0, oracle.globalUtility - jit.globalUtility) * externalityShare);
+}
+
+export function frontier(
+  scenario: LabScenario,
+  algorithm: MechanismId,
+  epsilon = scenario.epsilon,
+  K = 5,
+): Frontier {
+  const run =
+    algorithmResults(scenario).find((candidate) => candidate.id === algorithm) ??
+    algorithmResults(scenario)[0];
+  const optimalUtility = run.globalUtility;
+  const lossPercents = [0, 0.012, 0.026, 0.041, 0.058, 0.075, 0.095, 0.12];
+  const boundedEpsilon = Math.max(0, epsilon);
+  const plans: FrontierPlan[] = lossPercents
+    .map((lossPercent, index) => {
+      const globalUtility = Math.round(optimalUtility * (1 - lossPercent));
+      const buyerUtility = Math.round(globalUtility * (0.55 + index * 0.006));
+      const supplierUtility = globalUtility - buyerUtility;
+      const residual = Math.max(0, Math.round(run.residual + index * 18 - scenario.customSupplierFlexibility * 8));
+      return {
+        id: `${run.id}-frontier-${index + 1}`,
+        label: index === 0 ? "best utility" : `robust variant ${index}`,
+        mechanismId: run.id,
+        mechanismName: run.name,
+        globalUtility,
+        buyerUtility,
+        supplierUtility,
+        surplus: globalUtility - 8400 - 5200,
+        residual,
+        oracleGap: Math.max(0, run.oracleGap + Math.round(optimalUtility * lossPercent)),
+        robustnessNote:
+          index === 0
+            ? "Highest synthetic welfare, least slack."
+            : "Gives up a little utility to create more operational slack.",
+        transferRows: transferLedger(scenario, { planUtility: globalUtility }),
+      };
+    })
+    .filter((plan) => {
+      if (optimalUtility <= 0) {
+        return true;
+      }
+      return (optimalUtility - plan.globalUtility) / optimalUtility <= boundedEpsilon + 1e-9;
+    })
+    .slice(0, K);
+  return {
+    plans: plans.length > 0 ? plans : [],
+    epsilon: boundedEpsilon,
+    K,
+    optimalUtility,
+  };
+}
+
 function mechanismScore(
   id: MechanismId,
   scenario: LabScenario,
   oracleUtility?: number,
 ): AlgorithmResult {
+  const buyerCapacity = effectiveCapacity("buyer", scenario);
+  const supplierCapacity = effectiveCapacity("supplier", scenario);
+  const reliabilityPenalty =
+    (1 - buyerCapacity.reliability) * 0.11 +
+    (1 - supplierCapacity.reliability) * 0.28 +
+    Math.max(0, scenario.demand - supplierCapacity.effective) / Math.max(1, scenario.demand) * 0.2;
   const complexity =
     (scenario.participantCount - 2) * 0.07 +
     (scenario.productCount - 1) * 0.06 +
@@ -285,7 +388,8 @@ function mechanismScore(
     (scenario.fulfillmentCenterCount - 3) * 0.025 +
     (scenario.leadTimeWeeks - 6) * 0.012 +
     scenario.volatility * 0.3 +
-    scenario.capacityTightness * 0.22;
+    scenario.capacityTightness * 0.22 +
+    reliabilityPenalty;
   const info = infoQuality[scenario.infoMode];
   const agentDiscipline =
     scenario.customTruthfulness * 0.44 +
@@ -301,6 +405,7 @@ function mechanismScore(
     complexity * 3900 +
     info * 2600 +
     agentDiscipline * 1800 -
+    reliabilityPenalty * 5200 -
     (scenario.presetId === "joint-does-not-exist" ? 9600 : 0);
   const table: Record<
     MechanismId,
@@ -414,6 +519,10 @@ function mechanismScore(
   const utility = id === "centralized-oracle" ? base : base - loss;
   const benchmark = oracleUtility ?? base;
   const gap = Math.max(0, benchmark - utility);
+  const capacityFeasible =
+    buyerCapacity.effective > 0 &&
+    supplierCapacity.effective > 0 &&
+    supplierCapacity.effective >= scenario.demand * 0.25;
   const convergence =
     override.convergence ??
     (id === "centralized-oracle"
@@ -436,7 +545,7 @@ function mechanismScore(
     privacyExposure: clamp(spec.privacy, 0, 1),
     incentiveStory: spec.incentive,
     informationRequired: spec.infoRequired,
-    feasible: residual < 260 && utility > 13600,
+    feasible: capacityFeasible && residual < 260 && utility > 13600,
     quality:
       id === "centralized-oracle"
         ? "best benchmark"
@@ -445,6 +554,9 @@ function mechanismScore(
           : gap < 2800
             ? "mixed"
             : "weak",
+    transferMagnitude: id === "cpp-vcg" ? vcgTransfer(scenario, "supplier") : 0,
+    buyerEffectiveCapacity: buyerCapacity.effective,
+    supplierEffectiveCapacity: supplierCapacity.effective,
   };
 }
 

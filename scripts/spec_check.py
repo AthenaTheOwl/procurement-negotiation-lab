@@ -9,6 +9,7 @@ SPECS = [
     ROOT / "specs" / "0001-polished-simulator",
     ROOT / "specs" / "0002-lab-authoring-workbench",
     ROOT / "specs" / "0003-bergemann-arc",
+    ROOT / "specs" / "0004-operational-mechanism-refinements",
 ]
 
 REQUIRED_FILE_NAMES = [
@@ -45,6 +46,11 @@ REQUIREMENT_IDS = [
     "R-SPEC-001",
     "R-SPEC-002",
     "R-SPEC-003",
+    "R-OPS-001",
+    "R-OPS-002",
+    "R-OPS-003",
+    "R-OPS-004",
+    "R-SPEC-004",
 ]
 
 

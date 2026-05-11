@@ -3,8 +3,11 @@ import type { Dispatch } from "react";
 import { arcSteps, type ArcStep } from "../data/arc";
 import { scenarioPresets } from "../data/scenarios";
 import { compileFormula } from "../model/formula";
+import { runDecoyAudit } from "../model/decoys";
 import {
   algorithmResults,
+  effectiveCapacity,
+  frontier,
   informationSweep,
   labTakeaway,
   makeScenario,
@@ -30,6 +33,9 @@ interface ArcState {
   jointCaseId: string;
   splitRule: "proportional" | "equal";
   copyStatus: string;
+  alpha: number;
+  epsilon: number;
+  showDecoys: boolean;
 }
 
 type ArcAction =
@@ -43,7 +49,10 @@ type ArcAction =
   | { type: "scenario-json"; value: string }
   | { type: "joint-case"; id: string }
   | { type: "split"; rule: "proportional" | "equal" }
-  | { type: "copy-status"; value: string };
+  | { type: "copy-status"; value: string }
+  | { type: "alpha"; value: number }
+  | { type: "epsilon"; value: number }
+  | { type: "show-decoys"; value: boolean };
 
 function initialArcState(): ArcState {
   const scenario = makeScenario();
@@ -57,6 +66,9 @@ function initialArcState(): ArcState {
     jointCaseId: caseIds[0],
     splitRule: "proportional",
     copyStatus: "",
+    alpha: scenario.alpha,
+    epsilon: scenario.epsilon,
+    showDecoys: false,
   };
 }
 
@@ -84,6 +96,12 @@ function reducer(state: ArcState, action: ArcAction): ArcState {
       return { ...state, splitRule: action.rule };
     case "copy-status":
       return { ...state, copyStatus: action.value };
+    case "alpha":
+      return { ...state, alpha: action.value, scenario: makeScenario({ ...state.scenario, alpha: action.value }) };
+    case "epsilon":
+      return { ...state, epsilon: action.value, scenario: makeScenario({ ...state.scenario, epsilon: action.value }) };
+    case "show-decoys":
+      return { ...state, showDecoys: action.value };
     default:
       return state;
   }
@@ -150,7 +168,7 @@ function StepBody({ step, state, dispatch }: { step: ArcStep; state: ArcState; d
     case "privacy":
       return <PrivacyStep state={state} dispatch={dispatch} />;
     case "truth":
-      return <TruthStep scenario={state.scenario} />;
+      return <TruthStep state={state} dispatch={dispatch} />;
     case "admm":
       return <AdmmStep scenario={state.scenario} />;
     case "algorithms":
@@ -187,8 +205,12 @@ function CoordinationGapStep({ scenario }: { scenario: LabScenario }) {
 function PrivacyStep({ state, dispatch }: { state: ArcState; dispatch: Dispatch<ArcAction> }) {
   const sweep = informationSweep(state.scenario);
   const selected = sweep[state.privacyModeIndex] ?? sweep[0];
+  const supplierCapacity = effectiveCapacity("supplier", state.scenario);
   return (
     <div className="arc-widget" data-testid="arc-step-privacy">
+      <div className="callout">
+        <strong>Reliability prior:</strong> privacy does not mean believing every stated number. Here, Cinder states {supplierCapacity.stated} units, but a {Math.round(supplierCapacity.reliability * 100)}% reliability prior makes the planner treat it as {supplierCapacity.effective} effective units.
+      </div>
       <label className="slider-label">
         <span>
           Information shared: <strong>{selected.label}</strong>
@@ -218,12 +240,25 @@ function PrivacyStep({ state, dispatch }: { state: ArcState; dispatch: Dispatch<
   );
 }
 
-function TruthStep({ scenario }: { scenario: LabScenario }) {
-  const runs = algorithmResults(scenario);
+function TruthStep({ state, dispatch }: { state: ArcState; dispatch: Dispatch<ArcAction> }) {
+  const runs = algorithmResults(state.scenario);
   const rows = ["price-only", "cpp-vcg"].map((id) => runs.find((run) => run.id === id)).filter(Boolean) as AlgorithmResult[];
+  const clippedRows = transferLedger(state.scenario, { alpha: state.alpha });
   return (
     <div className="arc-widget" data-testid="arc-step-truth">
+      <div className="callout">
+        <strong>α clipping:</strong> full VCG transfer has the clean truth-telling story. A smaller α bounds spend, but weakens the dominant-strategy guarantee. That is an operational design choice, not just a math tweak.
+      </div>
+      <ScenarioSlider
+        label="α transfer clipping"
+        value={state.alpha}
+        min={0}
+        max={1}
+        step={0.01}
+        onChange={(value) => dispatch({ type: "alpha", value })}
+      />
       <AlgorithmMiniTable runs={rows} />
+      <TransferMiniTable rows={clippedRows} />
     </div>
   );
 }
@@ -280,6 +315,7 @@ function AuthorStep({ state, dispatch }: { state: ArcState; dispatch: Dispatch<A
       return { value: 0, error: error instanceof Error ? error.message : String(error) };
     }
   }, [sample.capacity, sample.demand, sample.lead_time, sample.q, sample.risk_score, sample.volatility, state.formula]);
+  const decoyRows = useMemo(() => runDecoyAudit(state.scenario), [state.scenario]);
 
   function updateScenario(overrides: Partial<LabScenario>) {
     dispatch({ type: "scenario", scenario: makeScenario({ ...state.scenario, ...overrides }) });
@@ -318,7 +354,32 @@ function AuthorStep({ state, dispatch }: { state: ArcState; dispatch: Dispatch<A
         <button className="secondary" onClick={() => dispatch({ type: "reset-formula" })}>
           Reset formula
         </button>
+        <button className="secondary" onClick={() => dispatch({ type: "show-decoys", value: !state.showDecoys })}>
+          Test against decoys
+        </button>
       </div>
+      {state.showDecoys && (
+        <div className="table-wrap" data-testid="arc-decoy-results">
+          <table>
+            <thead>
+              <tr>
+                <th>Decoy</th>
+                <th>Status</th>
+                <th>Why it matters</th>
+              </tr>
+            </thead>
+            <tbody>
+              {decoyRows.map((row) => (
+                <tr key={row.decoyId}>
+                  <td>{row.title}</td>
+                  <td>{row.match ? "match" : "mismatch"}</td>
+                  <td>{row.catchesMisreportKind}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <div className="three-col">
         <ScenarioSlider label="Volatility" value={state.scenario.volatility} min={0.05} max={0.7} step={0.01} onChange={(volatility) => updateScenario({ volatility })} />
         <ScenarioSlider label="Capacity tightness" value={state.scenario.capacityTightness} min={0.1} max={0.98} step={0.01} onChange={(capacityTightness) => updateScenario({ capacityTightness })} />
@@ -344,11 +405,13 @@ function AuthorStep({ state, dispatch }: { state: ArcState; dispatch: Dispatch<A
 }
 
 function JointCasesStep({ state, dispatch }: { state: ArcState; dispatch: Dispatch<ArcAction> }) {
-  const scenario = makeScenario({ presetId: state.jointCaseId });
+  const scenario = makeScenario({ presetId: state.jointCaseId, alpha: state.alpha, epsilon: state.epsilon });
   const preset = scenarioPresets.find((item) => item.id === state.jointCaseId) ?? scenarioPresets[0];
   const runs = algorithmResults(scenario).filter((run) => ["cpp-admm", "alternating-best-response", "cpp-vcg"].includes(run.id));
   const best = runs.find((run) => run.id === "cpp-vcg") ?? runs[0];
-  const ledger = transferRows(best.globalUtility, "proportional");
+  const frontierData = frontier(scenario, best.id, state.epsilon);
+  const selectedFrontierPlan = frontierData.plans[0];
+  const ledger = transferLedger(scenario, { planUtility: selectedFrontierPlan?.globalUtility ?? best.globalUtility });
   const feasible = ledger.every((row) => row.noWorseOff) && best.feasible;
   return (
     <div className="arc-widget" data-testid="arc-step-joint-cases">
@@ -365,7 +428,23 @@ function JointCasesStep({ state, dispatch }: { state: ArcState; dispatch: Dispat
       <div className="callout">
         <strong>{preset.name}:</strong> {preset.soWhat}
       </div>
+      <ScenarioSlider
+        label="ε near-optimal frontier"
+        value={state.epsilon}
+        min={0}
+        max={0.12}
+        step={0.01}
+        onChange={(value) => dispatch({ type: "epsilon", value })}
+      />
+      <p className="muted">
+        ε controls how many almost-best plans you are willing to inspect. The lesson: the highest utility plan is not always the most robust plan.
+      </p>
       <AlgorithmMiniTable runs={runs} />
+      <BarList
+        title="Near-optimal plan frontier"
+        rows={frontierData.plans.map((plan) => ({ label: plan.label, value: plan.globalUtility }))}
+        formatter={money}
+      />
       <p className={feasible ? "formula-result" : "formula-error"}>
         CBT feasibility: {feasible ? "feasible - every party clears its outside option." : "not feasible - the plan does not create enough surplus to make every party whole."}
       </p>

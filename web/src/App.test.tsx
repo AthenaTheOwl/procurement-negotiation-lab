@@ -59,6 +59,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: /^next$/i }));
     expect(screen.getByTestId("arc-step-truth")).toBeInTheDocument();
     expect(screen.getAllByText(/CPP \+ VCG\/CBT/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/α clipping/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /^next$/i }));
     expect(screen.getByTestId("arc-step-admm")).toBeInTheDocument();
@@ -74,11 +75,14 @@ describe("App", () => {
     await user.clear(formulaEditor);
     await user.type(formulaEditor, "__import__('os')");
     expect(screen.getByText(/private\/dunder|not allowed/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /test against decoys/i }));
+    expect(screen.getByTestId("arc-decoy-results")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /^next$/i }));
     expect(screen.getByTestId("arc-step-joint-cases")).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: /ADMM oscillates/i }));
     expect(screen.getAllByText(/oscillating/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/ε controls/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /^next$/i }));
     expect(screen.getByTestId("arc-step-cbt")).toBeInTheDocument();
@@ -97,6 +101,13 @@ describe("App", () => {
     expect(screen.getAllByText(/centralized oracle/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/CPP \+ VCG\/CBT/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/alternating best response/i).length).toBeGreaterThan(0);
+    expect(screen.getByTestId("alpha-slider")).toBeInTheDocument();
+    expect(screen.getByTestId("buyer-reliability-slider")).toBeInTheDocument();
+    expect(screen.getByTestId("supplier-reliability-slider")).toBeInTheDocument();
+    expect(screen.getByTestId("epsilon-slider")).toBeInTheDocument();
+    expect(screen.getByTestId("frontier-panel")).toBeInTheDocument();
+    await user.click(screen.getByLabelText(/Audit Mode/i));
+    expect(screen.getByTestId("decoy-audit-panel")).toBeInTheDocument();
   });
 
   it("renders tutorial definitions for technical terms", async () => {

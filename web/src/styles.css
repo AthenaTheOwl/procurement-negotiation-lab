@@ -556,6 +556,12 @@ textarea {
   align-self: start;
 }
 
+.ops-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
 .preset-grid {
   display: grid;
   gap: 0.55rem;
@@ -623,6 +629,52 @@ select {
   overflow-x: auto;
 }
 
+.frontier-panel {
+  border: 1px solid rgba(34, 197, 94, 0.24);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.28);
+  margin-top: 1rem;
+  padding: 0.85rem;
+}
+
+.frontier-list {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.frontier-item {
+  display: grid;
+  gap: 0.2rem;
+  text-align: left;
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.frontier-item span {
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.frontier-item.active {
+  background: rgba(37, 99, 235, 0.86);
+  border-color: #93c5fd;
+}
+
+.toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #dbeafe;
+  font-weight: 800;
+}
+
+.toggle-label input {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -684,6 +736,7 @@ pre {
   .surface-grid,
   .arc-layout,
   .lab-grid,
+  .ops-grid,
   .so-what-panel,
   .study-grid,
   .hero,

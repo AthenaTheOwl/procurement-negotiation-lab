@@ -5,10 +5,13 @@ import { agentById, agentsForSide } from "./data/agents";
 import { glossary, termOrder } from "./data/glossary";
 import { presetById, scenarioPresets } from "./data/scenarios";
 import { substrateCrunch } from "./data/story";
+import { runDecoyAudit } from "./model/decoys";
 import {
   algorithmResults,
   detectEnding,
   evaluateRound,
+  effectiveCapacity,
+  frontier,
   infoModeLabel,
   informationSweep,
   initialScores,
@@ -16,7 +19,7 @@ import {
   makeScenario,
   transferLedger,
 } from "./model/simulation";
-import type { AlgorithmResult, Choice, InfoMode, LabScenario, RoundResult, ScoreState, Surface } from "./model/types";
+import type { AlgorithmResult, Choice, FrontierPlan, InfoMode, LabScenario, RoundResult, ScoreState, Surface } from "./model/types";
 import { ArcSurface } from "./surfaces/ArcSurface";
 
 type PlayPhase = "briefing" | "reveal" | "finished";
@@ -288,15 +291,27 @@ function FinalDebrief({
 
 function LabSurface() {
   const [scenario, setScenario] = useState<LabScenario>(() => makeScenario());
+  const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [auditMode, setAuditMode] = useState(false);
   const runs = useMemo(() => algorithmResults(scenario), [scenario]);
   const info = useMemo(() => informationSweep(scenario), [scenario]);
   const takeaway = useMemo(() => labTakeaway(scenario), [scenario]);
+  const frontierData = useMemo(
+    () => frontier(scenario, takeaway.bestMechanism.id, scenario.epsilon),
+    [scenario, takeaway.bestMechanism.id],
+  );
+  const auditRows = useMemo(() => runDecoyAudit(scenario), [scenario]);
   const selectedPreset = presetById(scenario.presetId);
   const buyerAgent = agentById(scenario.buyerAgentId);
   const supplierAgent = agentById(scenario.supplierAgentId);
   const best = takeaway.bestMechanism;
+  const selectedPlan =
+    frontierData.plans.find((plan) => plan.id === selectedPlanId) ?? frontierData.plans[0];
+  const buyerCapacity = effectiveCapacity("buyer", scenario);
+  const supplierCapacity = effectiveCapacity("supplier", scenario);
   function applyPreset(presetId: string) {
     setScenario(makeScenario({ presetId }));
+    setSelectedPlanId("");
   }
   return (
     <section className="lab-shell" data-testid="lab-surface">
@@ -350,6 +365,9 @@ function LabSurface() {
           <Slider label="Participants" value={scenario.participantCount} min={2} max={5} step={1} onChange={(participantCount) => setScenario({ ...scenario, participantCount })} />
           <Slider label="Products" value={scenario.productCount} min={1} max={4} step={1} onChange={(productCount) => setScenario({ ...scenario, productCount })} />
           <Slider label="Periods" value={scenario.periodCount} min={1} max={6} step={1} onChange={(periodCount) => setScenario({ ...scenario, periodCount })} />
+          <div className="callout">
+            <strong>Near-optimal plans:</strong> the epsilon frontier below uses these problem knobs to show which almost-best plans buy more slack.
+          </div>
         </div>
         <div className="control-card">
           <h3>2. Make your own agents</h3>
@@ -365,6 +383,18 @@ function LabSurface() {
             ))}
           </SelectControl>
           <AgentCard title="Buyer strategy" agent={buyerAgent} />
+          <Slider
+            label="Buyer reliability"
+            value={scenario.buyerReliability}
+            min={0}
+            max={1}
+            step={0.01}
+            testId="buyer-reliability-slider"
+            onChange={(buyerReliability) => setScenario({ ...scenario, buyerReliability })}
+          />
+          <p className="muted">
+            Buyer capacity prior: {buyerCapacity.effective} effective units from {buyerCapacity.stated} stated units.
+          </p>
           <SelectControl label="Supplier agent" value={scenario.supplierAgentId} onChange={(supplierAgentId) => setScenario({ ...scenario, supplierAgentId })}>
             {agentsForSide("supplier").map((agent) => (
               <option key={agent.id} value={agent.id}>
@@ -373,6 +403,18 @@ function LabSurface() {
             ))}
           </SelectControl>
           <AgentCard title="Supplier strategy" agent={supplierAgent} />
+          <Slider
+            label="Supplier reliability"
+            value={scenario.supplierReliability}
+            min={0}
+            max={1}
+            step={0.01}
+            testId="supplier-reliability-slider"
+            onChange={(supplierReliability) => setScenario({ ...scenario, supplierReliability })}
+          />
+          <p className="muted">
+            Supplier capacity prior: {supplierCapacity.effective} effective units from {supplierCapacity.stated} stated units.
+          </p>
           <Slider label="Buyer urgency" value={scenario.customBuyerUrgency} min={0} max={1} step={0.01} onChange={(customBuyerUrgency) => setScenario({ ...scenario, customBuyerUrgency })} />
           <Slider label="Supplier flexibility" value={scenario.customSupplierFlexibility} min={0} max={1} step={0.01} onChange={(customSupplierFlexibility) => setScenario({ ...scenario, customSupplierFlexibility })} />
           <Slider label="Truthful response tendency" value={scenario.customTruthfulness} min={0} max={1} step={0.01} onChange={(customTruthfulness) => setScenario({ ...scenario, customTruthfulness })} />
@@ -387,6 +429,32 @@ function LabSurface() {
             The useful comparison is not "is ADMM good?" It is: local JIT versus
             oracle, then which practical mechanism recovers the most welfare for
             the least privacy exposure.
+          </p>
+          <div className="ops-grid">
+            <Slider
+              label="α transfer clipping"
+              value={scenario.alpha}
+              min={0}
+              max={1}
+              step={0.01}
+              testId="alpha-slider"
+              onChange={(alpha) => setScenario({ ...scenario, alpha })}
+            />
+            <Slider
+              label="ε near-optimal frontier"
+              value={scenario.epsilon}
+              min={0}
+              max={0.12}
+              step={0.01}
+              testId="epsilon-slider"
+              onChange={(epsilon) => {
+                setScenario({ ...scenario, epsilon });
+                setSelectedPlanId("");
+              }}
+            />
+          </div>
+          <p className="muted">
+            α scales VCG-style transfers. ε asks: what other plans are close enough to optimal that a planner might prefer their robustness?
           </p>
           <label className="select-label">
             Information mode
@@ -404,6 +472,11 @@ function LabSurface() {
             rows={runs.filter((run) => run.id !== "centralized-oracle").map((run) => ({ label: run.name, value: run.oracleGap }))}
             formatter={money}
           />
+          <FrontierPanel
+            plans={frontierData.plans}
+            selectedPlan={selectedPlan}
+            onSelect={(plan) => setSelectedPlanId(plan.id)}
+          />
         </div>
       </div>
       <div className="lab-grid">
@@ -420,9 +493,16 @@ function LabSurface() {
           <h3>5. Can CBT make participation rational?</h3>
           <p className="muted">
             {glossary.CBT} The table checks whether each party beats its outside
-            option after the transfer.
+            option after the transfer. α is currently {scenario.alpha.toFixed(2)}, so the transfer ledger is clipped to {Math.round(scenario.alpha * 100)}% of the full teaching transfer.
           </p>
-          <TransferTable rows={transferLedger(best.globalUtility)} />
+          <TransferTable rows={transferLedger(scenario, { planUtility: selectedPlan?.globalUtility ?? best.globalUtility })} />
+          <div className="button-row">
+            <label className="toggle-label">
+              <input type="checkbox" checked={auditMode} onChange={(event) => setAuditMode(event.target.checked)} />
+              Audit Mode: run decoy demand checks
+            </label>
+          </div>
+          {auditMode && <DecoyAuditPanel rows={auditRows} />}
         </div>
       </div>
     </section>
@@ -650,6 +730,73 @@ function TransferTable({ rows }: { rows: ReturnType<typeof transferLedger> }) {
   );
 }
 
+function FrontierPanel({
+  plans,
+  selectedPlan,
+  onSelect,
+}: {
+  plans: FrontierPlan[];
+  selectedPlan?: FrontierPlan;
+  onSelect: (plan: FrontierPlan) => void;
+}) {
+  return (
+    <div className="frontier-panel" data-testid="frontier-panel">
+      <h4>ε-frontier: near-optimal plans</h4>
+      <p className="muted">
+        These plans are close to the best synthetic utility but trade off slack,
+        residual, and transfer feasibility differently.
+      </p>
+      <div className="frontier-list">
+        {plans.map((plan) => (
+          <button
+            className={selectedPlan?.id === plan.id ? "frontier-item active" : "frontier-item"}
+            key={plan.id}
+            onClick={() => onSelect(plan)}
+          >
+            <strong>{plan.label}</strong>
+            <span>{money(plan.globalUtility)} · residual {plan.residual}</span>
+          </button>
+        ))}
+      </div>
+      {selectedPlan && (
+        <div className="callout">
+          <strong>{selectedPlan.mechanismName}:</strong> {selectedPlan.robustnessNote} Surplus {money(selectedPlan.surplus)}; oracle gap {money(selectedPlan.oracleGap)}.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DecoyAuditPanel({ rows }: { rows: ReturnType<typeof runDecoyAudit> }) {
+  return (
+    <div className="table-wrap" data-testid="decoy-audit-panel">
+      <table>
+        <thead>
+          <tr>
+            <th>Decoy</th>
+            <th>Status</th>
+            <th>Catches</th>
+            <th>Actual pattern</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.decoyId}>
+              <td>
+                <strong>{row.title}</strong>
+                <p className="muted">{row.expectedPattern}</p>
+              </td>
+              <td>{row.match ? "match" : "mismatch"}</td>
+              <td>{row.catchesMisreportKind}</td>
+              <td>{row.actualPattern}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function BarList({
   title,
   rows,
@@ -682,6 +829,7 @@ function Slider({
   min,
   max,
   step,
+  testId,
   onChange,
 }: {
   label: string;
@@ -689,6 +837,7 @@ function Slider({
   min: number;
   max: number;
   step: number;
+  testId?: string;
   onChange: (value: number) => void;
 }) {
   return (
@@ -696,7 +845,7 @@ function Slider({
       <span>
         {label}: <strong>{step === 1 ? value : value.toFixed(2)}</strong>
       </span>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} />
+      <input data-testid={testId} type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} />
     </label>
   );
 }

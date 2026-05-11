@@ -17,3 +17,4 @@ streamlit-*.err.log
 vite-*.log
 vite-*.out.log
 vite-*.err.log
+.gstack/

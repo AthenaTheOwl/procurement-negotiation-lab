@@ -1,103 +1,146 @@
 # research: operational mechanism refinements
 
-Sources used for each refinement. Inline-cited where they shaped a
-specific design decision.
+Sources used for each refinement. These shaped the implementation in spec
+0004; none are runtime dependencies.
 
-## Primary thesis source for this pass
+## Primary thesis source
 
 **This portfolio's essay [`from-mechanism-to-mechanism-design`](https://athena-site-six.vercel.app/essays/from-mechanism-to-mechanism-design/).**
-The essay names the four refinements (α clipping, reliability multipliers,
-ε-frontier, decoy demand) and frames each as a *rule choice*, not just an
-algorithm tweak. Spec 0004 implements what the essay describes.
+The essay names alpha clipping, reliability multipliers, epsilon frontier,
+and decoy demand as operational rule choices rather than solver tweaks.
 
-## α clipping (R-OPS-001)
-
-**Bergemann, D.** *How mechanism design theory helps optimize Amazon vendor
-negotiations.* Amazon Science blog, 2025.
-https://www.linkedin.com/pulse/how-mechanism-design-theory-helps-optimize-amazon-vendor-9igre/
+**Bergemann, D.** *How mechanism design theory helps optimize Amazon-vendor
+collaboration.* Amazon Science, May 5, 2026.
+https://www.amazon.science/blog/how-mechanism-design-theory-helps-optimize-amazon-vendor-collaboration
 
 Shapes:
-- The CPP+VCG framing (truth-telling as dominant strategy via cost-benefit
-  transfers).
-- The note that *practical* VCG implementations need budget control.
+
+- The CPP + VCG framing.
+- The cost-benefit transfer explanation.
+- The need to handle information privacy, shortages, rolling horizons, and
+  uncertain forecasts in an operational mechanism.
+
+## Alpha clipping (R-OPS-001)
 
 **ChatGPT VCG-style sketch (2026-05-10).** Internal user-shared note.
-Shapes:
-- The specific `α ∈ [0,1]` clipping form: `T_i = α · max(E_i, 0)`.
-- The framing of α as a knob the planner sets per category/season.
 
-**Vickrey, W.** *Counterspeculation, Auctions, and Competitive Sealed
-Tenders.* Journal of Finance, 1961. The foundational result.
+Shapes:
+
+- The specific teaching form `transfer = alpha * externality`.
+- The framing of alpha as a planner-set budget/risk knob.
 
 **Nisan, N., Roughgarden, T., Tardos, E., Vazirani, V. V.** *Algorithmic
-Game Theory.* Cambridge University Press, 2007. Cited for the standard
-treatment of VCG transfers and incentive compatibility.
+Game Theory.* Cambridge University Press, 2007.
+
+Shapes:
+
+- The standard treatment of VCG transfers and incentive compatibility.
 
 ## Reliability multipliers (R-OPS-002)
 
-**Industry practice in supply-chain planning.** Reliability/adherence
-scoring as a prior on stated capacity is standard in tools like Kinaxis,
-o9, Blue Yonder. Cited as inspiration, not as a direct dependency.
+**Lin, K.-Y. and Lin, Y.-K.** *Sustainable supply chain evaluation with
+supplier sustainability in terms of reliability.* Annals of Operations
+Research, 2024.
+https://link.springer.com/article/10.1007/s10479-024-05970-1
+
+Shapes:
+
+- Reliability as the probability that a supply chain can satisfy demand
+  under capacity, budget, and supplier conditions. The lab adapts this into
+  an effective-capacity multiplier.
 
 **Pactum on agentic procurement architecture.**
 https://pactum.com/blog/understanding-agentic-ai-in-procurement-how-autonomous-ai-has-been-transforming-supplier-deals
 
 Shapes:
-- The framing that agents operate within "clearly defined mandates,
-  pricing thresholds, approval rules and escalation paths set by the
-  enterprise." Reliability priors are one such mandate.
 
-## ε-frontier (R-OPS-003)
+- Specialized agents operating inside explicit mandates and thresholds.
+  Reliability priors are one visible mandate.
 
-**Multi-objective optimization literature.** The notion of returning a
-Pareto front or near-optimal set rather than a single solution. Standard
-in operations research; no single canonical reference required.
+## Epsilon frontier (R-OPS-003)
 
-**arXiv 2508.04960.** *Distributed Augmented Lagrangian Decomposition
-(DALD).* https://arxiv.org/pdf/2508.04960
+**Bertsimas, D. and Sim, M.** *The Price of Robustness.* Operations
+Research, 2004.
+https://web.mit.edu/dbertsim/www/papers/melvyn/The-Price-Of-Robustness-OR52.pdf
 
 Shapes:
-- Frame the ε-frontier as a generalization of the "best of multiple
-  algorithm runs" approach the existing Lab already uses (it ranks 8
-  mechanisms; ε-frontier ranks multiple plans within one mechanism).
+
+- The UI framing that a planner may accept slightly lower nominal utility
+  to gain robustness under uncertainty.
+
+**Distributed Augmented Lagrangian Decomposition (DALD).**
+https://arxiv.org/pdf/2508.04960
+
+Shapes:
+
+- A future algorithm extension path beyond the current ADMM comparison.
 
 ## Decoy demand (R-OPS-004)
 
-**Audit and anti-collusion literature.** Random decoy injections during
-procurement auctions are documented in:
-
-- **Asker, J.** *A Study of the Internal Organization of a Bidding
-  Cartel.* American Economic Review, 2010. https://www.aeaweb.org/articles?id=10.1257/aer.100.3.724
+**Asker, J.** *A Study of the Internal Organization of a Bidding Cartel.*
+American Economic Review, 2010.
+https://www.aeaweb.org/articles?id=10.1257/aer.100.3.724
 
 Shapes:
-- The framing that decoy scenarios catch *systematic* misreporting that
-  equilibrium math assumes away.
 
-**ChatGPT VCG-style sketch (2026-05-10).** The specific phrase "decoy
-demand scenarios during pilot" came from this note. The spec implements
-it as Audit Mode.
+- The framing that systematic misreporting and collusion are empirical
+  behaviors that a clean equilibrium story can miss.
 
-## Prior portfolio specs (cross-references)
+**ChatGPT VCG-style sketch (2026-05-10).** Internal user-shared note.
 
-- `specs/0001-polished-simulator/` — the original lab spec.
-- `specs/0002-lab-authoring-workbench/` — the workbench surface that this
-  spec extends.
-- `specs/0003-bergemann-arc/` — the arc surface that gains small additions
-  in this spec.
+Shapes:
 
-## What this spec deliberately does NOT cite
+- The specific phrase and idea of decoy demand scenarios during pilot.
 
-- Specific ε / K / α values from production systems. The lab's defaults
-  are *teaching* defaults, not operational recommendations.
-- Any internal Amazon, vendor, supplier, or pilot data. All scenarios
-  remain synthetic per the public-data boundary (`docs/public-data-boundary.md`).
+## Open-source and product references for future specs
 
-## Open follow-up reading (for spec 0005+)
+**snap-stanford/supply-chains.**
+https://github.com/snap-stanford/supply-chains
 
-- **Multi-issue negotiation literature.** NegMAS, AgenticPay,
-  Magentic Marketplace. Relevant once we move to 3+ vendors and a vendor
-  portal flow.
-- **Continuous mechanism retuning.** How α / reliability priors update
-  from observed data over time. Long-term; needs a real-data harness.
-- **Behavioral game theory.** When real vendors don't play the
-  equilibrium strategy; deviations from rationality.
+- Useful for source-boundary design: synthetic datasets are released, while
+  real-world datasets are documented but not redistributed.
+
+**NegMAS.**
+https://github.com/yasserfarouk/negmas
+
+- Useful for multi-issue utility functions and negotiation protocol design.
+
+**AgenticPay.**
+https://github.com/SafeRL-Lab/AgenticPay
+
+- Useful for environment registration, multi-product negotiation, multi-seller
+  negotiation, and Gymnasium-like scenario structure.
+
+**Magentic Marketplace.**
+https://www.microsoft.com/en-us/research/wp-content/uploads/2025/10/multi-agent-marketplace.pdf
+
+- Useful for the full economic lifecycle: search, matching, negotiation, and
+  transaction.
+
+## Spec-driven-development references
+
+**Kiro specs.**
+https://kiro.dev/docs/specs/
+
+- External comparison for this repo's requirements/design/tasks spec ledger.
+
+**Self-Refine.**
+https://arxiv.org/abs/2303.17651
+
+- Supports the generate-review-revise loop, but this repo grounds revision in
+  deterministic tests, browser QA, and traceability rather than model self-rating.
+
+## Production-repo inspiration
+
+`../cargo-health/medroute-main` shaped the hardening roadmap:
+
+- Specs before code.
+- Red/green task execution.
+- Test rings for unit/property, integration, contract/observability, and
+  browser/system tests.
+- Property or metamorphic tests for new domain rules.
+- Pact/authz/observability rows for externally visible behavior.
+- Schema validation and test data factories instead of ad-hoc fixtures.
+
+These practices are recorded in `docs/product-expansion-roadmap.md` as future
+hardening work rather than imported wholesale into this small public demo.
