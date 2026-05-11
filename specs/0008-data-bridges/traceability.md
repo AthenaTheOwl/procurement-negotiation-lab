@@ -2,11 +2,11 @@
 
 | Requirement | Tasks | Acceptance checks | Status |
 |---|---|---|---|
-| **R-BRIDGE-001** CSV import | A1, A2, A3, A4, A5 | Pass A: `csvImport.ts`; column convention; valid → seed; invalid → field errors; example CSV ships | not started |
-| **R-BRIDGE-002** source-graph visualization | B1, B2, B3, B4, B5, B6 | Pass B: cytoscape; toggle; renders N=2..8; click switches view | not started |
-| **R-BRIDGE-003** chip-map bridge | C1, C2, C3, C4, C5, C6 | Pass C: `chipMap.ts`; toggle; fetch public URL; seed valid; failure handled; sessionStorage cache | not started |
-| **R-BRIDGE-004** supplier-risk bridge | D1, D2, D3, D4, D5 | Pass D: `supplierRisk.ts`; toggle; fetch public URL; risk-score derivation; citations flow | not started |
-| **R-BRIDGE-005** provenance tracking | E1, E2, E3, E4, E5, E6 | Pass E: `sourceProvenance.ts`; badges visible; reports include provenance; boundary doc updated | not started |
+| **R-BRIDGE-001** CSV import | A1, A2, A3, A4, A5 | Pass A: `csvImport.ts`; column convention; valid → seed; invalid → field errors; example CSV ships | done (csvImport.ts + CSVImportPanel + tests) |
+| **R-BRIDGE-002** source-graph visualization | B1, B2, B3, B4, B5, B6 | Pass B: cytoscape; toggle; renders N=2..8; click switches view | done (SourceGraph.tsx + LabSurface toggle) |
+| **R-BRIDGE-003** chip-map bridge | C1, C2, C3, C4, C5, C6 | Pass C: `chipMap.ts`; toggle; fetch public URL; seed valid; failure handled; sessionStorage cache | done (chipMap.ts + BridgePanel + tests) |
+| **R-BRIDGE-004** supplier-risk bridge | D1, D2, D3, D4, D5 | Pass D: `supplierRisk.ts`; toggle; fetch public URL; risk-score derivation; citations flow | done (supplierRisk.ts + BridgePanel + tests) |
+| **R-BRIDGE-005** provenance tracking | E1, E2, E3, E4, E5, E6 | Pass E: `sourceProvenance.ts`; badges visible; reports include provenance; boundary doc updated | done (sourceProvenance.ts + ProvenanceBadge + RunReport carries provenance) |
 | **R-SPEC-008** discipline | S1, S2, S3 | Spec entry; this file; run-ledger | in progress |
 
 ## Update protocol
@@ -16,11 +16,11 @@ Same as prior specs.
 ## Status snapshot
 
 ```
-Pass A — CSV import           not started
-Pass B — source graph         not started
-Pass C — chip-map bridge      not started
-Pass D — supplier-risk bridge not started
-Pass E — provenance           not started
+Pass A — CSV import           done (Open Contracting column shape)
+Pass B — source graph         done (cytoscape lazy-loaded)
+Pass C — chip-map bridge      done (fetch + sessionStorage cache + seedFromChipMap)
+Pass D — supplier-risk bridge done (fetch + risk-score derivation + citations)
+Pass E — provenance           done (per-scenario tag + badges + report carries provenance)
 Spec discipline               in progress (this file)
 ```
 

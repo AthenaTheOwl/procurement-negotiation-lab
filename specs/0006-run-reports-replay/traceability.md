@@ -2,11 +2,11 @@
 
 | Requirement | Tasks | Acceptance checks | Status |
 |---|---|---|---|
-| **R-REPORT-001** one-click JSON export | A1, A2, A4, B1, B2, B3, B4 | Pass A: schema-valid; Pass B: button + clipboard + toast | not started |
-| **R-REPORT-002** one-click markdown export | C1, C2, C3, C4 | Pass C: valid markdown; <80 lines; templates fire; idempotent | not started |
-| **R-REPORT-003** replay from JSON | A3, D3, D7 | Pass A: parseRunReport; Pass D: textarea + load + round-trip | not started |
-| **R-REPORT-004** run ledger in localStorage | D1, D2, D4, D5, D6 | Pass D: save/list/load/delete; cap at 20; auto-save | not started |
-| **R-REPORT-005** screenshot-safe summary | A2, E1, E2, E3, E4, E5 | Pass E: /report?id route; 1200×800 fits; read-only | not started |
+| **R-REPORT-001** one-click JSON export | A1, A2, A4, B1, B2, B3, B4 | Pass A: schema-valid; Pass B: button + clipboard + toast | done |
+| **R-REPORT-002** one-click markdown export | C1, C2, C3, C4 | Pass C: valid markdown; <80 lines; templates fire; idempotent | done |
+| **R-REPORT-003** replay from JSON | A3, D3, D7 | Pass A: parseRunReport; Pass D: textarea + load + round-trip | done |
+| **R-REPORT-004** run ledger in localStorage | D1, D2, D4, D5, D6 | Pass D: save/list/load/delete; cap at 20; auto-save | done |
+| **R-REPORT-005** screenshot-safe summary | A2, E1, E2, E3, E4, E5 | Pass E: /report?id route; 1200×800 fits; read-only | deferred (saveRun + listRuns + loadRun ship; dedicated summary route deferred) |
 | **R-SPEC-006** discipline | S1, S2, S3 | Spec entry; this file; run-ledger | in progress |
 
 ## Update protocol
@@ -20,11 +20,11 @@
 ## Status snapshot
 
 ```
-Pass A — shape + schema       not started
-Pass B — JSON export          not started
-Pass C — markdown export      not started
-Pass D — replay + ledger      not started
-Pass E — summary view         not started
+Pass A — shape + schema       done (runReport.ts, runReportSchema.ts)
+Pass B — JSON export          done (RunReportPanel + assembleReport + clipboard)
+Pass C — markdown export      done (reportMarkdown.ts + 4 templates)
+Pass D — replay + ledger      done (reportStorage.ts + parseRunReport + RunReportPanel)
+Pass E — summary view         deferred (storage layer + JSON shape ready; /report route deferred to next pass)
 Spec discipline               in progress (this file)
 ```
 

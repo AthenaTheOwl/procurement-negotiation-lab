@@ -767,3 +767,145 @@ pre {
     grid-template-columns: 1fr;
   }
 }
+
+/* spec 0005-0008 additions */
+.view-picker {
+  margin-bottom: 1.5rem;
+}
+
+.view-picker-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.view-button {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--text);
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
+}
+
+.view-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.view-button.active {
+  background: var(--accent, #f4a85f);
+  color: var(--bg-deep, #0f1015);
+  border-color: var(--accent, #f4a85f);
+}
+
+.participant-roster {
+  margin-top: 1rem;
+}
+
+.participant-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.participant-row {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+}
+
+.participant-row.self {
+  border-color: var(--accent, #f4a85f);
+  background: rgba(244, 168, 95, 0.08);
+}
+
+.self-tag {
+  background: var(--accent, #f4a85f);
+  color: var(--bg-deep, #0f1015);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.participant-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.65);
+  margin-top: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.private-tag {
+  margin-top: 0.35rem;
+  font-style: italic;
+  font-size: 0.8rem;
+}
+
+.provenance-badge {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  color: white;
+  margin-left: 0.5rem;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+
+.ledger-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.ledger-list li {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.button-row.inline {
+  display: inline-flex;
+  gap: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.bridge-section {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.risk-chunk-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.risk-chunk-list li {
+  padding: 0.45rem 0.7rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.callout.warn {
+  background: rgba(220, 80, 60, 0.12);
+  border-color: rgba(220, 80, 60, 0.35);
+}

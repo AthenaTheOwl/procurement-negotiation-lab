@@ -10,6 +10,10 @@ SPECS = [
     ROOT / "specs" / "0002-lab-authoring-workbench",
     ROOT / "specs" / "0003-bergemann-arc",
     ROOT / "specs" / "0004-operational-mechanism-refinements",
+    ROOT / "specs" / "0005-multi-party-portal",
+    ROOT / "specs" / "0006-run-reports-replay",
+    ROOT / "specs" / "0007-production-hardening",
+    ROOT / "specs" / "0008-data-bridges",
 ]
 
 REQUIRED_FILE_NAMES = [
@@ -51,6 +55,32 @@ REQUIREMENT_IDS = [
     "R-OPS-003",
     "R-OPS-004",
     "R-SPEC-004",
+    "R-PORTAL-001",
+    "R-PORTAL-002",
+    "R-PORTAL-003",
+    "R-PORTAL-004",
+    "R-PORTAL-005",
+    "R-PORTAL-006",
+    "R-SPEC-005",
+    "R-REPORT-001",
+    "R-REPORT-002",
+    "R-REPORT-003",
+    "R-REPORT-004",
+    "R-REPORT-005",
+    "R-SPEC-006",
+    "R-HARDEN-001",
+    "R-HARDEN-002",
+    "R-HARDEN-003",
+    "R-HARDEN-004",
+    "R-HARDEN-005",
+    "R-HARDEN-006",
+    "R-SPEC-007",
+    "R-BRIDGE-001",
+    "R-BRIDGE-002",
+    "R-BRIDGE-003",
+    "R-BRIDGE-004",
+    "R-BRIDGE-005",
+    "R-SPEC-008",
 ]
 
 
