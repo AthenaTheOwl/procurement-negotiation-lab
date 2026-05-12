@@ -10,6 +10,8 @@ import yaml
 
 Risk = Literal["low", "medium", "high"]
 ReviewerChoice = Literal["claude_code", "codex", "stub", "none"]
+Checkpoint = Literal["plan_review", "diff_review", "pre_pr"]
+VALID_CHECKPOINTS: frozenset[str] = frozenset(("plan_review", "diff_review", "pre_pr"))
 
 
 @dataclass
@@ -50,9 +52,13 @@ class Task:
     pr: PRSpec = field(default_factory=PRSpec)
     planner: str = "claude_code"
     implementer: str = "codex"
+    checkpoints: list[str] = field(default_factory=list)
 
     def repo_path(self) -> Path:
         return Path(self.target_repo).expanduser().resolve()
+
+    def has_checkpoint(self, name: str) -> bool:
+        return name in self.checkpoints
 
 
 def load_task(path: str | Path) -> Task:
@@ -92,6 +98,16 @@ def load_task(path: str | Path) -> Task:
         draft=bool(pr_raw.get("draft", True)),
         title_template=pr_raw.get("title_template", "factory: {title}"),
     )
+    checkpoints_raw = raw.get("checkpoints") or []
+    checkpoints: list[str] = []
+    for entry in checkpoints_raw:
+        if not isinstance(entry, str):
+            raise ValueError(f"checkpoint entry must be a string: {entry!r}")
+        if entry not in VALID_CHECKPOINTS:
+            raise ValueError(
+                f"unknown checkpoint {entry!r}; expected one of {sorted(VALID_CHECKPOINTS)}"
+            )
+        checkpoints.append(entry)
     return Task(
         id=raw["id"],
         title=raw["title"],
@@ -104,4 +120,5 @@ def load_task(path: str | Path) -> Task:
         pr=pr,
         planner=raw.get("planner", "claude_code"),
         implementer=raw.get("implementer", "codex"),
+        checkpoints=checkpoints,
     )

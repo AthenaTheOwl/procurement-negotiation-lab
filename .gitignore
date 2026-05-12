@@ -22,3 +22,4 @@ vite-*.err.log
 # factory state + per-task worktrees
 ops/factory.db
 ops/factory.db-journal
+ops/factory-artifacts/

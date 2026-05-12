@@ -9,12 +9,15 @@ Given a task spec YAML, run the pipeline:
 
 ```
 plan(planner)
-   → human gate?
+   → checkpoint? (plan_review)
 implement(implementer)
    → gates: pytest / npm test / tsc / spec_check / ruff
 review(reviewer)
-   → if findings: patch(implementer) → re-gate → re-review (max 3 rounds)
-   → else: commit + push + (optional) draft PR via gh
+   → if findings: patch(implementer) → re-gate → re-review (max N rounds)
+   → checkpoint? (diff_review)
+commit
+   → checkpoint? (pre_pr)
+push + (optional) draft PR via gh
 ```
 
 Workers are CLIs invoked via `subprocess`. Three are wired:
@@ -32,6 +35,73 @@ makes it possible to develop and test the orchestrator without API access.
 
 State lives in `ops/factory.db` (SQLite). Per-task git worktrees live as
 siblings of the repo: `procurement-negotiation-lab-task-<id>/`.
+
+## Checkpoints and approvals
+
+A task YAML can list checkpoints where the pipeline pauses for human review:
+
+```yaml
+checkpoints:
+  - plan_review     # pause after plan, before implement
+  - diff_review     # pause after the first clean review, before commit
+  - pre_pr          # pause after commit, before push + gh pr create
+```
+
+When the pipeline hits a configured checkpoint:
+
+1. The relevant artifact (plan / diff / review) is written to
+   `ops/factory-artifacts/<task-id>/<round>-<kind>.txt`.
+2. The task row is set to `status=awaiting_approval`,
+   `awaiting_checkpoint=<name>`, `current_step=await:<name>`.
+3. An event `checkpoint.paused` is appended with the artifact ref.
+4. The CLI exits with code 2 and prints the resume command.
+
+To inspect and resume:
+
+```bash
+python -m scripts.factory.run --show <task-id>          # see awaiting checkpoint
+python -m scripts.factory.run --artifacts <task-id>     # list stored artifacts
+python -m scripts.factory.run --trace <task-id>         # event stream (per trace_id)
+
+# approve and continue from the checkpoint
+python -m scripts.factory.run --resume <task-id> --approve [--dry-run]
+
+# or reject the task entirely
+python -m scripts.factory.run --resume <task-id> --reject --comment "wrong scope"
+```
+
+Each `run_pipeline` invocation gets a fresh `trace_id` (uuid hex). Events
+created during that run carry the same `trace_id` so `--trace` can group a
+specific run, including resumes. The most recent trace is stored on the task
+row as `trace_id`.
+
+## Trace IDs and artifacts
+
+The factory stores app-level state (decisions, IDs, routing) in SQLite and
+artifact *content* on disk:
+
+```
+ops/factory.db                          # SQLite: tasks, events
+ops/factory-artifacts/<task-id>/
+  0-plan.txt                            # planner output
+  0-implement-stdout.txt                # implementer stdout (per round)
+  0-gate-typecheck.txt                  # full gate output per round
+  0-review.txt                          # reviewer output
+  1-review.txt                          # round-2 review after a patch
+  ...
+```
+
+The SQLite events table stores opaque references (`{task_id, kind, round,
+path, sha1, size}`) to each artifact — never the blob. This keeps the DB
+small, makes diffs grep-able, and lets you delete `ops/factory.db` without
+losing per-task content.
+
+Worker invocations also capture `thread_id` and `run_id` metadata when the
+CLI emits them (Claude / Codex `--output-format json` is probed, falling
+back to regex extraction, falling back to a tagged synthetic UUID). These
+flow into events and into the `last_thread_id` / `last_run_id` columns so
+you can correlate a factory event with a real Claude Code or Codex Harness
+run.
 
 ## Run it
 

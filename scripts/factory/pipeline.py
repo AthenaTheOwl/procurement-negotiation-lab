@@ -1,16 +1,20 @@
-"""Pipeline: plan → implement → gate → review → patch (≤ N) → PR.
+"""Pipeline: plan -> implement -> gate -> review -> patch (<= N) -> commit -> PR.
 
-State machine is intentionally short. Each step writes to the SQLite store
-and appends an event so a later run can pick up where this one left off.
+State machine is short and re-entrant. Each step writes to the SQLite store
+and appends an event so a later `run_pipeline(..., resume_from=...)` call can
+pick up where this one left off. Per-run `trace_id` lets `factory --trace`
+group events by pipeline invocation.
 """
 
 from __future__ import annotations
 
 import subprocess
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Any, Literal
 
+from .artifacts import ArtifactStore
 from .state import Store
 from .task import Task
 from .workers import (
@@ -22,14 +26,15 @@ from .workers import (
 )
 from .worktree import (
     WorktreeError,
+    WorktreeInfo,
     commit_all,
     create_worktree,
     diff_stat,
     push_branch,
 )
 
-if TYPE_CHECKING:
-    from .worktree import WorktreeInfo
+
+# ------------------------------------------------------------------ prompts
 
 
 PLAN_PROMPT = """\
@@ -49,7 +54,7 @@ End with a one-paragraph summary of the riskiest decision in the plan.
 
 IMPLEMENT_PROMPT = """\
 You are the implementation agent. Carry out the plan below as edits to the
-working directory. After editing, do nothing else — the factory will run
+working directory. After editing, do nothing else - the factory will run
 gates and review.
 
 Goal:
@@ -85,15 +90,23 @@ Task: read the diff and report findings in this exact shape:
 
 Be terse. "CLEAN" means the diff is shippable. "NEEDS_PATCH" means the
 implementer should fix the findings and resubmit. "REJECT" means the plan
-itself was wrong — the factory will stop and surface to a human.
+itself was wrong - the factory will stop and surface to a human.
 """
+
+
+# ------------------------------------------------------------------ result
 
 
 @dataclass
 class PipelineResult:
     ok: bool
-    final_status: str
+    final_status: Literal["done", "failed", "blocked", "awaiting_approval", "rejected"]
     summary: str
+    awaiting_checkpoint: str | None = None
+    trace_id: str | None = None
+
+
+# ------------------------------------------------------------------ helpers
 
 
 def _run_worker(worker: Worker, prompt: str, cwd: Path) -> WorkerResult:
@@ -108,14 +121,33 @@ def _format_gate_results(outcomes: list[GateOutcome]) -> str:
         marker = "ok" if outcome.ok else "FAIL"
         lines.append(f"  [{marker}] {outcome.name} ({outcome.cmd})")
         if not outcome.ok and outcome.stderr.strip():
-            lines.append(f"        stderr head: {outcome.stderr.strip().splitlines()[0][:140]}")
+            head = outcome.stderr.strip().splitlines()[0][:140]
+            lines.append(f"        stderr head: {head}")
     return "\n".join(lines)
 
 
+def _gate_results_for_artifact(outcomes: list[GateOutcome]) -> str:
+    """Verbose version stored in artifacts (includes full stdout/stderr)."""
+    if not outcomes:
+        return "(no gates)"
+    chunks: list[str] = []
+    for outcome in outcomes:
+        chunks.append(f"=== gate: {outcome.name} ===")
+        chunks.append(f"cmd: {outcome.cmd}")
+        chunks.append(f"ok: {outcome.ok}  must_pass: {outcome.must_pass}")
+        if outcome.stdout.strip():
+            chunks.append("--- stdout ---")
+            chunks.append(outcome.stdout)
+        if outcome.stderr.strip():
+            chunks.append("--- stderr ---")
+            chunks.append(outcome.stderr)
+        chunks.append("")
+    return "\n".join(chunks)
+
+
 def _open_pr(
-    worktree: "WorktreeInfo", task: Task, plan: str, review: str
+    worktree: WorktreeInfo, task: Task, plan: str, review: str
 ) -> str | None:
-    """Open a draft PR via gh. Returns the URL on success, None on failure."""
     body_parts = [
         f"## Goal\n\n{task.goal}\n",
         f"## Plan\n\n{plan or '(no plan recorded)'}\n",
@@ -149,11 +181,77 @@ def _open_pr(
         return None
     if result.returncode == 0:
         for line in result.stdout.splitlines():
-            line = line.strip()
-            if line.startswith("https://"):
-                return line
+            stripped = line.strip()
+            if stripped.startswith("https://"):
+                return stripped
         return result.stdout.strip() or None
     return None
+
+
+def _record_worker_event(
+    store: Store,
+    task: Task,
+    kind: str,
+    round_idx: int,
+    worker: Worker,
+    result: WorkerResult,
+    trace_id: str,
+    artifact_ref: dict[str, Any] | None = None,
+) -> None:
+    payload: dict[str, Any] = {
+        "round": round_idx,
+        "worker": worker.name,
+        "thread_id": result.thread_id,
+        "run_id": result.run_id,
+        "model": result.metadata.get("model"),
+        "duration_ms": result.metadata.get("duration_ms"),
+    }
+    if artifact_ref is not None:
+        payload["artifact"] = artifact_ref
+    store.append_event(task.id, kind, payload, trace_id=trace_id)
+    if result.thread_id or result.run_id:
+        store.update_task(
+            task.id,
+            last_thread_id=result.thread_id,
+            last_run_id=result.run_id,
+        )
+
+
+def _resolve_worktree(
+    task: Task, *, dry_run: bool, store: Store, trace_id: str
+) -> tuple[WorktreeInfo | None, str | None]:
+    """Return (worktree, error_message). On success error is None."""
+    repo = task.repo_path()
+    if dry_run:
+        wt = WorktreeInfo(
+            path=repo,
+            branch=f"factory/{task.id}",
+            base_branch=task.base_branch,
+        )
+        store.append_event(
+            task.id,
+            "worktree.skipped",
+            {"reason": "dry_run", "path": str(wt.path)},
+            trace_id=trace_id,
+        )
+        return wt, None
+    try:
+        wt = create_worktree(repo, task.id, task.base_branch)
+    except WorktreeError as cause:
+        store.append_event(
+            task.id, "worktree.error", {"error": str(cause)}, trace_id=trace_id
+        )
+        return None, str(cause)
+    store.append_event(
+        task.id,
+        "worktree.ready",
+        {"path": str(wt.path), "branch": wt.branch},
+        trace_id=trace_id,
+    )
+    return wt, None
+
+
+# ------------------------------------------------------------------ main entry
 
 
 def run_pipeline(
@@ -161,84 +259,322 @@ def run_pipeline(
     *,
     store: Store,
     dry_run: bool = False,
+    resume_from: str | None = None,
+    resume_comment: str | None = None,
+    artifact_store: ArtifactStore | None = None,
+    spec_path: str | None = None,
 ) -> PipelineResult:
-    """Run a single task pipeline to completion (or to first hard failure)."""
-    store.upsert_task(task.id, task.title, task.id)
-    store.append_event(task.id, "pipeline.start", {"dry_run": dry_run, "risk": task.risk})
+    """Run a single task pipeline.
 
-    # --- worktree ---
-    repo = task.repo_path()
-    if dry_run:
-        # Don't touch git state in dry-run; pretend we have a worktree at the repo path.
-        from .worktree import WorktreeInfo as _WI
-
-        wt = _WI(
-            path=repo,
-            branch=f"factory/{task.id}",
-            base_branch=task.base_branch,
-        )
-        store.update_task(
-            task.id,
-            status="running",
-            current_step="plan",
-            worktree_path=str(wt.path),
-            branch=wt.branch,
-        )
-        store.append_event(
-            task.id, "worktree.skipped", {"reason": "dry_run", "path": str(wt.path)}
-        )
-    else:
-        try:
-            wt = create_worktree(repo, task.id, task.base_branch)
-        except WorktreeError as cause:
-            store.update_task(task.id, status="failed", failure_reason=str(cause))
-            store.append_event(task.id, "worktree.error", {"error": str(cause)})
-            return PipelineResult(ok=False, final_status="failed", summary=str(cause))
-        store.update_task(
-            task.id,
-            status="running",
-            current_step="plan",
-            worktree_path=str(wt.path),
-            branch=wt.branch,
-        )
-        store.append_event(
-            task.id, "worktree.ready", {"path": str(wt.path), "branch": wt.branch}
-        )
-
-    # --- plan ---
-    planner = resolve_worker(task.planner, allow_stub_fallback=True)
-    plan_prompt = PLAN_PROMPT.format(
-        goal=task.goal,
-        cwd=wt.path,
-        branch=wt.branch,
-        base_branch=wt.base_branch,
-        risk=task.risk,
-    )
-    plan_result = (
-        _run_worker(planner, plan_prompt, wt.path)
-        if not dry_run
-        else WorkerResult(ok=True, stdout=f"[dry-run plan via {planner.name}]")
-    )
-    if not plan_result.ok:
-        store.update_task(task.id, status="failed", failure_reason=plan_result.stderr)
-        store.append_event(task.id, "plan.failed", {"stderr": plan_result.stderr[:500]})
-        return PipelineResult(ok=False, final_status="failed", summary=plan_result.stderr)
-    plan_text = plan_result.stdout
-    store.update_task(task.id, plan=plan_text, current_step="implement")
+    On first invocation, `resume_from` is None. If the pipeline pauses at a
+    checkpoint, the task row is left in `awaiting_approval` status with
+    `awaiting_checkpoint` set. A later call with `resume_from` = the
+    checkpoint name picks up at the next step.
+    """
+    trace_id = uuid.uuid4().hex
+    artifacts = artifact_store or ArtifactStore()
+    store.upsert_task(task.id, task.title, spec_path or task.id)
     store.append_event(
         task.id,
-        "plan.done",
-        {"worker": planner.name, "len": len(plan_text)},
+        "pipeline.start",
+        {
+            "dry_run": dry_run,
+            "risk": task.risk,
+            "resume_from": resume_from,
+            "comment": resume_comment,
+        },
+        trace_id=trace_id,
+    )
+    store.update_task(task.id, trace_id=trace_id)
+
+    # --- worktree ---
+    worktree, error = _resolve_worktree(
+        task, dry_run=dry_run, store=store, trace_id=trace_id
+    )
+    if worktree is None or error is not None:
+        store.update_task(task.id, status="failed", failure_reason=error or "worktree")
+        return PipelineResult(
+            ok=False,
+            final_status="failed",
+            summary=error or "worktree resolution failed",
+            trace_id=trace_id,
+        )
+    store.update_task(
+        task.id,
+        status="running",
+        current_step="plan",
+        worktree_path=str(worktree.path),
+        branch=worktree.branch,
+        awaiting_checkpoint=None,
     )
 
-    # --- implement / patch loop ---
+    # --- plan ---
+    if resume_from in (None, "plan_review"):
+        if resume_from == "plan_review":
+            # Plan was produced before the pause; load from artifacts.
+            plan_refs = [
+                ref for ref in artifacts.list(task.id) if ref.kind == "plan"
+            ]
+            if not plan_refs:
+                store.update_task(
+                    task.id,
+                    status="failed",
+                    failure_reason="resume plan_review but no plan artifact found",
+                )
+                return PipelineResult(
+                    ok=False,
+                    final_status="failed",
+                    summary="cannot resume: no stored plan",
+                    trace_id=trace_id,
+                )
+            plan_text = artifacts.read(plan_refs[0])
+            store.append_event(
+                task.id,
+                "checkpoint.resumed",
+                {"checkpoint": "plan_review", "comment": resume_comment},
+                trace_id=trace_id,
+            )
+        else:
+            planner = resolve_worker(task.planner, allow_stub_fallback=True)
+            plan_prompt = PLAN_PROMPT.format(
+                goal=task.goal,
+                cwd=worktree.path,
+                branch=worktree.branch,
+                base_branch=worktree.base_branch,
+                risk=task.risk,
+            )
+            plan_result = (
+                _run_worker(planner, plan_prompt, worktree.path)
+                if not dry_run
+                else WorkerResult(
+                    ok=True,
+                    stdout=f"[dry-run plan via {planner.name}]\n1. step\n2. step",
+                    metadata={
+                        "thread_id": f"stub-{planner.name}-thread",
+                        "run_id": f"stub-{planner.name}-run",
+                        "model": "stub-model",
+                        "duration_ms": 0,
+                    },
+                )
+            )
+            if not plan_result.ok:
+                store.update_task(
+                    task.id, status="failed", failure_reason=plan_result.stderr
+                )
+                store.append_event(
+                    task.id,
+                    "plan.failed",
+                    {"stderr": plan_result.stderr[:500]},
+                    trace_id=trace_id,
+                )
+                return PipelineResult(
+                    ok=False,
+                    final_status="failed",
+                    summary=plan_result.stderr,
+                    trace_id=trace_id,
+                )
+            plan_text = plan_result.stdout
+            plan_ref = artifacts.write(task.id, "plan", 0, plan_text)
+            _record_worker_event(
+                store,
+                task,
+                "plan.done",
+                0,
+                planner,
+                plan_result,
+                trace_id,
+                artifact_ref=plan_ref.to_dict(),
+            )
+            store.update_task(task.id, plan=plan_text[:4000])
+
+            if task.has_checkpoint("plan_review"):
+                store.update_task(
+                    task.id,
+                    status="awaiting_approval",
+                    current_step="await:plan_review",
+                    awaiting_checkpoint="plan_review",
+                )
+                store.append_event(
+                    task.id,
+                    "checkpoint.paused",
+                    {
+                        "checkpoint": "plan_review",
+                        "artifact": plan_ref.to_dict(),
+                    },
+                    trace_id=trace_id,
+                )
+                return PipelineResult(
+                    ok=True,
+                    final_status="awaiting_approval",
+                    summary=f"paused at plan_review (artifact {plan_ref.path})",
+                    awaiting_checkpoint="plan_review",
+                    trace_id=trace_id,
+                )
+    else:
+        # resume_from == diff_review or pre_pr; load existing plan
+        plan_refs = sorted(
+            [ref for ref in artifacts.list(task.id) if ref.kind == "plan"],
+            key=lambda r: r.round,
+        )
+        plan_text = artifacts.read(plan_refs[-1]) if plan_refs else ""
+
+    # --- implement / gate / review loop ---
+    last_review = ""
+    last_outcomes: list[GateOutcome] = []
+    if resume_from in (None, "plan_review"):
+        last_review, last_outcomes = _run_implement_loop(
+            task=task,
+            worktree=worktree,
+            plan_text=plan_text,
+            store=store,
+            artifacts=artifacts,
+            trace_id=trace_id,
+            dry_run=dry_run,
+        )
+        if last_review == "__rejected__":
+            return PipelineResult(
+                ok=False,
+                final_status="rejected",
+                summary="reviewer returned REJECT",
+                trace_id=trace_id,
+            )
+        if last_review == "__blocked__":
+            return PipelineResult(
+                ok=False,
+                final_status="blocked",
+                summary="exceeded max patch rounds",
+                trace_id=trace_id,
+            )
+
+        if task.has_checkpoint("diff_review"):
+            review_refs = [ref for ref in artifacts.list(task.id) if ref.kind == "review"]
+            last_ref = review_refs[-1].to_dict() if review_refs else None
+            store.update_task(
+                task.id,
+                status="awaiting_approval",
+                current_step="await:diff_review",
+                awaiting_checkpoint="diff_review",
+            )
+            store.append_event(
+                task.id,
+                "checkpoint.paused",
+                {"checkpoint": "diff_review", "artifact": last_ref},
+                trace_id=trace_id,
+            )
+            return PipelineResult(
+                ok=True,
+                final_status="awaiting_approval",
+                summary="paused at diff_review",
+                awaiting_checkpoint="diff_review",
+                trace_id=trace_id,
+            )
+
+    if resume_from == "diff_review":
+        store.append_event(
+            task.id,
+            "checkpoint.resumed",
+            {"checkpoint": "diff_review", "comment": resume_comment},
+            trace_id=trace_id,
+        )
+        # rehydrate the latest review text from the artifact store
+        review_refs = sorted(
+            [ref for ref in artifacts.list(task.id) if ref.kind == "review"],
+            key=lambda r: r.round,
+        )
+        last_review = artifacts.read(review_refs[-1]) if review_refs else ""
+
+    # --- commit ---
+    sha = (
+        commit_all(worktree.path, f"factory: {task.title}") if not dry_run else None
+    )
+    store.append_event(
+        task.id,
+        "commit.done",
+        {"sha": sha, "dry_run": dry_run},
+        trace_id=trace_id,
+    )
+
+    # --- pre_pr checkpoint ---
+    if task.pr.open and task.has_checkpoint("pre_pr") and resume_from != "pre_pr":
+        store.update_task(
+            task.id,
+            status="awaiting_approval",
+            current_step="await:pre_pr",
+            awaiting_checkpoint="pre_pr",
+        )
+        store.append_event(
+            task.id, "checkpoint.paused", {"checkpoint": "pre_pr"}, trace_id=trace_id
+        )
+        return PipelineResult(
+            ok=True,
+            final_status="awaiting_approval",
+            summary="paused at pre_pr",
+            awaiting_checkpoint="pre_pr",
+            trace_id=trace_id,
+        )
+    if resume_from == "pre_pr":
+        store.append_event(
+            task.id,
+            "checkpoint.resumed",
+            {"checkpoint": "pre_pr", "comment": resume_comment},
+            trace_id=trace_id,
+        )
+
+    # --- push + PR ---
+    pr_url: str | None = None
+    if task.pr.open and not dry_run:
+        if push_branch(worktree.path, worktree.branch):
+            pr_url = _open_pr(worktree, task, plan_text, last_review)
+            if pr_url:
+                store.update_task(task.id, pr_url=pr_url)
+
+    store.update_task(
+        task.id,
+        status="done",
+        current_step="done",
+        pr_url=pr_url,
+        awaiting_checkpoint=None,
+    )
+    store.append_event(
+        task.id, "pipeline.done", {"pr_url": pr_url}, trace_id=trace_id
+    )
+    summary = f"done: branch {worktree.branch}" + (
+        f"; PR {pr_url}" if pr_url else ""
+    )
+    return PipelineResult(
+        ok=True, final_status="done", summary=summary, trace_id=trace_id
+    )
+
+
+# ------------------------------------------------------------------ subloops
+
+
+def _run_implement_loop(
+    *,
+    task: Task,
+    worktree: WorktreeInfo,
+    plan_text: str,
+    store: Store,
+    artifacts: ArtifactStore,
+    trace_id: str,
+    dry_run: bool,
+) -> tuple[str, list[GateOutcome]]:
+    """Implement -> gates -> review, up to max_patch_rounds.
+
+    Returns (last_review_text, last_gate_outcomes). Special sentinel values:
+      "__rejected__" -> reviewer returned REJECT
+      "__blocked__"  -> exceeded max patch rounds
+    """
     implementer = resolve_worker(task.implementer, allow_stub_fallback=True)
     reviewer = resolve_worker(task.review.reviewer, allow_stub_fallback=True)
     gate_runner = GateWorker()
     last_review = ""
+    last_outcomes: list[GateOutcome] = []
     for round_idx in range(task.review.max_patch_rounds + 1):
         prompt = (
-            IMPLEMENT_PROMPT.format(goal=task.goal, plan=plan_text, cwd=wt.path)
+            IMPLEMENT_PROMPT.format(
+                goal=task.goal, plan=plan_text, cwd=worktree.path
+            )
             if round_idx == 0
             else (
                 "The reviewer flagged issues. Address them and update the worktree.\n\n"
@@ -246,34 +582,56 @@ def run_pipeline(
             )
         )
         impl_result = (
-            _run_worker(implementer, prompt, wt.path)
+            _run_worker(implementer, prompt, worktree.path)
             if not dry_run
             else WorkerResult(
-                ok=True, stdout=f"[dry-run implement round {round_idx} via {implementer.name}]"
+                ok=True,
+                stdout=f"[dry-run implement round {round_idx} via {implementer.name}]",
+                metadata={
+                    "thread_id": f"stub-{implementer.name}-thread-{round_idx}",
+                    "run_id": f"stub-{implementer.name}-run-{round_idx}",
+                    "model": "stub-model",
+                    "duration_ms": 0,
+                },
             )
         )
         if not impl_result.ok:
-            store.update_task(task.id, status="failed", failure_reason=impl_result.stderr)
+            store.update_task(
+                task.id, status="failed", failure_reason=impl_result.stderr
+            )
             store.append_event(
                 task.id,
                 "implement.failed",
                 {"round": round_idx, "stderr": impl_result.stderr[:500]},
+                trace_id=trace_id,
             )
-            return PipelineResult(
-                ok=False, final_status="failed", summary=impl_result.stderr
-            )
-        store.append_event(
-            task.id,
+            return "__rejected__", []
+        impl_ref = artifacts.write(
+            task.id, "implement-stdout", round_idx, impl_result.stdout
+        )
+        _record_worker_event(
+            store,
+            task,
             "implement.done",
-            {"round": round_idx, "worker": implementer.name},
+            round_idx,
+            implementer,
+            impl_result,
+            trace_id,
+            artifact_ref=impl_ref.to_dict(),
         )
 
-        # --- gates ---
         store.update_task(task.id, current_step=f"gate (round {round_idx})")
         if dry_run:
             gates_ok, outcomes = True, []
         else:
-            gates_ok, outcomes = gate_runner.run_gates(task.gates, cwd=wt.path)
+            gates_ok, outcomes = gate_runner.run_gates(task.gates, cwd=worktree.path)
+        for outcome in outcomes:
+            artifacts.write(
+                task.id,
+                f"gate-{_safe_kind(outcome.name)}",
+                round_idx,
+                _gate_results_for_artifact([outcome]),
+            )
         store.append_event(
             task.id,
             "gates.done",
@@ -285,60 +643,90 @@ def run_pipeline(
                     for o in outcomes
                 ],
             },
+            trace_id=trace_id,
         )
+        last_outcomes = outcomes
+
         if not gates_ok:
-            # ask the reviewer to look at the failed gates and produce findings
             review_prompt = REVIEW_PROMPT.format(
-                cwd=wt.path,
-                base_branch=wt.base_branch,
-                diff_stat=diff_stat(wt.path, wt.base_branch) or "(no diff yet)",
+                cwd=worktree.path,
+                base_branch=worktree.base_branch,
+                diff_stat=diff_stat(worktree.path, worktree.base_branch)
+                or "(no diff yet)",
                 gate_results=_format_gate_results(outcomes),
                 goal=task.goal,
             )
             review_result = (
-                _run_worker(reviewer, review_prompt, wt.path)
+                _run_worker(reviewer, review_prompt, worktree.path)
                 if not dry_run
                 else WorkerResult(
-                    ok=True, stdout="STATUS: NEEDS_PATCH\nFINDINGS:\n- [dry-run]"
+                    ok=True,
+                    stdout="STATUS: NEEDS_PATCH\nFINDINGS:\n- [dry-run]",
+                    metadata={
+                        "thread_id": f"stub-{reviewer.name}-thread-{round_idx}",
+                        "run_id": f"stub-{reviewer.name}-run-{round_idx}",
+                        "model": "stub-model",
+                        "duration_ms": 0,
+                    },
                 )
             )
             last_review = review_result.stdout
-            store.update_task(task.id, review=last_review)
+            review_ref = artifacts.write(task.id, "review", round_idx, last_review)
+            _record_worker_event(
+                store,
+                task,
+                "review.done",
+                round_idx,
+                reviewer,
+                review_result,
+                trace_id,
+                artifact_ref=review_ref.to_dict(),
+            )
+            store.update_task(task.id, review=last_review[:4000])
             if round_idx >= task.review.max_patch_rounds:
                 store.update_task(
                     task.id,
                     status="blocked",
                     failure_reason="gates failing after max patch rounds",
                 )
-                return PipelineResult(
-                    ok=False,
-                    final_status="blocked",
-                    summary="gates failing after max patch rounds",
-                )
+                return "__blocked__", outcomes
             continue
 
-        # --- review the clean diff ---
         review_prompt = REVIEW_PROMPT.format(
-            cwd=wt.path,
-            base_branch=wt.base_branch,
-            diff_stat=diff_stat(wt.path, wt.base_branch) or "(no diff yet)",
+            cwd=worktree.path,
+            base_branch=worktree.base_branch,
+            diff_stat=diff_stat(worktree.path, worktree.base_branch)
+            or "(no diff yet)",
             gate_results=_format_gate_results(outcomes),
             goal=task.goal,
         )
         review_result = (
-            _run_worker(reviewer, review_prompt, wt.path)
+            _run_worker(reviewer, review_prompt, worktree.path)
             if not dry_run
             else WorkerResult(
-                ok=True, stdout=f"STATUS: CLEAN\nFINDINGS:\n- [dry-run via {reviewer.name}]"
+                ok=True,
+                stdout=f"STATUS: CLEAN\nFINDINGS:\n- [dry-run via {reviewer.name}]",
+                metadata={
+                    "thread_id": f"stub-{reviewer.name}-thread-{round_idx}",
+                    "run_id": f"stub-{reviewer.name}-run-{round_idx}",
+                    "model": "stub-model",
+                    "duration_ms": 0,
+                },
             )
         )
         last_review = review_result.stdout
-        store.update_task(task.id, review=last_review)
-        store.append_event(
-            task.id,
+        review_ref = artifacts.write(task.id, "review", round_idx, last_review)
+        _record_worker_event(
+            store,
+            task,
             "review.done",
-            {"round": round_idx, "worker": reviewer.name, "head": last_review[:160]},
+            round_idx,
+            reviewer,
+            review_result,
+            trace_id,
+            artifact_ref=review_ref.to_dict(),
         )
+        store.update_task(task.id, review=last_review[:4000])
         upper = last_review.upper()
         if "STATUS: CLEAN" in upper or "STATUS:CLEAN" in upper:
             break
@@ -348,31 +736,43 @@ def run_pipeline(
                 status="blocked",
                 failure_reason="reviewer returned REJECT",
             )
-            return PipelineResult(
-                ok=False, final_status="blocked", summary="reviewer rejected the plan"
-            )
+            return "__rejected__", outcomes
         if round_idx >= task.review.max_patch_rounds:
             store.update_task(
                 task.id,
                 status="blocked",
                 failure_reason="reviewer kept asking for patches",
             )
-            return PipelineResult(
-                ok=False,
-                final_status="blocked",
-                summary="exceeded max patch rounds with NEEDS_PATCH",
-            )
+            return "__blocked__", outcomes
 
-    # --- commit + (optional) PR ---
-    sha = commit_all(wt.path, f"factory: {task.title}") if not dry_run else None
-    store.append_event(task.id, "commit.done", {"sha": sha, "dry_run": dry_run})
-    pr_url: str | None = None
-    if task.pr.open and not dry_run:
-        if push_branch(wt.path, wt.branch):
-            pr_url = _open_pr(wt, task, plan_text, last_review)
-            if pr_url:
-                store.update_task(task.id, pr_url=pr_url)
-    store.update_task(task.id, status="done", current_step="done", pr_url=pr_url)
-    store.append_event(task.id, "pipeline.done", {"pr_url": pr_url})
-    summary = f"done: branch {wt.branch}" + (f"; PR {pr_url}" if pr_url else "")
-    return PipelineResult(ok=True, final_status="done", summary=summary)
+    return last_review, last_outcomes
+
+
+def _safe_kind(name: str) -> str:
+    """Normalize a gate name for use in a filename."""
+    out: list[str] = []
+    for ch in name:
+        if ch.isalnum() or ch in "-_":
+            out.append(ch.lower())
+        else:
+            out.append("-")
+    return "".join(out).strip("-") or "gate"
+
+
+def reject_task(
+    store: Store,
+    task_id: str,
+    *,
+    comment: str | None = None,
+) -> None:
+    """Mark a paused task as rejected without further pipeline work."""
+    store.update_task(
+        task_id,
+        status="rejected",
+        current_step="rejected",
+        awaiting_checkpoint=None,
+        failure_reason=f"rejected by user: {comment}" if comment else "rejected by user",
+    )
+    store.append_event(
+        task_id, "checkpoint.rejected", {"comment": comment}
+    )

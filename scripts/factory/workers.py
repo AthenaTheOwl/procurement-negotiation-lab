@@ -6,8 +6,12 @@ The factory falls back to `stub` when the requested CLI is not on PATH.
 
 from __future__ import annotations
 
+import json as _json
+import re
 import shutil
 import subprocess
+import time
+import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -22,6 +26,16 @@ class WorkerResult:
     stdout: str = ""
     stderr: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def thread_id(self) -> str | None:
+        value = self.metadata.get("thread_id")
+        return value if isinstance(value, str) else None
+
+    @property
+    def run_id(self) -> str | None:
+        value = self.metadata.get("run_id")
+        return value if isinstance(value, str) else None
 
 
 class Worker(ABC):
@@ -38,9 +52,56 @@ def _cli_available(name: str) -> bool:
     return shutil.which(name) is not None
 
 
+_THREAD_RE = re.compile(r'"?(?:thread_?id|threadId)"?\s*[:=]\s*"?([\w\-]+)"?')
+_RUN_RE = re.compile(r'"?(?:run_?id|runId|session_?id)"?\s*[:=]\s*"?([\w\-]+)"?')
+
+
+def _extract_id(pattern: re.Pattern[str], stream: str) -> str | None:
+    if not stream:
+        return None
+    match = pattern.search(stream)
+    return match.group(1) if match else None
+
+
+def _extract_json_ids(stdout: str) -> dict[str, str]:
+    """Best-effort: if stdout contains a JSON object with thread/run/model, pick fields."""
+    out: dict[str, str] = {}
+    if not stdout:
+        return out
+    # try the first balanced JSON object we can find
+    text = stdout.strip()
+    if not text.startswith("{"):
+        return out
+    try:
+        parsed = _json.loads(text)
+    except _json.JSONDecodeError:
+        return out
+    if not isinstance(parsed, dict):
+        return out
+    for key in ("thread_id", "threadId"):
+        if isinstance(parsed.get(key), str):
+            out["thread_id"] = parsed[key]
+            break
+    for key in ("run_id", "runId", "session_id", "sessionId"):
+        if isinstance(parsed.get(key), str):
+            out["run_id"] = parsed[key]
+            break
+    for key in ("model", "model_id"):
+        if isinstance(parsed.get(key), str):
+            out["model"] = parsed[key]
+            break
+    return out
+
+
 def _run_cli(
-    argv: list[str], *, cwd: Path, timeout: int, prompt_for_stdin: str | None = None
+    argv: list[str],
+    *,
+    cwd: Path,
+    timeout: int,
+    prompt_for_stdin: str | None = None,
+    label: str = "cli",
 ) -> WorkerResult:
+    start = time.monotonic()
     try:
         result = subprocess.run(  # noqa: S603 - argv is constructed, never shell-interpreted
             argv,
@@ -55,14 +116,36 @@ def _run_cli(
         return WorkerResult(
             ok=False,
             stderr=f"timeout after {timeout}s: {cause}",
+            metadata={"duration_ms": int((time.monotonic() - start) * 1000)},
         )
     except FileNotFoundError as cause:
-        return WorkerResult(ok=False, stderr=f"binary not found: {cause}")
+        return WorkerResult(
+            ok=False,
+            stderr=f"binary not found: {cause}",
+            metadata={"duration_ms": int((time.monotonic() - start) * 1000)},
+        )
+    duration_ms = int((time.monotonic() - start) * 1000)
+    json_ids = _extract_json_ids(result.stdout)
+    thread_id = json_ids.get("thread_id") or _extract_id(_THREAD_RE, result.stdout) or _extract_id(_THREAD_RE, result.stderr)
+    run_id = json_ids.get("run_id") or _extract_id(_RUN_RE, result.stdout) or _extract_id(_RUN_RE, result.stderr)
+    model = json_ids.get("model")
+    if thread_id is None:
+        # Synthesize so downstream code can rely on the field. Tagged so it's
+        # obvious in logs which IDs are real vs synthesized.
+        thread_id = f"{label}-cli-{uuid.uuid4().hex[:12]}"
+    if run_id is None:
+        run_id = f"{label}-run-{uuid.uuid4().hex[:12]}"
     return WorkerResult(
         ok=result.returncode == 0,
         stdout=result.stdout,
         stderr=result.stderr,
-        metadata={"returncode": result.returncode},
+        metadata={
+            "returncode": result.returncode,
+            "thread_id": thread_id,
+            "run_id": run_id,
+            "model": model,
+            "duration_ms": duration_ms,
+        },
     )
 
 
@@ -85,7 +168,7 @@ class ClaudeCodeWorker(Worker):
                 ok=False, stderr="claude CLI not on PATH; install Claude Code first"
             )
         argv = ["claude", "--print", prompt]
-        return _run_cli(argv, cwd=cwd, timeout=timeout)
+        return _run_cli(argv, cwd=cwd, timeout=timeout, label="claude")
 
 
 class CodexWorker(Worker):
@@ -108,7 +191,7 @@ class CodexWorker(Worker):
                 ok=False, stderr="codex CLI not on PATH; install Codex CLI first"
             )
         argv = ["codex", "exec", prompt]
-        return _run_cli(argv, cwd=cwd, timeout=timeout)
+        return _run_cli(argv, cwd=cwd, timeout=timeout, label="codex")
 
 
 # --- gate worker ---------------------------------------------------------
@@ -184,9 +267,15 @@ class GateWorker:
 class StubWorker(Worker):
     """Deterministic placeholder for offline / dry-run / missing-CLI mode."""
 
-    def __init__(self, label: str = "stub"):
+    def __init__(self, label: str = "stub", seed: str | None = None):
         self.name = f"stub:{label}"
         self.label = label
+        self.seed = seed  # set during tests for stable IDs
+
+    def _synth_id(self, kind: str) -> str:
+        if self.seed:
+            return f"stub-{self.label}-{kind}-{self.seed}"
+        return f"stub-{self.label}-{kind}-{uuid.uuid4().hex[:12]}"
 
     def run(self, prompt: str, *, cwd: Path, timeout: int = 1800) -> WorkerResult:
         head = prompt.splitlines()[0] if prompt else "<empty>"
@@ -195,7 +284,17 @@ class StubWorker(Worker):
             f"prompt head: {head[:160]}\n"
             f"prompt length: {len(prompt)} chars"
         )
-        return WorkerResult(ok=True, stdout=body, metadata={"stub": True})
+        return WorkerResult(
+            ok=True,
+            stdout=body,
+            metadata={
+                "stub": True,
+                "thread_id": self._synth_id("thread"),
+                "run_id": self._synth_id("run"),
+                "model": "stub-model",
+                "duration_ms": 0,
+            },
+        )
 
 
 # --- registry ------------------------------------------------------------
