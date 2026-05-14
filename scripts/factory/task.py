@@ -12,6 +12,7 @@ Risk = Literal["low", "medium", "high"]
 ReviewerChoice = Literal["claude_code", "codex", "stub", "none"]
 Checkpoint = Literal["plan_review", "diff_review", "pre_pr"]
 VALID_CHECKPOINTS: frozenset[str] = frozenset(("plan_review", "diff_review", "pre_pr"))
+VALID_REVIEWERS: frozenset[str] = frozenset(("claude_code", "codex", "stub", "none"))
 
 
 @dataclass
@@ -28,6 +29,7 @@ class GateSpec:
 @dataclass
 class ReviewSpec:
     reviewer: ReviewerChoice = "claude_code"
+    reviewers: list[ReviewerChoice] = field(default_factory=lambda: ["claude_code"])
     max_patch_rounds: int = 3
 
 
@@ -87,8 +89,23 @@ def load_task(path: str | Path) -> Task:
         else:
             raise ValueError(f"unrecognized gate entry: {entry!r}")
     review_raw = raw.get("review") or {}
+    reviewers_raw = review_raw.get("reviewers")
+    if reviewers_raw is None:
+        reviewers = [review_raw.get("reviewer", "claude_code")]
+    elif isinstance(reviewers_raw, list):
+        reviewers = reviewers_raw
+    else:
+        raise ValueError("review.reviewers must be a list when provided")
+    normalized_reviewers: list[ReviewerChoice] = []
+    for reviewer in reviewers:
+        if reviewer not in VALID_REVIEWERS:
+            raise ValueError(
+                f"unknown reviewer {reviewer!r}; expected one of {sorted(VALID_REVIEWERS)}"
+            )
+        normalized_reviewers.append(reviewer)
     review = ReviewSpec(
         reviewer=review_raw.get("reviewer", "claude_code"),
+        reviewers=normalized_reviewers,
         max_patch_rounds=int(review_raw.get("max_patch_rounds", 3)),
     )
     pr_raw = raw.get("pr") or {}

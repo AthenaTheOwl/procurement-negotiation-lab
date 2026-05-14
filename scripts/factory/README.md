@@ -107,15 +107,55 @@ run.
 
 ```bash
 # dry run — no agents required
-python -m scripts.factory.run --task ops/factory-tasks/example-rename-fc-count.yaml --dry-run
+python -m uv run python -m scripts.factory.run --task ops/factory-tasks/example-rename-fc-count.yaml --dry-run
 
 # real run (requires `claude` and/or `codex` on PATH for the corresponding roles)
-python -m scripts.factory.run --task ops/factory-tasks/example-rename-fc-count.yaml
+python -m uv run python -m scripts.factory.run --task ops/factory-tasks/example-rename-fc-count.yaml
 
 # inspect state
-python -m scripts.factory.run --status
-python -m scripts.factory.run --show example-rename-fc-count
+python -m uv run python -m scripts.factory.run --status
+python -m uv run python -m scripts.factory.run --show example-rename-fc-count
 ```
+
+## Spec-driven task expansion
+
+The factory can turn an active spec's unchecked `tasks.md` passes into
+review-gated factory task YAML:
+
+```bash
+python -m uv run python -m scripts.factory.run \
+  --expand-spec specs/0009-factory-dev-control-plane \
+  --target-repo .
+```
+
+Generated tasks default to dual review (`claude_code` + `codex`), plan and diff
+checkpoints, and the repo's standard proof gates.
+
+## Multi-task routing
+
+Run several factory task YAMLs through the router:
+
+```bash
+python -m uv run python -m scripts.factory.run \
+  --run-many ops/factory-tasks/spec-0009-pass-a.yaml ops/factory-tasks/spec-0009-pass-b.yaml \
+  --dry-run --parallel 2
+```
+
+If the optional `factory` extra is installed and LangGraph is importable, the
+router uses a small LangGraph fan-out/fan-in graph. Otherwise it uses the
+built-in `ThreadPoolExecutor` fallback with the same output shape.
+
+## MCP exposure
+
+Expose the factory as a narrow MCP-compatible stdio server:
+
+```bash
+python -m uv run python -m scripts.factory.mcp_server
+```
+
+The server exposes read-first tools for task status, task detail, spec
+expansion, and dry-run multi-task routing. It deliberately does not expose an
+arbitrary shell-command tool.
 
 ## Why in-repo and not a separate package
 
@@ -130,10 +170,11 @@ multiple repos. For now it lives next to `spec_check.py` because:
 
 ## What it deliberately doesn't do
 
-- No multi-agent debate / argument loops. Gates are the referee.
+- No unbounded multi-agent debate / argument loops. Gates are the referee;
+  dual review is bounded by `max_patch_rounds`.
 - No background poller. You run `python -m scripts.factory.run` when you
   want it.
 - No auto-merge. Stops at "draft PR opened" by default.
-- No model routing per request. One task, one pipeline.
+- No arbitrary shell-command MCP tool. The MCP surface is intentionally narrow.
 
 Use it on small, reversible tasks first.

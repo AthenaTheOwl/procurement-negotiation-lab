@@ -15,7 +15,7 @@ def test_write_read_round_trip(tmp_path: Path) -> None:
     assert ref.task_id == "task-1"
     assert ref.kind == "plan"
     assert ref.round == 0
-    assert ref.size == len("hello\nworld".encode("utf-8"))
+    assert ref.size == len(b"hello\nworld")
     assert len(ref.sha1) == 40  # sha1 hex
     contents = store.read(ref)
     assert contents == "hello\nworld"

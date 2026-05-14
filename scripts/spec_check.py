@@ -14,6 +14,7 @@ SPECS = [
     ROOT / "specs" / "0006-run-reports-replay",
     ROOT / "specs" / "0007-production-hardening",
     ROOT / "specs" / "0008-data-bridges",
+    ROOT / "specs" / "0009-factory-dev-control-plane",
 ]
 
 REQUIRED_FILE_NAMES = [
@@ -81,6 +82,12 @@ REQUIREMENT_IDS = [
     "R-BRIDGE-004",
     "R-BRIDGE-005",
     "R-SPEC-008",
+    "R-FACTORY-001",
+    "R-FACTORY-002",
+    "R-FACTORY-003",
+    "R-FACTORY-004",
+    "R-FACTORY-005",
+    "R-SPEC-009",
 ]
 
 

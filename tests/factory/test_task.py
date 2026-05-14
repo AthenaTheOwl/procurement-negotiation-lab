@@ -53,6 +53,26 @@ gates:
     assert task.gates[1].display_name() == "vitest"
 
 
+def test_load_task_accepts_dual_reviewers(tmp_path: Path) -> None:
+    task_file = _write(
+        tmp_path / "reviewers.yaml",
+        """
+id: t-3
+title: reviewers
+target_repo: /tmp/repo
+goal: g
+review:
+  reviewers:
+    - claude_code
+    - codex
+  max_patch_rounds: 1
+""",
+    )
+    task = load_task(task_file)
+    assert task.review.reviewers == ["claude_code", "codex"]
+    assert task.review.max_patch_rounds == 1
+
+
 def test_load_task_missing_required(tmp_path: Path) -> None:
     task_file = _write(
         tmp_path / "broken.yaml", "id: only\ntitle: only\n"

@@ -52,8 +52,10 @@ def _cli_available(name: str) -> bool:
     return shutil.which(name) is not None
 
 
-_THREAD_RE = re.compile(r'"?(?:thread_?id|threadId)"?\s*[:=]\s*"?([\w\-]+)"?')
-_RUN_RE = re.compile(r'"?(?:run_?id|runId|session_?id)"?\s*[:=]\s*"?([\w\-]+)"?')
+_THREAD_RE = re.compile(
+    r'"?(?:thread_?id|threadId|conversation_?id|conversationId)"?\s*[:=]\s*"?([\w\-]+)"?'
+)
+_RUN_RE = re.compile(r'"?(?:run_?id|runId|session_?id|sessionId)"?\s*[:=]\s*"?([\w\-]+)"?')
 
 
 def _extract_id(pattern: re.Pattern[str], stream: str) -> str | None:
@@ -63,32 +65,74 @@ def _extract_id(pattern: re.Pattern[str], stream: str) -> str | None:
     return match.group(1) if match else None
 
 
-def _extract_json_ids(stdout: str) -> dict[str, str]:
-    """Best-effort: if stdout contains a JSON object with thread/run/model, pick fields."""
+def _string_at_path(obj: dict[str, Any], *path: str) -> str | None:
+    current: Any = obj
+    for key in path:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(key)
+    return current if isinstance(current, str) else None
+
+
+def _extract_json_ids_from_obj(parsed: dict[str, Any]) -> dict[str, str]:
+    """Best-effort extraction from known Claude/Codex-style JSON shapes."""
     out: dict[str, str] = {}
-    if not stdout:
-        return out
-    # try the first balanced JSON object we can find
-    text = stdout.strip()
-    if not text.startswith("{"):
-        return out
-    try:
-        parsed = _json.loads(text)
-    except _json.JSONDecodeError:
-        return out
-    if not isinstance(parsed, dict):
-        return out
-    for key in ("thread_id", "threadId"):
+    for key in ("thread_id", "threadId", "conversation_id", "conversationId"):
         if isinstance(parsed.get(key), str):
             out["thread_id"] = parsed[key]
             break
+    if "thread_id" not in out:
+        for path in (("thread", "id"), ("conversation", "id")):
+            value = _string_at_path(parsed, *path)
+            if value:
+                out["thread_id"] = value
+                break
     for key in ("run_id", "runId", "session_id", "sessionId"):
         if isinstance(parsed.get(key), str):
             out["run_id"] = parsed[key]
             break
-    for key in ("model", "model_id"):
+    if "run_id" not in out:
+        for path in (("run", "id"), ("session", "id")):
+            value = _string_at_path(parsed, *path)
+            if value:
+                out["run_id"] = value
+                break
+    for key in ("model", "model_id", "modelId"):
         if isinstance(parsed.get(key), str):
             out["model"] = parsed[key]
+            break
+    if "model" not in out:
+        value = _string_at_path(parsed, "response", "model") or _string_at_path(
+            parsed, "message", "model"
+        )
+        if value:
+            out["model"] = value
+    return out
+
+
+def _extract_json_ids(stdout: str) -> dict[str, str]:
+    """Best-effort: parse JSON or JSONL with thread/run/model fields.
+
+    Real CLIs vary: some emit one JSON object, some emit JSONL events, and
+    some only include IDs in stderr. This helper prefers real IDs whenever
+    they appear and lets `_run_cli` synthesize tagged IDs only as a fallback.
+    """
+    out: dict[str, str] = {}
+    if not stdout:
+        return out
+    for line in stdout.splitlines() or [stdout]:
+        text = line.strip()
+        if not text.startswith("{"):
+            continue
+        try:
+            parsed = _json.loads(text)
+        except _json.JSONDecodeError:
+            continue
+        if not isinstance(parsed, dict):
+            continue
+        extracted = _extract_json_ids_from_obj(parsed)
+        out.update({key: value for key, value in extracted.items() if value})
+        if {"thread_id", "run_id", "model"}.issubset(out):
             break
     return out
 
@@ -126,8 +170,20 @@ def _run_cli(
         )
     duration_ms = int((time.monotonic() - start) * 1000)
     json_ids = _extract_json_ids(result.stdout)
-    thread_id = json_ids.get("thread_id") or _extract_id(_THREAD_RE, result.stdout) or _extract_id(_THREAD_RE, result.stderr)
-    run_id = json_ids.get("run_id") or _extract_id(_RUN_RE, result.stdout) or _extract_id(_RUN_RE, result.stderr)
+    if len(json_ids) < 2:
+        json_ids.update(
+            {key: value for key, value in _extract_json_ids(result.stderr).items() if value}
+        )
+    thread_id = (
+        json_ids.get("thread_id")
+        or _extract_id(_THREAD_RE, result.stdout)
+        or _extract_id(_THREAD_RE, result.stderr)
+    )
+    run_id = (
+        json_ids.get("run_id")
+        or _extract_id(_RUN_RE, result.stdout)
+        or _extract_id(_RUN_RE, result.stderr)
+    )
     model = json_ids.get("model")
     if thread_id is None:
         # Synthesize so downstream code can rely on the field. Tagged so it's

@@ -18,6 +18,8 @@ from pathlib import Path
 
 from .artifacts import ArtifactStore
 from .pipeline import reject_task, run_pipeline
+from .router import route_tasks
+from .spec_tasks import expand_spec_to_tasks
 from .state import Store
 from .task import load_task
 from .workers import ClaudeCodeWorker, CodexWorker
@@ -183,6 +185,45 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--probe", action="store_true", help="check which agent CLIs are available"
     )
+    parser.add_argument(
+        "--expand-spec",
+        type=Path,
+        help="generate factory task YAMLs from unchecked tasks in a spec directory",
+    )
+    parser.add_argument(
+        "--expand-output",
+        type=Path,
+        default=Path("ops/factory-tasks"),
+        help="output directory for --expand-spec (default: ops/factory-tasks)",
+    )
+    parser.add_argument(
+        "--target-repo",
+        type=Path,
+        default=Path("."),
+        help="target_repo value for generated tasks (default: current repo)",
+    )
+    parser.add_argument(
+        "--overwrite-expanded",
+        action="store_true",
+        help="overwrite existing generated task YAMLs",
+    )
+    parser.add_argument(
+        "--run-many",
+        nargs="+",
+        type=Path,
+        help="run multiple task YAML files through the factory router",
+    )
+    parser.add_argument(
+        "--parallel",
+        type=int,
+        default=2,
+        help="parallelism for --run-many (default: 2)",
+    )
+    parser.add_argument(
+        "--no-langgraph",
+        action="store_true",
+        help="force the router to use the built-in ThreadPoolExecutor fallback",
+    )
     args = parser.parse_args(argv)
 
     if args.probe:
@@ -203,12 +244,39 @@ def main(argv: list[str] | None = None) -> int:
         if args.artifacts:
             _print_artifacts(args.artifacts)
             return 0
+        if args.expand_spec:
+            generated = expand_spec_to_tasks(
+                args.expand_spec,
+                output_dir=args.expand_output,
+                target_repo=args.target_repo,
+                overwrite=args.overwrite_expanded,
+            )
+            for item in generated:
+                task_ids = ", ".join(item.task_ids)
+                print(f"{item.id}: {item.path} ({task_ids})")
+            return 0
+        if args.run_many:
+            routed = route_tasks(
+                args.run_many,
+                db_path=args.db,
+                dry_run=args.dry_run,
+                parallel=args.parallel,
+                use_langgraph=not args.no_langgraph,
+            )
+            print(f"router: {routed.engine}")
+            for result in routed.results:
+                marker = "ok" if result.ok else "FAIL"
+                print(
+                    f"[{marker}] {result.task_id}: {result.status} "
+                    f"trace={result.trace_id or '-'}"
+                )
+            return 0 if all(result.ok for result in routed.results) else 1
         if args.resume:
             return _run_resume(store, args)
         if not args.task:
             parser.error(
                 "either --task, --resume, --status, --show, --trace, --artifacts, "
-                "or --probe is required"
+                "--expand-spec, --run-many, or --probe is required"
             )
         task = load_task(args.task)
         if not args.dry_run:

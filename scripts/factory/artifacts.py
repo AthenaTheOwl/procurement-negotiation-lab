@@ -12,7 +12,6 @@ import hashlib
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-
 ARTIFACT_KINDS = frozenset(
     {
         "plan",

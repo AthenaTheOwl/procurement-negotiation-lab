@@ -33,7 +33,6 @@ from .worktree import (
     push_branch,
 )
 
-
 # ------------------------------------------------------------------ prompts
 
 
@@ -566,7 +565,11 @@ def _run_implement_loop(
       "__blocked__"  -> exceeded max patch rounds
     """
     implementer = resolve_worker(task.implementer, allow_stub_fallback=True)
-    reviewer = resolve_worker(task.review.reviewer, allow_stub_fallback=True)
+    reviewers = [
+        resolve_worker(name, allow_stub_fallback=True)
+        for name in task.review.reviewers
+        if name != "none"
+    ]
     gate_runner = GateWorker()
     last_review = ""
     last_outcomes: list[GateOutcome] = []
@@ -656,31 +659,17 @@ def _run_implement_loop(
                 gate_results=_format_gate_results(outcomes),
                 goal=task.goal,
             )
-            review_result = (
-                _run_worker(reviewer, review_prompt, worktree.path)
-                if not dry_run
-                else WorkerResult(
-                    ok=True,
-                    stdout="STATUS: NEEDS_PATCH\nFINDINGS:\n- [dry-run]",
-                    metadata={
-                        "thread_id": f"stub-{reviewer.name}-thread-{round_idx}",
-                        "run_id": f"stub-{reviewer.name}-run-{round_idx}",
-                        "model": "stub-model",
-                        "duration_ms": 0,
-                    },
-                )
-            )
-            last_review = review_result.stdout
-            review_ref = artifacts.write(task.id, "review", round_idx, last_review)
-            _record_worker_event(
-                store,
-                task,
-                "review.done",
-                round_idx,
-                reviewer,
-                review_result,
-                trace_id,
-                artifact_ref=review_ref.to_dict(),
+            last_review = _run_reviewers(
+                reviewers=reviewers,
+                prompt=review_prompt,
+                worktree=worktree,
+                task=task,
+                store=store,
+                artifacts=artifacts,
+                trace_id=trace_id,
+                round_idx=round_idx,
+                dry_run=dry_run,
+                dry_run_status="NEEDS_PATCH",
             )
             store.update_task(task.id, review=last_review[:4000])
             if round_idx >= task.review.max_patch_rounds:
@@ -700,37 +689,23 @@ def _run_implement_loop(
             gate_results=_format_gate_results(outcomes),
             goal=task.goal,
         )
-        review_result = (
-            _run_worker(reviewer, review_prompt, worktree.path)
-            if not dry_run
-            else WorkerResult(
-                ok=True,
-                stdout=f"STATUS: CLEAN\nFINDINGS:\n- [dry-run via {reviewer.name}]",
-                metadata={
-                    "thread_id": f"stub-{reviewer.name}-thread-{round_idx}",
-                    "run_id": f"stub-{reviewer.name}-run-{round_idx}",
-                    "model": "stub-model",
-                    "duration_ms": 0,
-                },
-            )
-        )
-        last_review = review_result.stdout
-        review_ref = artifacts.write(task.id, "review", round_idx, last_review)
-        _record_worker_event(
-            store,
-            task,
-            "review.done",
-            round_idx,
-            reviewer,
-            review_result,
-            trace_id,
-            artifact_ref=review_ref.to_dict(),
+        last_review = _run_reviewers(
+            reviewers=reviewers,
+            prompt=review_prompt,
+            worktree=worktree,
+            task=task,
+            store=store,
+            artifacts=artifacts,
+            trace_id=trace_id,
+            round_idx=round_idx,
+            dry_run=dry_run,
+            dry_run_status="CLEAN",
         )
         store.update_task(task.id, review=last_review[:4000])
-        upper = last_review.upper()
-        if "STATUS: CLEAN" in upper or "STATUS:CLEAN" in upper:
+        review_status = _combined_review_status(last_review)
+        if review_status == "CLEAN":
             break
-        if "STATUS: REJECT" in upper:
+        if review_status == "REJECT":
             store.update_task(
                 task.id,
                 status="blocked",
@@ -746,6 +721,71 @@ def _run_implement_loop(
             return "__blocked__", outcomes
 
     return last_review, last_outcomes
+
+
+def _combined_review_status(review: str) -> Literal["CLEAN", "NEEDS_PATCH", "REJECT"]:
+    """Conservative aggregation for one or more review transcripts."""
+    upper = review.upper()
+    if "STATUS: REJECT" in upper or "STATUS:REJECT" in upper:
+        return "REJECT"
+    if "STATUS: NEEDS_PATCH" in upper or "STATUS:NEEDS_PATCH" in upper:
+        return "NEEDS_PATCH"
+    if "STATUS: CLEAN" in upper or "STATUS:CLEAN" in upper:
+        return "CLEAN"
+    return "NEEDS_PATCH"
+
+
+def _run_reviewers(
+    *,
+    reviewers: list[Worker],
+    prompt: str,
+    worktree: WorktreeInfo,
+    task: Task,
+    store: Store,
+    artifacts: ArtifactStore,
+    trace_id: str,
+    round_idx: int,
+    dry_run: bool,
+    dry_run_status: str,
+) -> str:
+    """Run one or more reviewers and return a combined review transcript."""
+    if not reviewers:
+        return "STATUS: CLEAN\nFINDINGS:\n- review disabled"
+    chunks: list[str] = []
+    for reviewer_idx, reviewer in enumerate(reviewers):
+        result = (
+            _run_worker(reviewer, prompt, worktree.path)
+            if not dry_run
+            else WorkerResult(
+                ok=True,
+                stdout=(
+                    f"STATUS: {dry_run_status}\n"
+                    f"FINDINGS:\n- [dry-run via {reviewer.name}]"
+                ),
+                metadata={
+                    "thread_id": f"stub-{reviewer.name}-thread-{round_idx}",
+                    "run_id": f"stub-{reviewer.name}-run-{round_idx}",
+                    "model": "stub-model",
+                    "duration_ms": 0,
+                },
+            )
+        )
+        artifact_round = round_idx * 10 + reviewer_idx
+        ref = artifacts.write(task.id, "review", artifact_round, result.stdout)
+        _record_worker_event(
+            store,
+            task,
+            "review.done",
+            round_idx,
+            reviewer,
+            result,
+            trace_id,
+            artifact_ref=ref.to_dict(),
+        )
+        chunks.append(f"=== reviewer: {reviewer.name} ===\n{result.stdout.strip()}")
+        if not result.ok:
+            chunks.append(f"STATUS: REJECT\nFINDINGS:\n- reviewer failed: {result.stderr[:400]}")
+    return "\n\n".join(chunks)
 
 
 def _safe_kind(name: str) -> str:

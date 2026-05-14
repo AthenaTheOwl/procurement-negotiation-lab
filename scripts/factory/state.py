@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS tasks (
@@ -89,7 +90,7 @@ class Event:
 
 
 def now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 class Store:
@@ -170,7 +171,7 @@ class Store:
         sets = ", ".join(f"{key}=?" for key in fields)
         values = list(fields.values()) + [task_id]
         with self._cursor() as cursor:
-            cursor.execute(f"UPDATE tasks SET {sets} WHERE id=?", values)
+            cursor.execute(f"UPDATE tasks SET {sets} WHERE id=?", values)  # noqa: S608
 
     # ---- events --------------------------------------------------------
 

@@ -70,6 +70,36 @@ def test_pipeline_dry_run_completes(tmp_repo: Path, tmp_path: Path) -> None:
         store.close()
 
 
+def test_pipeline_dry_run_records_dual_reviewers(tmp_repo: Path, tmp_path: Path) -> None:
+    task = Task(
+        id="dual-1",
+        title="dual review pipeline",
+        target_repo=str(tmp_repo),
+        goal="check the dual reviewer wiring",
+        base_branch="main",
+        gates=[],
+        review=ReviewSpec(
+            reviewer="stub",
+            reviewers=["stub", "stub"],
+            max_patch_rounds=1,
+        ),
+        pr=PRSpec(open=False),
+        planner="stub",
+        implementer="stub",
+    )
+    store = Store(tmp_path / "factory.db")
+    try:
+        result = run_pipeline(task, store=store, dry_run=True)
+        assert result.ok is True
+        row = store.get_task(task.id)
+        assert row is not None and row.review is not None
+        assert row.review.count("=== reviewer: stub:stub ===") == 2
+        reviews = [event for event in store.events_for(task.id) if event.kind == "review.done"]
+        assert len(reviews) == 2
+    finally:
+        store.close()
+
+
 def test_pipeline_fails_gracefully_when_base_branch_missing(
     tmp_repo: Path, tmp_path: Path
 ) -> None:
