@@ -1,0 +1,20 @@
+import { defineConfig } from "@playwright/test";
+
+const baseURL = process.env.SMOKE_URL ?? "https://procurement-negotiation-lab.vercel.app/";
+
+export default defineConfig({
+  testDir: "./web/e2e",
+  timeout: 30_000,
+  expect: { timeout: 5_000 },
+  fullyParallel: false,
+  retries: process.env.CI ? 2 : 0,
+  reporter: process.env.CI ? "github" : "list",
+  use: {
+    baseURL,
+    actionTimeout: 5_000,
+    navigationTimeout: 10_000,
+    headless: true,
+    viewport: { width: 1280, height: 800 },
+    trace: "retain-on-failure",
+  },
+});

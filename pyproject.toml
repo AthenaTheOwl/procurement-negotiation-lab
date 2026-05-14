@@ -27,12 +27,20 @@ dev = [
     "pytest-cov>=5.0.0",
     "ruff>=0.7.0",
     "types-PyYAML>=6.0.12.20240917",
+    "urllib3>=2.7.0",
 ]
 
 [project.optional-dependencies]
 flopro = [
     # FloPro SDK/ADK are not published to PyPI yet. See docs/flopro.md for
     # local install notes. The hosted app uses the pure-Python ADMM reference.
+]
+factory = [
+    # Optional orchestration and MCP SDKs for the in-repo development factory.
+    # The committed factory has safe fallbacks and does not require these for
+    # normal tests or hosted app deploys.
+    "langgraph>=1.0.0",
+    "mcp>=1.27.1",
 ]
 
 [tool.uv]
@@ -46,6 +54,10 @@ extend-exclude = ["_legacy"]   # reference-only code from the pre-redesign engin
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "S"]
 ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S603", "S607"]
+"scripts/factory/worktree.py" = ["S607"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -61,6 +73,7 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "--cov=src/procurement_lab --cov-report=term-missing"
 
 [build-system]

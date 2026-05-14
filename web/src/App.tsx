@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Hero } from "./components/Hero";
 import { agentById, agentsForSide } from "./data/agents";
@@ -17,10 +17,29 @@ import {
   initialScores,
   labTakeaway,
   makeScenario,
+  multiPartyLedger,
   transferLedger,
 } from "./model/simulation";
-import type { AlgorithmResult, Choice, FrontierPlan, InfoMode, LabScenario, RoundResult, ScoreState, Surface } from "./model/types";
+import type { AlgorithmResult, Choice, FrontierPlan, InfoMode, LabScenario, Participant, RoundResult, ScoreState, SplitRule, Surface } from "./model/types";
 import { ArcSurface } from "./surfaces/ArcSurface";
+import { ReportSurface } from "./surfaces/report/ReportSurface";
+import { deriveParticipants } from "./model/participants";
+import { redactForView, type ViewMode } from "./model/views";
+import { ViewPicker } from "./components/ViewPicker";
+import { ParticipantRoster } from "./components/ParticipantRoster";
+import { MultiPartyTransferTable } from "./components/MultiPartyTransferTable";
+import { RunReportPanel } from "./components/RunReportPanel";
+import { CSVImportPanel } from "./components/CSVImportPanel";
+import { BridgePanel } from "./components/BridgePanel";
+import { ProvenanceBadge } from "./components/ProvenanceBadge";
+import { ScenarioImportExportPanel } from "./components/ScenarioImportExportPanel";
+import { ParticipantBuilder } from "./components/ParticipantBuilder";
+import { SourceGraph } from "./surfaces/arena/SourceGraph";
+import { tag as tagProvenance, mergeProvenance } from "./model/bridges/sourceProvenance";
+import type { RunReport } from "./model/runReportSchema";
+import type { ImportResult } from "./model/bridges/csvImport";
+import type { ChipMapSeed } from "./model/bridges/chipMap";
+import type { EvidenceAttachment } from "./model/bridges/supplierRisk";
 
 type PlayPhase = "briefing" | "reveal" | "finished";
 
@@ -35,6 +54,17 @@ const infoModes: InfoMode[] = [
 
 export default function App() {
   const [surface, setSurface] = useState<Surface>(initialSurface);
+  const reportRouteId = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("report") : null;
+  const reportRouteJson = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("json") : null;
+  if (reportRouteId || reportRouteJson) {
+    return (
+      <div className="app-shell report-shell">
+        <main>
+          <ReportSurface />
+        </main>
+      </div>
+    );
+  }
   return (
     <div className="app-shell">
       <Hero onStartArc={() => setSurface("arc")} onOpenLab={() => setSurface("lab")} onOpenPlay={() => setSurface("play")} />
@@ -293,6 +323,10 @@ function LabSurface() {
   const [scenario, setScenario] = useState<LabScenario>(() => makeScenario());
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [auditMode, setAuditMode] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("coordinator");
+  const [evidence, setEvidence] = useState<EvidenceAttachment | null>(null);
+  const [importSummary, setImportSummary] = useState<ImportResult | null>(null);
+  const [graphOpen, setGraphOpen] = useState(false);
   const runs = useMemo(() => algorithmResults(scenario), [scenario]);
   const info = useMemo(() => informationSweep(scenario), [scenario]);
   const takeaway = useMemo(() => labTakeaway(scenario), [scenario]);
@@ -301,6 +335,13 @@ function LabSurface() {
     [scenario, takeaway.bestMechanism.id],
   );
   const auditRows = useMemo(() => runDecoyAudit(scenario), [scenario]);
+  const participants = useMemo(() => deriveParticipants(scenario), [scenario]);
+  const view = useMemo(() => redactForView(participants, viewMode), [participants, viewMode]);
+  const splitRule: SplitRule = scenario.splitRule ?? "proportional";
+  const multiRows = useMemo(
+    () => multiPartyLedger(scenario, { planUtility: undefined, splitRule }),
+    [scenario, splitRule],
+  );
   const selectedPreset = presetById(scenario.presetId);
   const buyerAgent = agentById(scenario.buyerAgentId);
   const supplierAgent = agentById(scenario.supplierAgentId);
@@ -309,8 +350,83 @@ function LabSurface() {
     frontierData.plans.find((plan) => plan.id === selectedPlanId) ?? frontierData.plans[0];
   const buyerCapacity = effectiveCapacity("buyer", scenario);
   const supplierCapacity = effectiveCapacity("supplier", scenario);
+
+  useEffect(() => {
+    if (viewMode === "coordinator") return;
+    const stillExists = participants.find((p) => p.id === viewMode.participantId);
+    if (!stillExists) setViewMode("coordinator");
+  }, [participants, viewMode]);
+
   function applyPreset(presetId: string) {
-    setScenario(makeScenario({ presetId }));
+    setScenario({ ...makeScenario({ presetId }), provenance: tagProvenance("synthetic") });
+    setSelectedPlanId("");
+    setEvidence(null);
+    setImportSummary(null);
+  }
+
+  function applySplitRule(rule: SplitRule) {
+    setScenario({ ...scenario, splitRule: rule });
+  }
+
+  function applyImport(result: ImportResult) {
+    if (!result.ok || !result.seed) return;
+    setImportSummary(result);
+    setScenario({
+      ...scenario,
+      participantCount: Math.min(8, Math.max(2, result.seed.derivedParticipants.length)),
+      participants: result.seed.derivedParticipants.slice(0, 8),
+      provenance: tagProvenance("csv-imported", {
+        sourceId: `csv-${result.seed.rows.length}-rows`,
+        notes: `CSV import: ${result.seed.rows.length} row(s), ${result.seed.buyerIds.length} buyer(s), ${result.seed.supplierIds.length} supplier(s)`,
+      }),
+    });
+  }
+
+  function applyChipMapSeed(seed: ChipMapSeed) {
+    setScenario({
+      ...scenario,
+      participantCount: Math.min(8, Math.max(2, seed.participants.length)),
+      participants: seed.participants.slice(0, 8),
+      provenance: mergeProvenance(scenario.provenance ?? tagProvenance("synthetic"), seed.provenance),
+    });
+  }
+
+  function applyRiskEvidence(attachment: EvidenceAttachment) {
+    setEvidence(attachment);
+    setScenario({
+      ...scenario,
+      provenance: mergeProvenance(scenario.provenance ?? tagProvenance("synthetic"), attachment.provenance),
+    });
+  }
+
+  function applyParticipantChange(updated: Participant[]) {
+    setScenario({
+      ...scenario,
+      participants: updated.slice(0, 8),
+      participantCount: Math.min(8, Math.max(2, updated.length)),
+    });
+  }
+
+  function applyScenarioLoad(loaded: LabScenario) {
+    setScenario({
+      ...loaded,
+      provenance: loaded.provenance ?? tagProvenance("user-imported"),
+    });
+    setSelectedPlanId("");
+    setEvidence(null);
+    setImportSummary(null);
+  }
+
+  function applyReplay(report: RunReport) {
+    const rebuilt = makeScenario({ ...(report.scenario as Partial<LabScenario>) });
+    setScenario({
+      ...rebuilt,
+      alpha: report.parameters.alpha,
+      epsilon: report.parameters.epsilon,
+      splitRule: report.parameters.splitRule ?? "proportional",
+      provenance: report.provenance ?? rebuilt.provenance ?? tagProvenance("user-imported"),
+    });
+    setAuditMode(report.parameters.auditMode);
     setSelectedPlanId("");
   }
   return (
@@ -327,7 +443,9 @@ function LabSurface() {
       </div>
       <div className="so-what-panel" data-testid="lab-so-what">
         <div>
-          <div className="section-label">{takeaway.title}</div>
+          <div className="section-label">
+            {takeaway.title} <ProvenanceBadge provenance={scenario.provenance} testId="scenario-provenance" />
+          </div>
           <h3>{takeaway.soWhat}</h3>
           <p>
             Selected setup: <strong>{selectedPreset.name}</strong>. {selectedPreset.soWhat}
@@ -337,6 +455,38 @@ function LabSurface() {
           <ExplainedMetric label="Coordination gap" value={money(takeaway.coordinationGap)} help="Value lost when local JIT planning is compared with the centralized oracle." />
           <ExplainedMetric label="Best non-oracle rule" value={best.name} help="Best mechanism in this synthetic run after excluding the all-knowing oracle." />
           <ExplainedMetric label="Info value" value={money(takeaway.informationValue)} help="Gain from full information versus private information under CPP+VCG." />
+        </div>
+      </div>
+      <div className="lab-grid">
+        <div className="control-card">
+          <ViewPicker participants={participants} value={viewMode} onChange={setViewMode} />
+          <ParticipantRoster view={view} />
+          <div className="button-row">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={graphOpen}
+                onChange={(event) => setGraphOpen(event.target.checked)}
+                data-testid="graph-toggle"
+              />
+              Show source graph
+            </label>
+          </div>
+          {graphOpen && (
+            <SourceGraph
+              participants={participants}
+              selectedId={viewMode === "coordinator" ? undefined : viewMode.participantId}
+              onSelect={(id) => {
+                const participant = participants.find((p) => p.id === id);
+                if (!participant) return;
+                if (participant.role === "buyer") setViewMode({ role: "buyer", participantId: id });
+                else setViewMode({ role: "supplier", participantId: id });
+              }}
+            />
+          )}
+        </div>
+        <div className="control-card">
+          <ParticipantBuilder participants={participants} onChange={applyParticipantChange} />
         </div>
       </div>
       <div className="lab-grid">
@@ -504,6 +654,70 @@ function LabSurface() {
           </div>
           {auditMode && <DecoyAuditPanel rows={auditRows} />}
         </div>
+      </div>
+      <div className="lab-grid">
+        <div className="results-card wide">
+          <h3>5a. Multi-party ledger</h3>
+          <p className="muted">
+            When the scenario has more than two participants (CSV import, chip-map bridge,
+            or N-party preset), CBT transfers split across all of them. Try each split rule:
+          </p>
+          <div className="button-row">
+            {(["proportional", "equal", "shapley"] as const).map((rule) => (
+              <button
+                key={rule}
+                className={splitRule === rule ? "view-button active" : "view-button"}
+                onClick={() => applySplitRule(rule)}
+                data-testid={`split-${rule}-btn`}
+              >
+                {rule}
+              </button>
+            ))}
+          </div>
+          <MultiPartyTransferTable rows={multiRows} splitRule={splitRule} />
+        </div>
+      </div>
+      <div className="lab-grid">
+        <CSVImportPanel onSeed={applyImport} />
+        <BridgePanel
+          scenario={scenario}
+          onSeedFromChipMap={applyChipMapSeed}
+          onAttachRiskEvidence={applyRiskEvidence}
+        />
+      </div>
+      {evidence && (
+        <div className="lab-grid">
+          <div className="results-card wide" data-testid="evidence-panel">
+            <h3>9. Attached risk evidence</h3>
+            <p className="muted">
+              Risk score derived from selected chunks: <strong>{evidence.riskScore.toFixed(2)}</strong>
+            </p>
+            <ul>
+              {evidence.excerpts.map((excerpt, idx) => (
+                <li key={idx}>
+                  <strong>{excerpt.company}</strong>
+                  <span className="muted"> · {excerpt.section}</span>
+                  <p>{excerpt.text}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+      {importSummary && importSummary.seed && (
+        <div className="lab-grid">
+          <div className="results-card wide" data-testid="import-summary">
+            <h3>CSV import summary</h3>
+            <p className="muted">
+              {importSummary.seed.rows.length} row(s) parsed · {importSummary.seed.buyerIds.length} buyer(s)
+              · {importSummary.seed.supplierIds.length} supplier(s) · mean price ${importSummary.seed.meanUnitPrice.toFixed(2)}
+            </p>
+          </div>
+        </div>
+      )}
+      <div className="lab-grid">
+        <RunReportPanel scenario={scenario} auditMode={auditMode} onReplay={applyReplay} />
+        <ScenarioImportExportPanel scenario={scenario} onLoad={applyScenarioLoad} />
       </div>
     </section>
   );

@@ -54,6 +54,12 @@ Current active specs:
 - `0008-data-bridges/acceptance.md`
 - `0008-data-bridges/research.md`
 - `0008-data-bridges/traceability.md`
+- `0009-factory-dev-control-plane/requirements.md`
+- `0009-factory-dev-control-plane/design.md`
+- `0009-factory-dev-control-plane/tasks.md`
+- `0009-factory-dev-control-plane/acceptance.md`
+- `0009-factory-dev-control-plane/research.md`
+- `0009-factory-dev-control-plane/traceability.md`
 
 The development loop is:
 

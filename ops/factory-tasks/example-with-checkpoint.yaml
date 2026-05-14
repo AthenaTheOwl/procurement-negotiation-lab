@@ -1,0 +1,38 @@
+id: example-with-checkpoint
+title: "Add a single example test to scripts.factory (with human checkpoints)"
+target_repo: e:/claude_code/random-apps/procurement-negotiation-lab
+base_branch: main
+
+goal: |
+  Add a one-test pytest module at tests/factory/test_sanity_smoke.py that
+  asserts `from scripts.factory.artifacts import ArtifactStore` imports
+  without raising. The test must pass under `python -m uv run pytest
+  tests/factory/test_sanity_smoke.py -q`.
+
+  This is a deliberately tiny task so the checkpoint behavior is the demo,
+  not the diff.
+
+risk: medium
+
+# Pause the pipeline at these points. The human reviews the artifact, then
+# resumes via:
+#   python -m scripts.factory.run --resume example-with-checkpoint --approve
+checkpoints:
+  - plan_review
+  - diff_review
+
+gates:
+  - cmd: python -m uv run pytest tests/factory/test_sanity_smoke.py -q
+    name: pytest-smoke
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 2
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: codex

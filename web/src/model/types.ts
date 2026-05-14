@@ -79,22 +79,69 @@ export interface RoundResult {
   nextScores: ScoreState;
 }
 
+export type ParticipantRole =
+  | "buyer"
+  | "supplier"
+  | "packager"
+  | "logistics"
+  | "distributor"
+  | "coordinator";
+
+export type AgentSide = ParticipantRole | "either";
+
+export interface AgentParameters {
+  urgency: number;
+  flexibility: number;
+  truthfulness: number;
+  privacyPreference: number;
+  riskAversion: number;
+}
+
 export interface AgentArchetype {
   id: string;
-  side: "buyer" | "supplier" | "either";
+  side: AgentSide;
   name: string;
   shortName: string;
   oneLine: string;
   objective: string;
   privateInfo: string;
   strategy: string;
-  parameters: {
-    urgency: number;
-    flexibility: number;
-    truthfulness: number;
-    privacyPreference: number;
-    riskAversion: number;
-  };
+  parameters: AgentParameters;
+}
+
+export interface Participant {
+  id: string;
+  role: ParticipantRole;
+  name: string;
+  strategyId: string;
+  reliability: number;
+  capacity?: number;
+  outsideOption?: number;
+  parameters: AgentParameters;
+}
+
+export type SplitRule = "proportional" | "equal" | "shapley";
+
+export type ProvenanceSource =
+  | "synthetic"
+  | "chip-map"
+  | "supplier-risk-rag"
+  | "user-imported"
+  | "csv-imported";
+
+export interface Citation {
+  source: string;
+  sourceId?: string;
+  span?: string;
+  url?: string;
+}
+
+export interface DataProvenance {
+  source: ProvenanceSource;
+  sourceId?: string;
+  fetchedAt?: string;
+  citations: Citation[];
+  notes?: string;
 }
 
 export interface ScenarioPreset {
@@ -147,6 +194,10 @@ export interface LabScenario {
   buyerReliability: number;
   supplierReliability: number;
   epsilon: number;
+  participants?: Participant[];
+  splitRule?: SplitRule;
+  provenance?: DataProvenance;
+  schemaVersion?: string;
 }
 
 export interface CapacityView {

@@ -1,0 +1,10 @@
+supplier_id,buyer_id,product_id,period,quantity,unit_price,capacity,reliability,outside_option,risk_score,source
+cinder-foundry,northstar,substrate-A,2026-Q1,420,118.50,640,0.92,5100,0.42,internal
+horizon-foundry,northstar,substrate-A,2026-Q1,280,124.00,470,0.88,4700,0.55,internal
+vela-foundry,northstar,substrate-B,2026-Q1,180,142.00,260,0.85,3600,0.66,internal
+cinder-foundry,northstar,substrate-A,2026-Q2,440,117.20,640,0.92,5100,0.42,internal
+horizon-foundry,northstar,substrate-A,2026-Q2,320,121.50,470,0.89,4700,0.55,internal
+vela-foundry,northstar,substrate-B,2026-Q2,200,140.80,260,0.86,3600,0.66,internal
+horizon-foundry,quartz-buyer,substrate-A,2026-Q1,160,127.00,470,0.88,3800,0.55,internal
+ibiden-packager,northstar,substrate-A,2026-Q1,300,180.00,420,0.86,3700,0.6,internal
+ibiden-packager,northstar,substrate-A,2026-Q2,320,178.50,420,0.86,3700,0.6,internal

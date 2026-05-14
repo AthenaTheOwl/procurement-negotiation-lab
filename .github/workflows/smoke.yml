@@ -1,0 +1,50 @@
+name: Playwright smoke
+
+on:
+  schedule:
+    - cron: "0 10 * * 1"
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "URL to smoke-test (overrides SMOKE_URL)"
+        required: false
+        default: "https://procurement-negotiation-lab.vercel.app/"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run smoke
+        env:
+          SMOKE_URL: ${{ github.event.inputs.url || 'https://procurement-negotiation-lab.vercel.app/' }}
+        run: npx playwright test --project=chromium --reporter=github
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+      - name: Open issue on failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `smoke: deployed lab failing (${new Date().toISOString().slice(0, 10)})`,
+              body: `Playwright smoke against ${process.env.SMOKE_URL || 'the default URL'} failed. See artifacts for the trace.`,
+              labels: ["smoke", "maintenance"],
+            });

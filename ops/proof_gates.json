@@ -1,7 +1,7 @@
 {
   "status": "local green",
-  "last_updated": "2026-05-10",
-  "last_pass": "0004-pass-a-d-operational-refinements",
+  "last_updated": "2026-05-14",
+  "last_pass": "0009-factory-dev-control-plane",
   "gates": [
     {"name": "spec-check", "status": "passed", "command": "python -m uv run python scripts/spec_check.py"},
     {"name": "frontend-build", "status": "passed", "command": "npm.cmd run build"},
@@ -15,6 +15,7 @@
     {"name": "0003-pass-a-browser-qa", "status": "passed", "command": "Browser plugin verified hero copy, Bergemann link, and primary CTA to arc; headless Chrome saved ops/qa-evidence/0003-pass-a-hero.png"},
     {"name": "0003-pass-c-formula-engine", "status": "passed", "command": "npm.cmd run build; npm.cmd run test -- --run; npm.cmd run test -- web/src/model/formula.test.ts --run --coverage --coverage.include=web/src/model/formula.ts (formula.ts 90.1% lines); python -m uv run python scripts/spec_check.py; python -m uv run pytest; python -m uv run ruff check .; python -m uv run mypy src; python -m uv run bandit -q -r src; python -m uv run pip-audit; Browser plugin smoke reload on http://127.0.0.1:5173/"},
     {"name": "0003-pass-b-guided-arc", "status": "passed", "command": "npm.cmd run build; npm.cmd run test -- --run; npm.cmd run test -- web/src/model/formula.test.ts --run --coverage --coverage.include=web/src/model/formula.ts; python -m uv run python scripts/spec_check.py; python -m uv run pytest; python -m uv run ruff check .; python -m uv run mypy src; python -m uv run bandit -q -r src; python -m uv run pip-audit; Browser plugin walked #arc through steps 1-8, invalid formula, ADMM oscillation case, and CBT equal split; headless Chrome saved ops/qa-evidence/0003-pass-b-arc.png"},
-    {"name": "0004-pass-a-d-operational-refinements", "status": "passed", "command": "npm.cmd run build; npm.cmd run test -- --run; python -m uv run python scripts/spec_check.py; python -m uv run pytest; python -m uv run ruff check .; python -m uv run mypy src; python -m uv run bandit -q -r src; python -m uv run pip-audit; Browser plugin verified Lab controls/audit and Arc alpha/decoy/frontier additions; screenshots saved under ops/qa-evidence/0004-pass-a-d-*.png"}
+    {"name": "0004-pass-a-d-operational-refinements", "status": "passed", "command": "npm.cmd run build; npm.cmd run test -- --run; python -m uv run python scripts/spec_check.py; python -m uv run pytest; python -m uv run ruff check .; python -m uv run mypy src; python -m uv run bandit -q -r src; python -m uv run pip-audit; Browser plugin verified Lab controls/audit and Arc alpha/decoy/frontier additions; screenshots saved under ops/qa-evidence/0004-pass-a-d-*.png"},
+    {"name": "0009-factory-dev-control-plane", "status": "passed", "command": "python -m uv run pytest tests/factory/; python -m uv run pytest; npx.cmd tsc --noEmit; npm.cmd test -- --run; python scripts/spec_check.py; python -m uv run ruff check scripts tests; Browser QA not applicable (CLI/dev runtime only)"}
   ]
 }

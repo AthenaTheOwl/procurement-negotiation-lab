@@ -1,0 +1,41 @@
+id: example-rename-fc-count
+title: "Rename fulfillmentCenterCount to fcCount across the lab"
+target_repo: e:/claude_code/random-apps/procurement-negotiation-lab
+base_branch: main
+
+goal: |
+  Rename `fulfillmentCenterCount` to `fcCount` in the LabScenario type and
+  every consumer:
+  - web/src/model/types.ts: rename the field on LabScenario
+  - web/src/model/simulation.ts: update the references in mechanismScore
+    and statedCapacity
+  - web/src/model/scenarioSchema.ts: rename in the zod schema
+  - web/src/App.tsx: update the slider label and onChange handler
+  - web/src/data/scenarios.ts: rename in each preset's defaults block
+
+  Do not change the rendered slider label text. Keep the public JSON shape
+  backwards-compatible by accepting the old key during scenario migration.
+
+  Update vitest tests that reference the old name.
+
+risk: low
+
+gates:
+  - cmd: npx tsc --noEmit
+    name: typecheck
+  - cmd: npm test -- --run
+    name: vitest
+  - cmd: python scripts/spec_check.py
+    name: spec_check
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 3
+
+pr:
+  open: false           # keep PRs off by default — flip to true once you trust it
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: codex

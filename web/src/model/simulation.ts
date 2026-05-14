@@ -10,9 +10,15 @@ import type {
   MechanismId,
   RoundResult,
   ScoreState,
+  SplitRule,
   TransferRow,
 } from "./types";
 import { presetById } from "../data/scenarios";
+import { deriveParticipants } from "./participants";
+import {
+  multiPartyTransferLedger,
+  type MultiPartyTransferRow,
+} from "./shapleyTransfer";
 
 export const initialScores: ScoreState = {
   relationship: 0,
@@ -248,7 +254,7 @@ export function informationSweep(base: LabScenario): Array<{
 
 export function transferLedger(
   input: number | LabScenario,
-  options: { alpha?: number; planUtility?: number } = {},
+  options: { alpha?: number; planUtility?: number; splitRule?: SplitRule } = {},
 ): TransferRow[] {
   const scenario = typeof input === "number" ? undefined : input;
   const globalUtility =
@@ -256,6 +262,16 @@ export function transferLedger(
       ? input
       : options.planUtility ?? labTakeaway(input).bestMechanism.globalUtility;
   const alpha = clamp(options.alpha ?? scenario?.alpha ?? 1, 0, 1);
+  if (scenario && (scenario.participants || options.splitRule || (scenario.splitRule && scenario.splitRule !== "proportional"))) {
+    const participants = deriveParticipants(scenario);
+    const rows = multiPartyTransferLedger({
+      participants,
+      globalUtility,
+      alpha,
+      splitRule: options.splitRule ?? scenario.splitRule ?? "proportional",
+    });
+    return rows;
+  }
   const buyerBefore = globalUtility * 0.56;
   const supplierBefore = globalUtility * 0.44;
   const outsideBuyer = 8400;
@@ -281,6 +297,38 @@ export function transferLedger(
       noWorseOff: supplierBefore + supplierTransfer >= outsideSupplier,
     },
   ];
+}
+
+export function multiPartyLedger(
+  scenario: LabScenario,
+  options: { alpha?: number; planUtility?: number; splitRule?: SplitRule } = {},
+): MultiPartyTransferRow[] {
+  const globalUtility =
+    options.planUtility ?? labTakeaway(scenario).bestMechanism.globalUtility;
+  const participants = deriveParticipants(scenario);
+  return multiPartyTransferLedger({
+    participants,
+    globalUtility,
+    alpha: clamp(options.alpha ?? scenario.alpha, 0, 1),
+    splitRule: options.splitRule ?? scenario.splitRule ?? "proportional",
+  });
+}
+
+export function multiPartyWelfare(scenario: LabScenario): {
+  participants: ReturnType<typeof deriveParticipants>;
+  totalOutside: number;
+  globalUtility: number;
+  surplus: number;
+} {
+  const participants = deriveParticipants(scenario);
+  const totalOutside = participants.reduce((sum, p) => sum + (p.outsideOption ?? 0), 0);
+  const globalUtility = labTakeaway(scenario).bestMechanism.globalUtility;
+  return {
+    participants,
+    totalOutside,
+    globalUtility,
+    surplus: globalUtility - totalOutside,
+  };
 }
 
 export function statedCapacity(party: "buyer" | "supplier", scenario: LabScenario): number {
