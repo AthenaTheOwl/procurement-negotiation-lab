@@ -18,3 +18,5 @@ vite-*.log
 vite-*.out.log
 vite-*.err.log
 .gstack/
+ops/factory.db
+ops/factory-artifacts/
