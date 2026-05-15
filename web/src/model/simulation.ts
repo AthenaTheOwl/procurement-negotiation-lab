@@ -147,7 +147,7 @@ export function detectEnding(results: RoundResult[], scores: ScoreState): {
     summary:
       "The parties settle on a credible capacity plan, the transfer ledger can keep both sides no worse off, and the launch has a defensible supply story.",
     lesson:
-      "The best-looking outcome is not perfect certainty. It is enough shared information plus a fair split of the surplus.",
+      "A shippable outcome looks like enough shared information plus a fair split of the surplus, with both sides above their outside options.",
   };
 }
 
@@ -695,7 +695,7 @@ function plainEnglishConsequence(choice: Choice, residual: number, oracleGap: nu
     return "This move hurts joint value. A transfer cannot fix a plan that destroys value before the money is split.";
   }
   if (residual > 170) {
-    return "You and Cinder are still far apart. The next question is not the exact number; it is what information or commitment would make the gap smaller.";
+    return "You and Cinder are still far apart. The next move is to figure out what information or commitment would actually pull the two numbers together.";
   }
   if (oracleGap > 3000) {
     return "The deal is moving, but the all-knowing benchmark says the parties are still leaving value on the table.";
