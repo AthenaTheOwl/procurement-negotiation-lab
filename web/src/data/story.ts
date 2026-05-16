@@ -126,9 +126,9 @@ export const substrateCrunch: Story = {
         "A public filing-style note points to tighter advanced-packaging capacity and longer qualification cycles. Your old forecast assumed smoother supply.",
       decisionPrompt: "How do you use the new risk evidence?",
       supplierPrivate:
-        "Cinder knows the bottleneck is real. They are watching whether you treat risk as shared planning data or as leverage.",
+        "Cinder knows the bottleneck is real. They are watching whether you treat risk as shared planning data or as a bargaining chip.",
       lesson:
-        "Risk evidence is useful only if it changes a decision. It is not a decorative footnote.",
+        "Risk evidence earns its keep when it changes a decision. A footnote that doesn't change the order is decoration.",
       terms: ["risk score", "information mode"],
       choices: [
         {
@@ -180,9 +180,9 @@ export const substrateCrunch: Story = {
         "Your team keeps asking for protection. Cinder keeps pulling quantity back toward a safer reservation. The number is bouncing instead of settling.",
       decisionPrompt: "How do you stabilize the negotiation?",
       supplierPrivate:
-        "Cinder is not refusing the business. They are refusing unlimited uncertainty without a firmer commitment or a transfer.",
+        "Cinder still wants the business. What they are refusing is unlimited uncertainty without a firmer commitment or a transfer to compensate them for carrying it.",
       lesson:
-        "Agreement is not the same as averaging. If the parties cannot settle, the plan is not operational.",
+        "Averaging the asks doesn't produce agreement. If neither side can actually sign, the plan stays on paper instead of becoming an order.",
       terms: ["residual", "ADMM", "CBT"],
       choices: [
         {

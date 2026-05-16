@@ -730,8 +730,9 @@ function StudySurface() {
         <div className="section-label">Tutorial</div>
         <h2>What the simulator is doing, in plain words.</h2>
         <p>
-          This layer is for the math after you have seen the decision. The case
-          is synthetic; the point is mechanism design literacy, not supplier risk scoring.
+          This layer is for the math behind the decision. The case is synthetic;
+          the lab teaches mechanism design literacy, and is not a supplier risk
+          scoring tool.
         </p>
       </div>
       <div className="study-grid">
@@ -747,10 +748,10 @@ function StudySurface() {
           residual means the parties are still talking past each other.
         </TutorialCard>
         <TutorialCard title="3. ADMM and alternatives" term="ADMM">
-          ADMM is not automatically best. It is useful when parties keep local
-          objectives but can exchange coordination signals. The lab compares it
-          with an oracle, alternating best response, price-only coordination, and
-          consensus averaging.
+          ADMM works when parties keep local objectives but can exchange
+          coordination signals. The lab compares it against an oracle, alternating
+          best response, price-only coordination, and consensus averaging so you
+          can see where each one wins or loses on welfare and privacy.
         </TutorialCard>
         <TutorialCard title="4. Information buys value" term="information mode">
           Better shared information can improve joint plans because each side
