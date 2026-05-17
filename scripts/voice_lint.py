@@ -10,6 +10,7 @@ or explicitly allowlisted.
 Per-line allowlist: append `voice_lint:allow <label>` on the same line.
 Multiple labels: `voice_lint:allow label1 label2`. `all` suppresses all rules.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -107,7 +108,10 @@ BANNED_WARN = [
     "in practice",
 ]
 
-NEGATION = r"(?:isn['\u2019]t|aren['\u2019]t|wasn['\u2019]t|weren['\u2019]t|is\s+not|are\s+not|was\s+not|were\s+not)"
+NEGATION = (
+    r"(?:isn['\u2019]t|aren['\u2019]t|wasn['\u2019]t|weren['\u2019]t|"
+    r"is\s+not|are\s+not|was\s+not|were\s+not)"
+)
 RIGHT_COPULA = (
     r"(?:(?:it|they|that|this|there|here)\s+(?:is|are|was|were)"
     r"|(?:it|that|this|there|here)['\u2019]s"
@@ -132,15 +136,43 @@ STRUCTURAL = [
             re.IGNORECASE,
         ),
     ),
-    Rule("FAIL", "the-point-is", re.compile(r"\bthe\s+point\s+(?:is|isn['\u2019]t|is\s+not)\b", re.IGNORECASE)),
-    Rule("FAIL", "not-because-because", re.compile(r"\bnot\s+because\s+[^.!?\n]{1,100}[.!?]\s+because\s+", re.IGNORECASE)),
-    Rule("FAIL", "not-as-as", re.compile(r"\bnot\s+as\s+[^.!?\n]{1,100}[.!?]\s+as\s+", re.IGNORECASE)),
-    Rule("FAIL", "not-just-but", re.compile(r"\bnot\s+(?:just|only|merely|simply)\b[^.!?\n]{1,80}\bbut\b", re.IGNORECASE)),
+    Rule(
+        "FAIL",
+        "the-point-is",
+        re.compile(r"\bthe\s+point\s+(?:is|isn['\u2019]t|is\s+not)\b", re.IGNORECASE),
+    ),
+    Rule(
+        "FAIL",
+        "not-because-because",
+        re.compile(r"\bnot\s+because\s+[^.!?\n]{1,100}[.!?]\s+because\s+", re.IGNORECASE),
+    ),
+    Rule(
+        "FAIL", "not-as-as", re.compile(r"\bnot\s+as\s+[^.!?\n]{1,100}[.!?]\s+as\s+", re.IGNORECASE)
+    ),
+    Rule(
+        "FAIL",
+        "not-just-but",
+        re.compile(r"\bnot\s+(?:just|only|merely|simply)\b[^.!?\n]{1,80}\bbut\b", re.IGNORECASE),
+    ),
     Rule("FAIL", "more-than-just", re.compile(r"\bmore\s+than\s+just\b", re.IGNORECASE)),
     Rule("WARN", "its-about", re.compile(r"\b(?:it['\u2019]s|it\s+is)\s+about\b", re.IGNORECASE)),
     Rule("WARN", "this-is-why", re.compile(r"\bthis\s+is\s+why\b", re.IGNORECASE)),
-    Rule("WARN", "question-is", re.compile(r"\b(?:the\s+)?(?:question|lesson|key|core|move)\s+(?:is|isn['\u2019]t|is\s+not)\b", re.IGNORECASE)),
-    Rule("WARN", "empty-adverbial-opener", re.compile(r"^\s*(?:importantly|notably|ultimately|fundamentally|essentially|in practice),?\b", re.IGNORECASE)),
+    Rule(
+        "WARN",
+        "question-is",
+        re.compile(
+            r"\b(?:the\s+)?(?:question|lesson|key|core|move)\s+(?:is|isn['\u2019]t|is\s+not)\b",
+            re.IGNORECASE,
+        ),
+    ),
+    Rule(
+        "WARN",
+        "empty-adverbial-opener",
+        re.compile(
+            r"^\s*(?:importantly|notably|ultimately|fundamentally|essentially|in practice),?\b",
+            re.IGNORECASE,
+        ),
+    ),
 ]
 
 ALLOWLIST_RE = re.compile(r"voice_lint:allow\s+([A-Za-z0-9\-_ ]+)")
@@ -188,7 +220,9 @@ def rules() -> list[Rule]:
     return out
 
 
-def scan(path: Path, active_rules: list[Rule], filter_label: str | None = None) -> list[tuple[str, int, str, str]]:
+def scan(
+    path: Path, active_rules: list[Rule], filter_label: str | None = None
+) -> list[tuple[str, int, str, str]]:
     offenses: list[tuple[str, int, str, str]] = []
     try:
         text = path.read_text(encoding="utf-8")
@@ -213,7 +247,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="voice_lint", description="voice-tell lint")
     parser.add_argument("--root", type=Path, default=ROOT, help="repo root to scan")
     parser.add_argument("--label", default=None, help="filter output to one label")
-    parser.add_argument("--target", action="append", dest="targets", default=None, help="override TARGETS glob; repeatable")
+    parser.add_argument(
+        "--target",
+        action="append",
+        dest="targets",
+        default=None,
+        help="override TARGETS glob; repeatable",
+    )
     parser.add_argument("--warn-only", action="store_true", help="print findings but exit 0")
     args = parser.parse_args(argv)
 
@@ -225,7 +265,9 @@ def main(argv: list[str] | None = None) -> int:
     warn_total = 0
 
     for file_path in files:
-        for severity, line_no, label, line_text in scan(file_path, rules(), filter_label=args.label):
+        for severity, line_no, label, line_text in scan(
+            file_path, rules(), filter_label=args.label
+        ):
             rel = file_path.relative_to(root).as_posix()
             snippet = line_text if len(line_text) <= 200 else line_text[:200] + "..."
             print(f"{rel}:{line_no}: {severity}: {label} -> {snippet}")
@@ -238,7 +280,9 @@ def main(argv: list[str] | None = None) -> int:
     suffix = f" (filtered by label={args.label!r})" if args.label else ""
     if total:
         print(
-            f"\nvoice-lint: {fail_total} FAIL, {warn_total} WARN across {len(files)} file(s) scanned{suffix}.",
+            "\nvoice-lint: "
+            f"{fail_total} FAIL, {warn_total} WARN across "
+            f"{len(files)} file(s) scanned{suffix}.",
             file=sys.stderr,
         )
         return 0 if args.warn_only else 1
