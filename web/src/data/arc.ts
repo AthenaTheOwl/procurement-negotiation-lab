@@ -27,7 +27,7 @@ export const arcSteps: ArcStep[] = [
     id: "privacy",
     title: "2. Price the cost of privacy",
     thesis:
-      "More information usually improves the plan, but it also exposes bargaining posture. The design question is how much signal a coordination rule needs before the marginal disclosure costs more than the marginal gain.",
+      "More information usually improves the plan, but it also exposes bargaining posture. A coordination rule needs enough signal to move the plan before disclosure costs more than the welfare it creates.",
     labLink: "Use the information-mode sweep in Lab.",
   },
   {

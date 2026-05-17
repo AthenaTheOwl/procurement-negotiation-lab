@@ -20,7 +20,7 @@ export const substrateCrunch: Story = {
       supplierPrivate:
         "Cinder has some room, but not enough for every customer. A vague forecast asks them to hold risk for free.",
       lesson:
-        "Long-lead buying starts before certainty. The first move is a bet about how much uncertainty you and the supplier should carry.",
+        "Long-lead buying starts before certainty. Your first commitment decides how much uncertainty you carry and how much you ask the supplier to absorb.",
       terms: ["long-lead planning", "information mode"],
       choices: [
         {
@@ -182,7 +182,7 @@ export const substrateCrunch: Story = {
       supplierPrivate:
         "Cinder still wants the business. What they are refusing is unlimited uncertainty without a firmer commitment or a transfer to compensate them for carrying it.",
       lesson:
-        "Averaging the asks doesn't produce agreement. If neither side can actually sign, the plan stays on paper instead of becoming an order.",
+        "Averaging the asks doesn't produce agreement. If neither side can sign the result, the plan stays on paper instead of becoming an order.",
       terms: ["residual", "ADMM", "CBT"],
       choices: [
         {
