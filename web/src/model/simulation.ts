@@ -695,7 +695,7 @@ function plainEnglishConsequence(choice: Choice, residual: number, oracleGap: nu
     return "This move hurts joint value. A transfer cannot fix a plan that destroys value before the money is split.";
   }
   if (residual > 170) {
-    return "You and Cinder are still far apart. The next move is to figure out what information or commitment would actually pull the two numbers together.";
+    return "You and Cinder are still far apart. Narrow the gap by choosing the information or commitment that would pull the two numbers together.";
   }
   if (oracleGap > 3000) {
     return "The deal is moving, but the all-knowing benchmark says the parties are still leaving value on the table.";
