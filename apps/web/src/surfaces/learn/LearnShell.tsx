@@ -14,6 +14,9 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { Level01 } from "./Level01";
+import { Level02 } from "./Level02";
+import { Level03 } from "./Level03";
+import { Level04 } from "./Level04";
 import { LevelShell } from "../../primitives/LevelShell";
 import {
   TOTAL_LEVELS,
@@ -76,17 +79,18 @@ export function LearnShell({
     }
   };
 
-  if (level === 1) {
-    return (
-      <Level01
-        progress={progress}
-        onComplete={handleComplete}
-        onJumpTo={handleJumpTo}
-        onOpenHome={onOpenHome}
-        onOpenSandbox={onOpenSandbox}
-      />
-    );
-  }
+  const commonProps = {
+    progress,
+    onComplete: handleComplete,
+    onJumpTo: handleJumpTo,
+    onOpenHome,
+    onOpenSandbox,
+  };
+
+  if (level === 1) return <Level01 {...commonProps} />;
+  if (level === 2) return <Level02 {...commonProps} />;
+  if (level === 3) return <Level03 {...commonProps} />;
+  if (level === 4) return <Level04 {...commonProps} />;
   return (
     <PlaceholderLevel
       level={level}
