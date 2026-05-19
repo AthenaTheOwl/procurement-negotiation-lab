@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test";
 const baseURL = process.env.SMOKE_URL ?? "https://procurement-negotiation-lab.vercel.app/";
 
 export default defineConfig({
-  testDir: "./web/e2e",
+  testDir: "./apps/web/e2e",
   timeout: 30_000,
   expect: { timeout: 5_000 },
   fullyParallel: false,

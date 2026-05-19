@@ -1,39 +1,20 @@
 {
-  "name": "procurement-negotiation-lab",
-  "version": "0.3.0",
+  "name": "procurement-negotiation-lab-monorepo",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host 127.0.0.1",
-    "test": "vitest",
-    "lint": "tsc --noEmit",
-    "smoke": "playwright test",
-    "smoke:install": "playwright install --with-deps chromium"
-  },
-  "dependencies": {
-    "@types/cytoscape": "^3.21.9",
-    "@types/papaparse": "^5.5.2",
-    "@vitejs/plugin-react": "^5.1.2",
-    "acorn": "^8.16.0",
-    "cytoscape": "^3.33.3",
-    "papaparse": "^5.5.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "typescript": "^5.9.3",
-    "vite": "^7.3.0",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.59.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/react": "^18.3.27",
-    "@types/react-dom": "^18.3.7",
-    "@vitest/coverage-v8": "^4.1.5",
-    "jsdom": "^27.3.0",
-    "vitest": "^4.0.16"
+    "dev": "npm run dev --workspace=@lab/web",
+    "build": "npm run build --workspace=@lab/web",
+    "preview": "npm run preview --workspace=@lab/web",
+    "test:engine": "npm run test --workspace=@lab/engine",
+    "test:web": "npm run test --workspace=@lab/web -- --run",
+    "test": "npm run test:engine && npm run test:web",
+    "lint": "npm run lint --workspace=@lab/engine && npm run lint --workspace=@lab/web",
+    "smoke": "npm run smoke --workspace=@lab/web"
   }
 }
