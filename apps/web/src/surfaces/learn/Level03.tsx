@@ -97,10 +97,10 @@ export function Level03({
 
   const sweetZone = SWEET_ZONE.includes(mode);
   const insight = sweetZone
-    ? `Sharing a ${mode === "cost-band" ? "cost" : "forecast"} band recovers most of the joint surplus. Going further raises privacy exposure faster than surplus rises.`
+    ? `Sharing a ${mode === "cost-band" ? "cost" : "forecast"} band recovers most of the joint surplus while parties keep their detailed costs hidden. Going further requires disclosing more than the marginal welfare gain justifies.`
     : mode === "full-oracle"
-      ? "Full sharing recovers the most surplus, but both parties feel exposed."
-      : "With this little shared, the supplier can't plan well — surplus stays low.";
+      ? "Full disclosure recovers the most surplus. It also requires each side to hand over its full cost and capacity profile to a coordinator they trust to keep them honest."
+      : "With this little shared, the supplier can't plan well — surplus stays low. The info mode caps what each side has agreed to expose; the mechanism (next level) decides how to use it.";
 
   return (
     <LevelShell

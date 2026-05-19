@@ -219,3 +219,42 @@ export {
   splitOutcome,
 } from "./learn/split";
 export type { SplitConfig, SplitPoint } from "./learn/split";
+export {
+  COMMITMENT_KINDS,
+  DEFAULT_MULTI_PERIOD_CONFIG,
+  SHORTFALL_PENALTY,
+  applyPreset,
+  defaultMultiPeriodPlan,
+  evaluateMultiPeriodPlan,
+  optimalMultiPeriodPlan,
+  optimalQuantityForWeek,
+} from "./learn/multiPeriod";
+export type {
+  CommitmentKind,
+  MultiPeriodConfig,
+  MultiPeriodPreset,
+  MultiPeriodResult,
+  WeekPlan,
+  WeekResult,
+} from "./learn/multiPeriod";
+export {
+  SHARE_VERSION,
+  decodeParticipant,
+  encodeParticipant,
+} from "./learn/shareEncoder";
+export type { SharedParticipant } from "./learn/shareEncoder";
+export {
+  appendRound,
+  applyAccept,
+  decodeSession,
+  encodeSession,
+  isDealClosed,
+  latestOfferFor,
+  newSession,
+} from "./learn/negotiationSession";
+export type {
+  NegotiationRole,
+  NegotiationState,
+  Offer,
+  RoundRecord,
+} from "./learn/negotiationSession";

@@ -223,11 +223,17 @@ export function Level05({
 
         {completedAll && (
           <div style={reveal} role="status" data-testid="level5-reveal">
-            Different rules trade welfare, privacy, and speed. Oracle is
-            fastest but exposes everything. ADMM keeps cost-band privacy at
-            comparable surplus. VCG transfers buy you incentive
-            compatibility — truthful reporting becomes the dominant
-            strategy.
+            Different rules trade welfare, privacy, and speed. The oracle
+            needs each side's full cost and capacity profile to find the
+            optimum. ADMM only exchanges local decisions and a coordinator
+            price each iteration; no party reveals its full utility
+            function. CPP+VCG adds a transfer computed from those same
+            ADMM iterates, which makes truthful reporting the dominant
+            strategy without requiring sealed-bid type disclosure. Cheaper
+            protocols (price-only, consensus averaging) leak even less,
+            but they lose strategy-proofness and converge to lower
+            welfare. The frontier is privacy traded against incentive
+            compatibility.
           </div>
         )}
       </div>

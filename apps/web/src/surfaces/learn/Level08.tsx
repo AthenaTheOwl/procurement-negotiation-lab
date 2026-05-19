@@ -4,16 +4,18 @@
  * Graduation level. The user picks a role, edits a utility formula
  * with sandboxed variables, and watches a live surplus bar respond.
  * When they've touched the formula or any parameter, a graduation
- * card appears with an "Open Sandbox" button.
+ * card appears with a "Continue → Level 9" button.
  *
  * Spec: specs/0010-pedagogical-redesign/levels/08.md
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import {
   FormulaError,
   compileFormula,
+  decodeParticipant,
+  encodeParticipant,
   strategiesForRole,
   type AgentParameters,
   type ParticipantRole,
@@ -100,6 +102,41 @@ export function Level08({
   const [editedFormula, setEditedFormula] = useState(false);
   const [editedParams, setEditedParams] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  // If the URL carries ?p=<encoded>, decode it once on mount and
+  // hydrate the level state. Tampered or stale payloads return null
+  // and are ignored.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get("p");
+    if (!encoded) return;
+    const decoded = decodeParticipant(encoded);
+    if (!decoded) return;
+    setRole(decoded.role);
+    setFormula(decoded.formula);
+    setParams(decoded.params);
+    setEditedFormula(true);
+    setEditedParams(true);
+  }, []);
+
+  const handleShare = async () => {
+    if (typeof window === "undefined") return;
+    const encoded = encodeParticipant({ role, formula, params });
+    const url = `${window.location.origin}${window.location.pathname}?p=${encoded}#/learn/8`;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        window.setTimeout(() => setShareCopied(false), 2000);
+      } else {
+        window.prompt("Share this URL", url);
+      }
+    } catch {
+      window.prompt("Share this URL", url);
+    }
+  };
 
   // re-pin formula & params when the user switches role.
   const handleRoleChange = (next: ParticipantRole) => {
@@ -184,7 +221,6 @@ export function Level08({
   const handleContinue = () => {
     if (graduated) {
       onComplete();
-      onOpenSandbox?.();
     }
   };
 
@@ -274,8 +310,8 @@ export function Level08({
       total={TOTAL_LEVELS}
       completedThrough={progress.highest_completed}
       title="Author your own"
-      stakes="Build a participant. Pick a role, edit the formula, see what surplus your design produces."
-      continueLabel="Open Sandbox →"
+      stakes="Build a participant. Pick a role, edit the formula, see what surplus your design produces. Next level: take it to a 12-week commitment schedule."
+      continueLabel="Continue → Level 9"
       continueDisabled={!graduated}
       onContinue={handleContinue}
       onJumpTo={onJumpTo}
@@ -337,6 +373,33 @@ export function Level08({
               {evalResult.error}
             </div>
           )}
+          <div
+            style={{
+              display: "flex",
+              gap: "var(--space-2, 8px)",
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              type="button"
+              onClick={handleShare}
+              data-testid="share-participant"
+              style={{
+                background: shareCopied
+                  ? "var(--surplus-good, #1bb676)"
+                  : "var(--role-coordinator, #6d54ff)",
+                color: "white",
+                border: 0,
+                padding: "var(--space-2, 8px) var(--space-4, 16px)",
+                borderRadius: "var(--radius-pill, 999px)",
+                fontSize: "var(--type-1, 0.85rem)",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              {shareCopied ? "URL copied!" : "Share this participant"}
+            </button>
+          </div>
           <div style={hint}>
             You can edit the formula. The lab parses what you write; if
             anything is wrong it shows you the message above. Variables
@@ -426,16 +489,17 @@ export function Level08({
 
         {graduated && (
           <div style={graduation} data-testid="graduation-card" role="status">
-            <strong>You've built a participant.</strong> The Sandbox has the
-            full toolkit — multiple parties, scenario import, run reports,
-            dual-review. Continue when ready.
+            <strong>You've built a participant.</strong> One screen, one
+            week. The next level scales the same participant across a
+            12-week commitment schedule, where firm, soft, and forecast
+            promises each carry different costs.
             <button
               type="button"
               style={graduationBtn}
               onClick={handleContinue}
               data-testid="open-sandbox"
             >
-              Open Sandbox →
+              Continue → Level 9
             </button>
           </div>
         )}

@@ -131,7 +131,7 @@ export function Level03({
         renderValue={(v) => String(v)}
         predictionLabel="your guess"
         truthLabel="the sweet zone"
-        insight={`Sharing a cost or forecast band recovers most of the joint surplus. Recovered at current stop: ${Math.round(recoveredPortion * 100)}% of the full-oracle peak.`}
+        insight={`Sharing a cost or forecast band recovers most of the joint surplus while parties keep their detailed cost and capacity profiles hidden. The info mode caps what each side has agreed to expose; the mechanism (next level) decides how to use it. Recovered at current stop: ${Math.round(recoveredPortion * 100)}% of the full-oracle peak.`}
         revealLabel="Reveal the sweet zone"
         onReveal={() => setRevealed(true)}
         disabled={visited.size < 3}

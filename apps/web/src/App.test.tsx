@@ -37,6 +37,11 @@ describe("App router", () => {
     expect(parseRoute()).toEqual({ kind: "sandbox" });
   });
 
+  it("parseRoute returns negotiate for #/negotiate", () => {
+    setLocation("#/negotiate");
+    expect(parseRoute()).toEqual({ kind: "negotiate" });
+  });
+
   it('parseRoute treats legacy "#arc" / "#play" / "#lab" / "#study" as sandbox', () => {
     for (const legacy of ["#arc", "#play", "#lab", "#study"]) {
       setLocation(legacy);

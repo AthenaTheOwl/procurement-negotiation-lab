@@ -13,6 +13,7 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { HomeSurface } from "./surfaces/home/HomeSurface";
 import { LearnShell } from "./surfaces/learn/LearnShell";
+import { NegotiateSurface } from "./surfaces/negotiate/NegotiateSurface";
 import { TOTAL_LEVELS, type LevelId } from "./state/learnProgress";
 
 // Heavy surfaces are lazy-loaded so the home + learn routes don't pull
@@ -30,6 +31,7 @@ type Route =
   | { kind: "home" }
   | { kind: "learn"; level: LevelId }
   | { kind: "sandbox" }
+  | { kind: "negotiate" }
   | { kind: "report" };
 
 function parseRoute(): Route {
@@ -41,6 +43,7 @@ function parseRoute(): Route {
   const hash = window.location.hash.replace(/^#\/?/, "").trim();
   if (hash === "" || hash === "home") return { kind: "home" };
   if (hash === "sandbox") return { kind: "sandbox" };
+  if (hash === "negotiate") return { kind: "negotiate" };
   const learnMatch = hash.match(/^learn\/(\d+)$/);
   if (learnMatch) {
     const level = Number(learnMatch[1]);
@@ -85,6 +88,10 @@ export default function App() {
     setHash("#/sandbox");
     setRoute({ kind: "sandbox" });
   }, []);
+  const goNegotiate = useCallback(() => {
+    setHash("#/negotiate");
+    setRoute({ kind: "negotiate" });
+  }, []);
   const goLearn = useCallback((level: number) => {
     const safeLevel = (Math.max(1, Math.min(TOTAL_LEVELS, level)) as LevelId);
     setHash(`#/learn/${safeLevel}`);
@@ -108,6 +115,7 @@ export default function App() {
       <HomeSurface
         onStartPlaying={(level) => goLearn(level)}
         onOpenSandbox={goSandbox}
+        onOpenNegotiate={goNegotiate}
       />
     );
   }
@@ -121,6 +129,10 @@ export default function App() {
         onOpenSandbox={goSandbox}
       />
     );
+  }
+
+  if (route.kind === "negotiate") {
+    return <NegotiateSurface onOpenHome={goHome} />;
   }
 
   // sandbox
