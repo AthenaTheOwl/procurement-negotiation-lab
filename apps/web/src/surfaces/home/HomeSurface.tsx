@@ -16,21 +16,27 @@ import {
   loadProgress,
   type LearnProgress,
 } from "../../state/learnProgress";
+import { loadStreak, touchStreak, type Streak } from "../../state/streak";
 
 export interface HomeSurfaceProps {
   onStartPlaying: (level: number) => void;
   onOpenSandbox: () => void;
+  onOpenNegotiate?: () => void;
 }
 
 export function HomeSurface({
   onStartPlaying,
   onOpenSandbox,
+  onOpenNegotiate,
 }: HomeSurfaceProps) {
   const [progress, setProgress] = useState<LearnProgress>(() => loadProgress());
+  const [streak, setStreak] = useState<Streak>(() => loadStreak());
 
-  // Live-reload on mount in case another tab updated localStorage.
+  // Live-reload on mount in case another tab updated localStorage,
+  // and stamp today's visit into the streak.
   useEffect(() => {
     setProgress(loadProgress());
+    setStreak(touchStreak());
   }, []);
 
   const hasProgress = progress.highest_completed > 0;
@@ -164,7 +170,7 @@ export function HomeSurface({
           A small lab for mechanism design — built one screen at a time.
         </h1>
         <p style={subtitle}>
-          Walk through eight short levels and end up with the intuition to
+          Walk through nine short levels and end up with the intuition to
           build your own utility formulas in the Sandbox.
         </p>
 
@@ -174,6 +180,30 @@ export function HomeSurface({
             total={TOTAL_LEVELS}
             completedThrough={progress.highest_completed}
           />
+        )}
+
+        {streak.current > 0 && (
+          <div
+            data-testid="streak-badge"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "var(--space-2, 8px)",
+              background: "var(--neutral-bg-2, #ffffff)",
+              border: "1px solid var(--neutral-line, #e3e3df)",
+              borderRadius: "var(--radius-pill, 999px)",
+              padding: "var(--space-2, 8px) var(--space-4, 16px)",
+              fontSize: "var(--type-2, 1rem)",
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            <strong>{streak.current}</strong>-day streak
+            {streak.longest > streak.current && (
+              <span style={{ color: "var(--neutral-fg-soft, #5b5b62)" }}>
+                · longest {streak.longest}
+              </span>
+            )}
+          </div>
         )}
 
         <div style={ctaRow}>
@@ -203,6 +233,16 @@ export function HomeSurface({
           >
             Open Sandbox
           </button>
+          {onOpenNegotiate && (
+            <button
+              type="button"
+              style={ghostBtn}
+              onClick={onOpenNegotiate}
+              data-testid="home-negotiate-cta"
+            >
+              Negotiate with a partner
+            </button>
+          )}
         </div>
 
         {hasProgress && (

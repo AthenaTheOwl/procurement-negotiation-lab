@@ -8,11 +8,22 @@
  * Spec: specs/0010-pedagogical-redesign/levels/07.md
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
-import { makeScenario, runDecoyAudit } from "@lab/engine";
+import {
+  fetchRiskCorpus,
+  makeScenario,
+  runDecoyAudit,
+  type RiskChunk,
+} from "@lab/engine";
 import { LevelShell } from "../../primitives/LevelShell";
 import { TOTAL_LEVELS, type LearnProgress } from "../../state/learnProgress";
+
+type EvidenceState =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | { kind: "ok"; chunks: RiskChunk[] }
+  | { kind: "error"; message: string };
 
 export interface Level07Props {
   progress: LearnProgress;
@@ -46,6 +57,23 @@ export function Level07({
 
   const [honest, setHonest] = useState(false);
   const [toggled, setToggled] = useState(false);
+  const [evidenceOn, setEvidenceOn] = useState(false);
+  const [evidence, setEvidence] = useState<EvidenceState>({ kind: "idle" });
+
+  useEffect(() => {
+    if (!evidenceOn || evidence.kind === "ok" || evidence.kind === "loading") return;
+    setEvidence({ kind: "loading" });
+    fetchRiskCorpus()
+      .then((corpus) =>
+        setEvidence({ kind: "ok", chunks: corpus.chunks.slice(0, 3) }),
+      )
+      .catch((err) =>
+        setEvidence({
+          kind: "error",
+          message: err instanceof Error ? err.message : String(err),
+        }),
+      );
+  }, [evidenceOn, evidence.kind]);
 
   const rows = honest ? honestRows : dishonestRows;
   const matched = rows.filter((r) => r.match).length;
@@ -180,6 +208,98 @@ export function Level07({
             );
           })}
         </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-3, 12px)",
+            justifyContent: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontSize: "var(--type-2, 1rem)" }}>
+            Live RAG evidence from supplier-risk-rag-agent
+          </span>
+          <button
+            type="button"
+            onClick={() => setEvidenceOn((on) => !on)}
+            aria-pressed={evidenceOn}
+            data-testid="evidence-toggle"
+            style={{
+              background: evidenceOn
+                ? "var(--role-coordinator, #6d54ff)"
+                : "var(--neutral-line, #e3e3df)",
+              color: evidenceOn ? "white" : "var(--neutral-fg, #1c1c1f)",
+              border: 0,
+              padding: "var(--space-2, 8px) var(--space-5, 24px)",
+              borderRadius: "var(--radius-pill, 999px)",
+              fontSize: "var(--type-2, 1rem)",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {evidenceOn ? "ON" : "OFF"}
+          </button>
+        </div>
+        {evidenceOn && (
+          <div data-testid="evidence-panel" style={list}>
+            {evidence.kind === "loading" && (
+              <div style={{ color: "var(--neutral-fg-soft, #5b5b62)" }}>
+                Fetching live filing excerpts from supplier-risk-rag-agent…
+              </div>
+            )}
+            {evidence.kind === "error" && (
+              <div
+                style={{ color: "var(--surplus-lost, #d24a4a)" }}
+                data-testid="evidence-error"
+              >
+                Live evidence unavailable: {evidence.message}. The decoy
+                audit above still runs locally.
+              </div>
+            )}
+            {evidence.kind === "ok" &&
+              evidence.chunks.map((chunk, idx) => (
+                <div
+                  key={idx}
+                  data-testid={`evidence-${idx}`}
+                  style={{
+                    background: "var(--neutral-bg, #f7f7f4)",
+                    borderLeft:
+                      "4px solid var(--role-coordinator, #6d54ff)",
+                    borderRadius: "var(--radius-tile, 12px)",
+                    padding:
+                      "var(--space-3, 12px) var(--space-4, 16px)",
+                  }}
+                >
+                  <div style={{ fontWeight: 600 }}>
+                    {chunk.company ?? chunk.ticker ?? "supplier"}
+                    {chunk.section ? ` · ${chunk.section}` : ""}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "var(--type-1, 0.85rem)",
+                      color: "var(--neutral-fg-soft, #5b5b62)",
+                      marginTop: "var(--space-1, 4px)",
+                    }}
+                  >
+                    {chunk.text.slice(0, 320)}
+                    {chunk.text.length > 320 ? "…" : ""}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "var(--type-1, 0.85rem)",
+                      color: "var(--neutral-fg-soft, #5b5b62)",
+                      marginTop: "var(--space-1, 4px)",
+                    }}
+                  >
+                    accession: {chunk.accession ?? "—"} · cik:{" "}
+                    {chunk.cik ?? "—"}
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
 
         {toggled && (
           <div style={reveal} role="status" data-testid="level7-reveal">

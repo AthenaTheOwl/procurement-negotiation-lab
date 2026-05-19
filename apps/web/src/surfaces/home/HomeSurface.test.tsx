@@ -7,14 +7,17 @@ import {
   emptyProgress,
   saveProgress,
 } from "../../state/learnProgress";
+import { clearStreak } from "../../state/streak";
 
 beforeEach(() => {
   clearProgress();
+  clearStreak();
 });
 
 afterEach(() => {
   cleanup();
   clearProgress();
+  clearStreak();
 });
 
 describe("HomeSurface", () => {
@@ -94,5 +97,11 @@ describe("HomeSurface", () => {
     fireEvent.click(screen.getByTestId("home-sandbox-link"));
     fireEvent.click(screen.getByTestId("home-sandbox-cta"));
     expect(onOpenSandbox).toHaveBeenCalledTimes(2);
+  });
+
+  it("mounts a 1-day streak badge on first visit", () => {
+    render(<HomeSurface onStartPlaying={() => {}} onOpenSandbox={() => {}} />);
+    const badge = screen.getByTestId("streak-badge");
+    expect(badge.textContent).toMatch(/1.*day streak/i);
   });
 });

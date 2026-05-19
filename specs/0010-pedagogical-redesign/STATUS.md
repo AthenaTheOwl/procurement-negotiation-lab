@@ -1,13 +1,10 @@
 # spec 0010 — pedagogical redesign + mobile · status report
 
 **Date**: 2026-05-19
-**Branch**: `spec/0010-phase-2-primitives-level1` (stacked, contains
-phases 1 through 7)
+**Branch**: `main` (phases 0–7 merged + bonus phase 8 features stacked)
 **Author**: Claude Opus 4.7
 
 ## What this run delivered
-
-A complete redesign of `procurement-negotiation-lab` per spec 0010:
 
 | Phase | Scope | State |
 |-------|-------|-------|
@@ -18,10 +15,56 @@ A complete redesign of `procurement-negotiation-lab` per spec 0010:
 | 4 | Levels 5–7 web + ConvergenceAnimation + SplitRuleToggle | shipped & pushed |
 | 5 | Level 8 capstone + Sandbox bridge | shipped & pushed |
 | 6+7 | Mobile scaffold + Home + all 8 levels + Sandbox stub | shipped & pushed |
+| 8 (bonus) | Level 9 multi-period · RAG bridge · chip-map bridge · save & share · streak · negotiate surface | shipped & pushed |
 
-All code on the feature branch `spec/0010-phase-2-primitives-level1`
-(which intentionally accumulates phase 1 through 7 to keep history
-linear). Ready for a single PR review.
+All code lives on `main`. No long-lived feature branches.
+
+## Phase 8 (bonus) — features added in the cleanup-and-expand pass
+
+- **Level 9 — Multi-period commitment workbench** (web + mobile). A 12-week
+  schedule with editable q, commitment kind (firm/soft/forecast), and
+  forecast confidence per week. Closed-form optimum + four presets
+  (default, all-firm, drop-far-weeks, snap-to-optimum). Engine helper:
+  `packages/engine/src/learn/multiPeriod.ts` (13 tests).
+- **Live RAG bridge in Level 7** — toggle pulls live filing excerpts
+  from `supplier-risk-rag-agent` via the existing `fetchRiskCorpus`
+  bridge, renders top-3 cited chunks with accession + CIK. Friendly
+  error path when the fetch fails.
+- **Live chip-map bridge in Level 6** — toggle fetches
+  `chip-supply-chain-map` nodes, averages packager-node chokepoint
+  scores, and resets the capacity slider to `(1 - chokepoint) * 100%`.
+- **Save & share Level 8 participant** — encode role + formula +
+  params into a base64url URL fragment. Visit `/?p=<...>#/learn/8`
+  and the level hydrates from the URL. Tampered payloads return null.
+  Engine helper: `packages/engine/src/learn/shareEncoder.ts` (7 tests).
+- **Daily streak counter on Home** — localStorage-backed, lazy-decays
+  to 0 after a 2+ day gap. Engine helper:
+  `apps/web/src/state/streak.ts` (8 tests).
+- **Negotiate-with-a-partner surface** — new route `#/negotiate`,
+  two-party turn-based negotiation that encodes session state in a
+  URL (`?n=<base64>`) and uses BroadcastChannel for same-machine
+  multi-tab real-time sync. Engine helper:
+  `packages/engine/src/learn/negotiationSession.ts` (9 tests).
+- **Privacy claim tightening in Levels 3 + 5** — Level 5's reveal blurb
+  now correctly compares mechanisms by what they exchange (full types
+  vs ADMM iterates vs prices vs averaged proposals) instead of
+  claiming "ADMM is private" without nuance.
+
+## Cross-portfolio work in the same pass
+
+- **Flagship demo flipped** to procurement-negotiation-lab.
+  - `athena-site` now renders `ProcurementLabEmbed` above the door
+    grid and demotes the chip-map embed to "featured demo".
+  - `athena-site/src/content/doors.json` updated for N°11 and N°17.
+  - `athena-site/src/components/Hero.astro` names the lab as the
+    current build with a link to the live URL.
+  - `AthenaTheOwl-profile/README.md` moves the lab to the top of the
+    `// active` section with a flagship label.
+- **DEPLOY.md added to three Streamlit-ready repos:**
+  - `Robust-Facility-Location/DEPLOY.md`
+  - `semiconductor-e2e-manufacturing-optimization/DEPLOY.md`
+  - `world-food-program-robust-simulator/DEPLOY.md`
+  Each documents the one-time Streamlit Community Cloud connect flow.
 
 ## What is verified to work
 
@@ -29,153 +72,131 @@ Run on Windows 10 / Python 3.11 / Node 20 / Xpress Community.
 
 | Check | Command | Result |
 |-------|---------|--------|
-| voice_lint | `python scripts/voice_lint.py` | clean (70 files) |
+| voice_lint | `python scripts/voice_lint.py` | clean (75 files) |
 | spec_check | `python scripts/spec_check.py` | OK |
 | pytest (factory + engine) | `python -m uv run pytest tests/` | 92 / 92 |
-| vitest web | `npm run test:web` | 149 / 149 |
-| vitest engine | `npm run test:engine` | 156 / 156 |
+| vitest web | `npm run test:web` | 179 / 179 |
+| vitest engine | `npm run test:engine` | 185 / 185 |
 | tsc web | `npx tsc --noEmit -p apps/web/tsconfig.json` | clean |
 | tsc engine | `npx tsc --noEmit -p packages/engine/tsconfig.json` | clean |
-| Production build | `npm run build` | clean (177 modules) |
+| Production build | `npm run build` | clean (182 modules) |
 
-Total: **305 unit/integration tests passing.**
+Total: **456 unit/integration tests passing** (92 pytest + 179 web
+vitest + 185 engine vitest).
 
-The production build also confirms that React.lazy split worked — the
-legacy Sandbox is now its own 82kb chunk and cytoscape is a 442kb
-chunk, neither loaded on the home or learn routes.
+The Vercel deploy of `procurement-negotiation-lab` was failing on
+`error TS2688: Cannot find type definition file for 'react-native'`
+because the monorepo-hoisted `@types/react-native` (a mobile devDep)
+was being included implicitly in the web TS program. Fixed by setting
+`"types": []` in `apps/web/tsconfig.json`. Next push triggers a clean
+production deploy.
 
 ## What is NOT verified (honest log)
 
 ### iOS Simulator / physical device
 
 **Not run.** Windows hosts cannot launch the iOS Simulator. The mobile
-code is type-correct against the React Native API and uses standard
-Expo packages (`react-native-svg`, `@react-native-async-storage`,
-`expo-status-bar`); a Mac or cloud-build runner can build it once.
+code is type-correct against the React Native API; a Mac or cloud
+build runner can build it.
 
 ### EAS Build
 
-**Not run.** Requires a logged-in EAS account. `eas.json` is
-configured for `development`, `preview`, and `production` profiles
-ready to run as soon as `eas login` is done.
+**Not run.** Requires `eas login`. `eas.json` is configured.
 
 ### Mobile vitest / jest-expo
 
-**Not run.** Running `apps/mobile/src/state/learnProgress.test.ts`
-and `apps/mobile/src/theme/tokens.test.ts` needs `npm install` to
-pull `jest-expo`, `expo`, `react-native`, etc. (~400 MB and
-native-module compile steps). The test files are correct shape;
-running them is a one-command follow-up.
+**Not run.** Requires `cd apps/mobile && npm install` (~400 MB Expo
+toolchain). Test files exist and follow jest-expo conventions.
 
-To run them after install:
-```bash
-cd apps/mobile
-npm install
-npm test
-```
+### Streamlit Community Cloud deploys
 
-### Vercel deploy verification
+**Not triggered.** Requires user-account browser auth at
+share.streamlit.io. The three repos are ready to deploy in 3 clicks
+each per their `DEPLOY.md`.
 
-**Not re-checked here.** The web app builds, but the *deployed* URL
-behind the Vercel hook is not pinged in this run. The production
-build artifact is in `apps/web/dist/`; pushing the branch triggers
-Vercel's preview deploy automatically.
+### Stryker mutation testing
 
-### Mutation testing (Stryker)
-
-**Not configured.** The spec mentioned Stryker as part of the
-"common test types" sweep. Not added in this run — it would gate
-behind a separate `stryker.conf.js` and a longer CI run. The
-existing vitest coverage gives 305 tests as the safety net; mutation
-testing on top is incremental.
-
-### Chaos testing
-
-**Not implemented.** I treated "chaos" as out of scope for an 8-level
-walkthrough — the engine functions are pure, the levels are
-deterministic, and chaos at the integration layer (e.g. random
-network failures during a deploy) doesn't have a meaningful surface
-here. If the user wants property-based fuzzing of `compileFormula` or
-`runDecoyAudit`, that's a focused add and is easy to graft on with
-fast-check.
+**Not configured.** 456 tests give the safety net; mutation testing on
+top is incremental.
 
 ### Playwright e2e
 
-**Not updated.** `playwright.config.ts` exists with `testDir:
-"./apps/web/e2e"` from the Phase 1 monorepo restructure, but the e2e
-suite was not exercised. The web app's vitest suite covers
-component-level behavior for every level; running Playwright against
-the deployed Vercel URL is a deploy-time check.
+**Not exercised.** vitest covers component-level behavior for every
+level. Deploy-time check belongs against the live Vercel URL.
 
-### Live RAG bridge / live chip-map bridge
+## Notable design choices and trade-offs from this pass
 
-**Not touched** — these are deferred bridges from spec 0008/0009 and
-out of scope for spec 0010.
+### Privacy claims actually got more honest
 
-## Notable design choices and trade-offs
+ADMM-vs-VCG-vs-oracle messaging in Level 5 used to claim "ADMM keeps
+cost-band privacy at comparable surplus" — true but vague. The new
+copy names what each mechanism *exchanges*: full types (oracle and
+sealed VCG) vs ADMM iterates + coordinator price (CPP-VCG) vs prices
+only (price-only) vs plan proposals (consensus-averaging). The user's
+question about "is ADMM actually private" is now answered correctly
+in the lab itself: ADMM's privacy advantage is over oracle/sealed-VCG,
+not over cheaper protocols.
 
-### Lazy loading of heavy surfaces
+### Bridges fail gracefully
 
-`apps/web/src/App.tsx` uses `React.lazy` for SandboxApp and
-ReportSurface. This kept the home/learn routes from pulling cytoscape
-into their bundles and also fixed a jsdom worker crash that hit
-during the full vitest run.
+The Level 6 chip-map toggle and Level 7 RAG-evidence toggle both
+fetch over plain HTTPS to raw GitHub URLs. If the fetch fails (404,
+CORS, network), the toggle surfaces a friendly "live <X> unavailable:
+<reason>" message and the local logic keeps working. No crash, no
+hung promise.
 
-### Vitest 4 pool config migration
+### Two-browser negotiate is server-less by design
 
-Vitest 4 moved `poolOptions` to top-level. The Phase 2 commit
-encountered the old shape and silently failed one worker; Phase 2
-also fixed it (`pool: "forks", isolate: true`).
+The negotiate surface uses three layers: URL encoding (always works),
+BroadcastChannel (same-machine tab sync), and sessionStorage (role
+preference). No backend. The trade-off: cross-machine sync requires
+manual URL exchange, not real-time push. Adding push is one Vercel
+serverless function + an eventsource away when usage justifies it.
 
-### Q-default optimum is q=500, not q=425
+### Multi-period optimum is closed-form, not solver-driven
 
-The default-scenario joint optimum sits at q=500 (supplier's
-overcapacity penalty is modest until q exceeds ~700). Storyboard
-comments in `levels/02.md` say "around q ≈ 425" — the level itself
-tolerates ±25 and shows the real optimum at reveal time, so the
-narrative still lands. Worth updating the storyboard if you want
-tight alignment.
+Level 9's "snap to optimum" runs `q = demandMean * forecastConfidence`
+per week — provably optimal under the level's piecewise-linear utility
+model. No CVXPY / Xpress dependency in the browser bundle.
 
-### Mobile knobs are +/- not slider
+## End-of-pass file map
 
-The mobile QuantityKnob uses discrete +/- buttons rather than a
-continuous slider. Real slider drag needs
-`@react-native-community/slider` or a PanResponder primitive; v1
-keeps the install lean. UX is identical (discrete steps).
+```
+NEW (engine, all with tests):
+  packages/engine/src/learn/multiPeriod.ts             (13 tests)
+  packages/engine/src/learn/shareEncoder.ts            (7 tests)
+  packages/engine/src/learn/negotiationSession.ts      (9 tests)
 
-### Mobile Sandbox is a redirect
+NEW (web):
+  apps/web/src/surfaces/learn/Level09.tsx              (7 tests)
+  apps/web/src/surfaces/negotiate/NegotiateSurface.tsx (7 tests)
+  apps/web/src/state/streak.ts                         (8 tests)
+  apps/web/src/components/ProcurementLabEmbed.astro    (in athena-site)
 
-The legacy SandboxApp pulls cytoscape + Acorn + ~1000 lines of
-component tree. Rather than half-port it, the mobile Sandbox tile is
-a `SandboxStub` that opens the deployed web sandbox via
-`Linking.openURL`. The mobile app stays small; the rich tools live
-where they already work.
+NEW (mobile):
+  apps/mobile/src/screens/learn/Level09.tsx
 
-## What's next (if/when you want to continue)
+EDITED (procurement-negotiation-lab):
+  apps/web/src/surfaces/learn/{Level03,Level05,Level06,Level07,Level08}.tsx
+  apps/web/src/surfaces/learn/LearnShell.tsx
+  apps/web/src/surfaces/home/HomeSurface.tsx
+  apps/web/src/App.tsx                  (negotiate route added)
+  apps/web/src/state/learnProgress.ts   (TOTAL_LEVELS = 9)
+  apps/web/tsconfig.json                ("types": [])
+  apps/mobile/App.tsx                   (Level09 wired)
+  apps/mobile/src/screens/learn/Level03.tsx + Level05.tsx (privacy copy)
+  apps/mobile/src/state/learnProgress.ts                  (TOTAL_LEVELS = 9)
+  packages/engine/src/index.ts          (new helpers exported)
 
-1. **Run mobile tests.** `cd apps/mobile && npm install && npm test`.
-2. **Open a PR** from `spec/0010-phase-2-primitives-level1` → `main`.
-   The branch contains seven commits, each phase-scoped, easy to
-   review one at a time.
-3. **Deploy.** Vercel auto-deploys the branch as a preview; promote
-   to production after PR merge.
-4. **EAS build for mobile.** `eas login && eas build --profile
-   preview` for iOS/Android binaries.
-5. **Optional**: Stryker mutation config, Playwright e2e against the
-   deployed URL, full chaos suite. Each is its own bounded add.
+EDITED (cross-repo flagship swap):
+  athena-site/src/components/Hero.astro
+  athena-site/src/components/ChipMapEmbed.astro
+  athena-site/src/pages/index.astro
+  athena-site/src/content/doors.json
+  AthenaTheOwl-profile/README.md
 
-## Files added/changed (summary)
-
-- `specs/0010-pedagogical-redesign/` — 6-doc ledger + 8 level storyboards
-- `packages/engine/src/learn/` — 2 new helpers (jointUtility, split)
-- `packages/engine/src/index.ts` — public surface extended
-- `apps/web/src/primitives/` — 11 reusable visual components
-- `apps/web/src/state/learnProgress.ts` — localStorage progress
-- `apps/web/src/surfaces/home/` — landing surface
-- `apps/web/src/surfaces/learn/` — LearnShell + Level01..08
-- `apps/web/src/surfaces/sandbox/` — renamed legacy app
-- `apps/web/src/App.tsx` — top-level router with React.lazy
-- `apps/mobile/` — Expo + RN app (9 primitives, 8 levels, home, stub)
-- `scripts/spec_check.py` — R-LEARN-*/R-MOBILE-* IDs
-- `scripts/voice_lint.py` — updated targets
-- Commits on `spec/0010-phase-2-primitives-level1`, all pushed.
+NEW (deploy docs):
+  Robust-Facility-Location/DEPLOY.md
+  semiconductor-e2e-manufacturing-optimization/DEPLOY.md
+  world-food-program-robust-simulator/DEPLOY.md
+```

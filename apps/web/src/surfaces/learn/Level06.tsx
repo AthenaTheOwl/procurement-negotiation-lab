@@ -8,9 +8,10 @@
  * Spec: specs/0010-pedagogical-redesign/levels/06.md
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
-import type { SplitRule } from "@lab/engine";
+import { fetchChipMapData } from "@lab/engine";
+import type { ChipMapNode, SplitRule } from "@lab/engine";
 import { AgentFigure } from "../../primitives/AgentFigure";
 import { LevelShell } from "../../primitives/LevelShell";
 import { QuantityKnob } from "../../primitives/QuantityKnob";
@@ -71,6 +72,54 @@ export function Level06({
   const [triedRules, setTriedRules] = useState<Set<SplitRule>>(
     () => new Set(["proportional"]),
   );
+  const [chipMapOn, setChipMapOn] = useState(false);
+  const [chipMapStatus, setChipMapStatus] = useState<
+    | { kind: "idle" }
+    | { kind: "loading" }
+    | { kind: "ok"; chokepoint: number; packagerCount: number; nodes: ChipMapNode[] }
+    | { kind: "error"; message: string }
+  >({ kind: "idle" });
+
+  // When the chip-map toggle flips on, fetch the graph and average
+  // packager-node chokepoint scores. Use the result to bias the
+  // capacity slider so the lab inherits "what the chip map currently
+  // thinks" about packager constraint.
+  useEffect(() => {
+    if (!chipMapOn) return;
+    if (chipMapStatus.kind === "ok" || chipMapStatus.kind === "loading") return;
+    setChipMapStatus({ kind: "loading" });
+    fetchChipMapData()
+      .then((data) => {
+        const packagerNodes = data.nodes.filter(
+          (n) =>
+            n.type === "packager" ||
+            (n.short_description ?? "").toLowerCase().includes("packag"),
+        );
+        const scores = packagerNodes
+          .map((n) => n.chokepoint_score)
+          .filter((s): s is number => typeof s === "number");
+        const chokepoint =
+          scores.length > 0
+            ? scores.reduce((a, b) => a + b, 0) / scores.length
+            : 0.4;
+        setChipMapStatus({
+          kind: "ok",
+          chokepoint,
+          packagerCount: packagerNodes.length,
+          nodes: packagerNodes,
+        });
+        const derivedCapacity = Math.round(
+          Math.max(20, Math.min(100, (1 - chokepoint) * 100)),
+        );
+        setCapacityPct(derivedCapacity);
+      })
+      .catch((err) =>
+        setChipMapStatus({
+          kind: "error",
+          message: err instanceof Error ? err.message : String(err),
+        }),
+      );
+  }, [chipMapOn, chipMapStatus.kind]);
 
   const rows = useMemo(
     () => computeShares(rule, capacityPct / 100),
@@ -180,6 +229,63 @@ export function Level06({
             onChange={handleRuleChange}
             testId="level6-rule"
           />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-3, 12px)",
+              flexWrap: "wrap",
+              justifyContent: "center",
+            }}
+          >
+            <span style={{ fontSize: "var(--type-2, 1rem)" }}>
+              Use live chip-map chokepoint
+            </span>
+            <button
+              type="button"
+              onClick={() => setChipMapOn((on) => !on)}
+              data-testid="chip-map-toggle"
+              aria-pressed={chipMapOn}
+              style={{
+                background: chipMapOn
+                  ? "var(--role-coordinator, #6d54ff)"
+                  : "var(--neutral-line, #e3e3df)",
+                color: chipMapOn ? "white" : "var(--neutral-fg, #1c1c1f)",
+                border: 0,
+                padding: "var(--space-2, 8px) var(--space-5, 24px)",
+                borderRadius: "var(--radius-pill, 999px)",
+                fontSize: "var(--type-2, 1rem)",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              {chipMapOn ? "ON" : "OFF"}
+            </button>
+          </div>
+          {chipMapOn && (
+            <div
+              data-testid="chip-map-status"
+              style={{
+                fontSize: "var(--type-1, 0.85rem)",
+                color: "var(--neutral-fg-soft, #5b5b62)",
+                textAlign: "center",
+              }}
+            >
+              {chipMapStatus.kind === "loading" && "Fetching chip-supply-chain-map data…"}
+              {chipMapStatus.kind === "error" &&
+                `Live chip-map unavailable: ${chipMapStatus.message}. Slider stays on the local default.`}
+              {chipMapStatus.kind === "ok" && (
+                <>
+                  Live chokepoint score across {chipMapStatus.packagerCount}{" "}
+                  packager node{chipMapStatus.packagerCount === 1 ? "" : "s"}:{" "}
+                  <strong>{Math.round(chipMapStatus.chokepoint * 100)}%</strong>.
+                  Capacity slider above set to{" "}
+                  <strong>{Math.round((1 - chipMapStatus.chokepoint) * 100)}%</strong>{" "}
+                  to match.
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <table style={tableStyle} data-testid="level6-table">
