@@ -2,8 +2,8 @@
  * SandboxStub (mobile) — small placeholder that points users back to
  * the web Lab Arena. The full sandbox is not part of the v1 mobile
  * build: it pulls cytoscape and an Acorn-based formula compiler that
- * would need a different harness on RN. Until that work lands, the
- * mobile sandbox tile redirects users to the public deployed URL.
+ * each need RN-specific ports. Until that work lands, the mobile
+ * sandbox tile redirects users to the public deployed URL.
  */
 
 import { Pressable, Text, View, Linking } from "react-native";

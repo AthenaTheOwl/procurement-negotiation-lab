@@ -69,7 +69,7 @@ describe("Level05", () => {
     expect(stats.textContent).not.toContain("—");
   });
 
-  it("after Run all completes, reveal blurb appears and Continue enables", () => {
+  it("after Run all completes, reveal blurb appears and Continue unlocks", () => {
     const onComplete = vi.fn();
     setup({ onComplete });
     fireEvent.click(screen.getByTestId("run-all"));
