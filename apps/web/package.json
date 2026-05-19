@@ -9,7 +9,7 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest",
     "lint": "tsc --noEmit",
-    "smoke": "playwright test",
+    "smoke": "playwright test -c ../../playwright.config.ts",
     "smoke:install": "playwright install --with-deps chromium"
   },
   "dependencies": {

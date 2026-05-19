@@ -4,8 +4,9 @@ test.describe("procurement-negotiation-lab smoke", () => {
   test("home page loads with hero + nav", async ({ page }) => {
     const response = await page.goto("/", { waitUntil: "domcontentloaded" });
     expect(response?.ok()).toBeTruthy();
-    await expect(page.getByRole("navigation", { name: /main sections/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /lab arena/i })).toBeVisible();
+    await expect(page.getByTestId("home-surface")).toBeVisible();
+    await expect(page.getByTestId("home-start-cta")).toBeVisible();
+    await expect(page.getByTestId("home-sandbox-link")).toBeVisible();
   });
 
   test("lab arena renders preset grid + view picker", async ({ page }) => {

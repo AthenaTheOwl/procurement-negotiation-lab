@@ -1,202 +1,183 @@
-# spec 0010 — pedagogical redesign + mobile · status report
+# spec 0010 - pedagogical redesign + mobile status
 
 **Date**: 2026-05-19
-**Branch**: `main` (phases 0–7 merged + bonus phase 8 features stacked)
-**Author**: Claude Opus 4.7
+**Branch**: `main`
+**Original implementation report**: Claude Opus 4.7
+**Independent verification and corrections**: Codex
 
-## What this run delivered
+## Current Verdict
+
+Spec 0010 is implemented and locally reproducible after one correction pass.
+The major product additions are present, the app builds, the Python and
+TypeScript test suites pass, mobile Jest now runs, and the live Vercel app
+passes the Playwright smoke suite.
+
+The original report was directionally right but had two stale verification
+claims:
+
+- The old Vercel `TS2688: Cannot find type definition file for 'react-native'`
+  failure was fixed by `types: []` in `apps/web/tsconfig.json`.
+- The active GitHub frontend failure after that was a different issue:
+  `npm ci` failed because `package-lock.json` had not been regenerated after
+  adding the `apps/mobile` workspace and Expo dependencies. The lockfile is now
+  regenerated and `npm ci` is part of the verified gate.
+
+## What Landed
 
 | Phase | Scope | State |
 |-------|-------|-------|
-| 0 | Specs, tokens, 8 storyboards, spec_check schema | shipped & pushed |
-| 1 | Monorepo restructure (packages/engine + apps/web) | shipped & pushed |
-| 2 | Visual primitives (5) + Level 1 + Home + Sandbox rename + router | shipped & pushed |
-| 3 | Levels 2–4 web + 4 more primitives | shipped & pushed |
-| 4 | Levels 5–7 web + ConvergenceAnimation + SplitRuleToggle | shipped & pushed |
-| 5 | Level 8 capstone + Sandbox bridge | shipped & pushed |
-| 6+7 | Mobile scaffold + Home + all 8 levels + Sandbox stub | shipped & pushed |
-| 8 (bonus) | Level 9 multi-period · RAG bridge · chip-map bridge · save & share · streak · negotiate surface | shipped & pushed |
+| 0 | Specs, tokens, 8 storyboards, spec_check schema | shipped |
+| 1 | Monorepo restructure (`packages/engine` + `apps/web`) | shipped |
+| 2 | Visual primitives, Level 1, Home, Sandbox rename, router | shipped |
+| 3 | Levels 2-4 web + more primitives | shipped |
+| 4 | Levels 5-7 web + ConvergenceAnimation + SplitRuleToggle | shipped |
+| 5 | Level 8 capstone + Sandbox bridge | shipped |
+| 6+7 | Mobile scaffold + Home + Levels 1-8 + Sandbox stub | shipped |
+| 8 | Level 9, RAG bridge, chip-map bridge, save/share, streak, negotiate surface | shipped |
 
-All code lives on `main`. No long-lived feature branches.
+## Phase 8 Additions
 
-## Phase 8 (bonus) — features added in the cleanup-and-expand pass
+- **Level 9 - multi-period commitment workbench**: web + mobile screen, 12-week
+  schedule, firm/soft/forecast commitments, closed-form per-week optimum, and
+  four presets.
+- **Live RAG bridge in Level 7**: optional fetch against the
+  `supplier-risk-rag-agent` corpus, cited chunks, and graceful fallback.
+- **Live chip-map bridge in Level 6**: optional fetch from the chip-map dataset
+  that maps packager chokepoint scores into the capacity slider.
+- **Save and share participant in Level 8**: `?p=<base64url>` hydration for role,
+  formula, and params, with tamper rejection.
+- **Daily streak counter on Home**: localStorage-backed streak with lazy decay
+  after a 2+ day gap.
+- **Two-browser Negotiate surface**: `#/negotiate` URL-encoded session state plus
+  BroadcastChannel same-machine tab sync.
+- **Privacy claim tightening**: web and mobile copy now names what each mechanism
+  exchanges instead of reducing the message to "ADMM is private."
 
-- **Level 9 — Multi-period commitment workbench** (web + mobile). A 12-week
-  schedule with editable q, commitment kind (firm/soft/forecast), and
-  forecast confidence per week. Closed-form optimum + four presets
-  (default, all-firm, drop-far-weeks, snap-to-optimum). Engine helper:
-  `packages/engine/src/learn/multiPeriod.ts` (13 tests).
-- **Live RAG bridge in Level 7** — toggle pulls live filing excerpts
-  from `supplier-risk-rag-agent` via the existing `fetchRiskCorpus`
-  bridge, renders top-3 cited chunks with accession + CIK. Friendly
-  error path when the fetch fails.
-- **Live chip-map bridge in Level 6** — toggle fetches
-  `chip-supply-chain-map` nodes, averages packager-node chokepoint
-  scores, and resets the capacity slider to `(1 - chokepoint) * 100%`.
-- **Save & share Level 8 participant** — encode role + formula +
-  params into a base64url URL fragment. Visit `/?p=<...>#/learn/8`
-  and the level hydrates from the URL. Tampered payloads return null.
-  Engine helper: `packages/engine/src/learn/shareEncoder.ts` (7 tests).
-- **Daily streak counter on Home** — localStorage-backed, lazy-decays
-  to 0 after a 2+ day gap. Engine helper:
-  `apps/web/src/state/streak.ts` (8 tests).
-- **Negotiate-with-a-partner surface** — new route `#/negotiate`,
-  two-party turn-based negotiation that encodes session state in a
-  URL (`?n=<base64>`) and uses BroadcastChannel for same-machine
-  multi-tab real-time sync. Engine helper:
-  `packages/engine/src/learn/negotiationSession.ts` (9 tests).
-- **Privacy claim tightening in Levels 3 + 5** — Level 5's reveal blurb
-  now correctly compares mechanisms by what they exchange (full types
-  vs ADMM iterates vs prices vs averaged proposals) instead of
-  claiming "ADMM is private" without nuance.
+## Cross-Portfolio Work
 
-## Cross-portfolio work in the same pass
+- `athena-site` now promotes `procurement-negotiation-lab` as the flagship demo
+  and demotes the chip-map embed to featured demo.
+- `AthenaTheOwl-profile/README.md` puts the lab first in `// active`.
+- `DEPLOY.md` exists in the three Streamlit-ready repos:
+  `facility-location`, `semiconductor-wafer-robust-optimization`, and
+  `food-relief-fund/food-relief-simulator`.
 
-- **Flagship demo flipped** to procurement-negotiation-lab.
-  - `athena-site` now renders `ProcurementLabEmbed` above the door
-    grid and demotes the chip-map embed to "featured demo".
-  - `athena-site/src/content/doors.json` updated for N°11 and N°17.
-  - `athena-site/src/components/Hero.astro` names the lab as the
-    current build with a link to the live URL.
-  - `AthenaTheOwl-profile/README.md` moves the lab to the top of the
-    `// active` section with a flagship label.
-- **DEPLOY.md added to three Streamlit-ready repos:**
-  - `Robust-Facility-Location/DEPLOY.md`
-  - `semiconductor-e2e-manufacturing-optimization/DEPLOY.md`
-  - `world-food-program-robust-simulator/DEPLOY.md`
-  Each documents the one-time Streamlit Community Cloud connect flow.
+## Verified Gates
 
-## What is verified to work
-
-Run on Windows 10 / Python 3.11 / Node 20 / Xpress Community.
+Run locally on Windows with Node/npm, Python 3.11, and uv.
 
 | Check | Command | Result |
 |-------|---------|--------|
-| voice_lint | `python scripts/voice_lint.py` | clean (75 files) |
-| spec_check | `python scripts/spec_check.py` | OK |
-| pytest (factory + engine) | `python -m uv run pytest tests/` | 92 / 92 |
-| vitest web | `npm run test:web` | 179 / 179 |
-| vitest engine | `npm run test:engine` | 185 / 185 |
-| tsc web | `npx tsc --noEmit -p apps/web/tsconfig.json` | clean |
-| tsc engine | `npx tsc --noEmit -p packages/engine/tsconfig.json` | clean |
-| Production build | `npm run build` | clean (182 modules) |
+| Clean npm install | `npm ci` | pass |
+| Production build | `npm run build` | pass, 182 modules |
+| Engine vitest | `npm run test:engine` | 185 / 185 |
+| Web vitest | `npm run test:web` | 179 / 179 |
+| Root JS tests | `npm run test` | 364 / 364 |
+| Mobile Jest | `npm run test --workspace=@lab/mobile -- --runInBand` | 11 / 11 |
+| Mobile typecheck | `npm run typecheck --workspace=@lab/mobile` | pass |
+| Python tests | `python -m uv run pytest -q` | 92 / 92 |
+| Ruff | `python -m uv run ruff check .` | pass |
+| Mypy | `python -m uv run mypy src` | pass |
+| Bandit | `python -m uv run bandit -q -r src` | pass |
+| Python audit | `python -m uv run pip-audit` | no known Python vulns |
+| Voice lint | `python scripts/voice_lint.py` | clean, 75 files |
+| Spec check | `python scripts/spec_check.py` | OK |
+| Live Playwright smoke | `SMOKE_URL=https://procurement-negotiation-lab.vercel.app/ npm run smoke --workspace=@lab/web` | 6 / 6 |
 
-Total: **456 unit/integration tests passing** (92 pytest + 179 web
-vitest + 185 engine vitest).
+Current verified count: **467 unit/integration tests** passing
+(92 pytest + 185 engine vitest + 179 web vitest + 11 mobile Jest), plus
+**6 Playwright smoke checks** against the live Vercel URL.
 
-The Vercel deploy of `procurement-negotiation-lab` was failing on
-`error TS2688: Cannot find type definition file for 'react-native'`
-because the monorepo-hoisted `@types/react-native` (a mobile devDep)
-was being included implicitly in the web TS program. Fixed by setting
-`"types": []` in `apps/web/tsconfig.json`. Next push triggers a clean
-production deploy.
+## Remaining Caveats
 
-## What is NOT verified (honest log)
+### GitHub Actions
 
-### iOS Simulator / physical device
+The previous `frontend` workflow failure was caused by stale `package-lock.json`.
+This pass regenerates the lockfile and changes the workflow test step from
+`npm run test -- --run` to `npm run test`, avoiding npm's unknown-config warning.
+The push that contains this correction should be treated as the durable CI proof.
 
-**Not run.** Windows hosts cannot launch the iOS Simulator. The mobile
-code is type-correct against the React Native API; a Mac or cloud
-build runner can build it.
+### Vercel
+
+The active production URL is
+`https://procurement-negotiation-lab.vercel.app/`. Vercel had a ready production
+deployment before this correction pass; after this pass, the production redeploy
+should be rechecked against the pushed commit.
+
+### iOS Simulator / Physical Device
+
+Not run. Windows cannot launch the iOS Simulator. Mobile Jest and TypeScript now
+run locally, but native device/simulator runtime verification still requires a
+Mac or EAS.
 
 ### EAS Build
 
-**Not run.** Requires `eas login`. `eas.json` is configured.
+Not run. Requires `eas login`. `eas.json` is present.
 
-### Mobile vitest / jest-expo
+### Streamlit Community Cloud Deploys
 
-**Not run.** Requires `cd apps/mobile && npm install` (~400 MB Expo
-toolchain). Test files exist and follow jest-expo conventions.
+Not triggered. The three repos have `DEPLOY.md` instructions, but deployment
+requires user-account authentication at `share.streamlit.io`.
 
-### Streamlit Community Cloud deploys
+### Full Playwright Flow Coverage
 
-**Not triggered.** Requires user-account browser auth at
-share.streamlit.io. The three repos are ready to deploy in 3 clicks
-each per their `DEPLOY.md`.
+Live smoke is verified. A broader browser suite for every new Level 9,
+RAG/chip-map bridge, save/share, streak, and negotiate flow remains future work.
 
-### Stryker mutation testing
+### npm Audit
 
-**Not configured.** 456 tests give the safety net; mutation testing on
-top is incremental.
+`npm ci` reports npm advisories in the JavaScript dependency tree, mostly through
+the Expo/mobile stack. Do not run `npm audit fix --force` blindly; that would
+likely jump framework versions. Treat this as a dependency-triage workstream.
 
-### Playwright e2e
+## Design Notes
 
-**Not exercised.** vitest covers component-level behavior for every
-level. Deploy-time check belongs against the live Vercel URL.
+### Privacy Claims Are More Correct
 
-## Notable design choices and trade-offs from this pass
+The lab now compares mechanisms by the information they exchange: full types
+for oracle/sealed VCG, ADMM iterates plus coordinator price for CPP-style
+mechanisms, prices only for price-only, and proposals for consensus averaging.
+ADMM's privacy advantage is over full-type mechanisms, not over every cheaper
+protocol.
 
-### Privacy claims actually got more honest
+### Bridges Fail Gracefully
 
-ADMM-vs-VCG-vs-oracle messaging in Level 5 used to claim "ADMM keeps
-cost-band privacy at comparable surplus" — true but vague. The new
-copy names what each mechanism *exchanges*: full types (oracle and
-sealed VCG) vs ADMM iterates + coordinator price (CPP-VCG) vs prices
-only (price-only) vs plan proposals (consensus-averaging). The user's
-question about "is ADMM actually private" is now answered correctly
-in the lab itself: ADMM's privacy advantage is over oracle/sealed-VCG,
-not over cheaper protocols.
+The Level 6 chip-map bridge and Level 7 RAG bridge fetch live data over HTTPS.
+If a fetch fails, the UI reports the unavailable source and keeps the local
+learning flow usable.
 
-### Bridges fail gracefully
+### Negotiate Is Serverless By Design
 
-The Level 6 chip-map toggle and Level 7 RAG-evidence toggle both
-fetch over plain HTTPS to raw GitHub URLs. If the fetch fails (404,
-CORS, network), the toggle surfaces a friendly "live <X> unavailable:
-<reason>" message and the local logic keeps working. No crash, no
-hung promise.
+The negotiate surface uses URL encoding, BroadcastChannel, and sessionStorage.
+Cross-machine sync still requires manual URL exchange; true push sync would need
+a small backend channel.
 
-### Two-browser negotiate is server-less by design
+### Multi-Period Optimum Is Closed Form
 
-The negotiate surface uses three layers: URL encoding (always works),
-BroadcastChannel (same-machine tab sync), and sessionStorage (role
-preference). No backend. The trade-off: cross-machine sync requires
-manual URL exchange, not real-time push. Adding push is one Vercel
-serverless function + an eventsource away when usage justifies it.
+Level 9's optimum uses the level's own piecewise-linear utility model and avoids
+shipping a solver into the browser bundle.
 
-### Multi-period optimum is closed-form, not solver-driven
+## File Map
 
-Level 9's "snap to optimum" runs `q = demandMean * forecastConfidence`
-per week — provably optimal under the level's piecewise-linear utility
-model. No CVXPY / Xpress dependency in the browser bundle.
-
-## End-of-pass file map
-
-```
-NEW (engine, all with tests):
-  packages/engine/src/learn/multiPeriod.ts             (13 tests)
-  packages/engine/src/learn/shareEncoder.ts            (7 tests)
-  packages/engine/src/learn/negotiationSession.ts      (9 tests)
+```text
+NEW (engine, with tests):
+  packages/engine/src/learn/multiPeriod.ts
+  packages/engine/src/learn/shareEncoder.ts
+  packages/engine/src/learn/negotiationSession.ts
 
 NEW (web):
-  apps/web/src/surfaces/learn/Level09.tsx              (7 tests)
-  apps/web/src/surfaces/negotiate/NegotiateSurface.tsx (7 tests)
-  apps/web/src/state/streak.ts                         (8 tests)
-  apps/web/src/components/ProcurementLabEmbed.astro    (in athena-site)
+  apps/web/src/surfaces/learn/Level09.tsx
+  apps/web/src/surfaces/negotiate/NegotiateSurface.tsx
+  apps/web/src/state/streak.ts
 
 NEW (mobile):
   apps/mobile/src/screens/learn/Level09.tsx
+  apps/mobile/scripts/run-jest.cjs
 
-EDITED (procurement-negotiation-lab):
-  apps/web/src/surfaces/learn/{Level03,Level05,Level06,Level07,Level08}.tsx
-  apps/web/src/surfaces/learn/LearnShell.tsx
-  apps/web/src/surfaces/home/HomeSurface.tsx
-  apps/web/src/App.tsx                  (negotiate route added)
-  apps/web/src/state/learnProgress.ts   (TOTAL_LEVELS = 9)
-  apps/web/tsconfig.json                ("types": [])
-  apps/mobile/App.tsx                   (Level09 wired)
-  apps/mobile/src/screens/learn/Level03.tsx + Level05.tsx (privacy copy)
-  apps/mobile/src/state/learnProgress.ts                  (TOTAL_LEVELS = 9)
-  packages/engine/src/index.ts          (new helpers exported)
-
-EDITED (cross-repo flagship swap):
-  athena-site/src/components/Hero.astro
-  athena-site/src/components/ChipMapEmbed.astro
-  athena-site/src/pages/index.astro
-  athena-site/src/content/doors.json
-  AthenaTheOwl-profile/README.md
-
-NEW (deploy docs):
-  Robust-Facility-Location/DEPLOY.md
-  semiconductor-e2e-manufacturing-optimization/DEPLOY.md
-  world-food-program-robust-simulator/DEPLOY.md
+EDITED (verification/reproducibility):
+  package-lock.json
+  apps/mobile/package.json
+  apps/web/package.json
+  apps/web/e2e/smoke.spec.ts
+  .github/workflows/frontend.yml
 ```
