@@ -211,3 +211,11 @@ export {
   defaultLearnScenario,
 } from "./learn/jointUtility";
 export type { JointPoint, LearnScenarioDefaults } from "./learn/jointUtility";
+export {
+  DEFAULT_BUYER_OUTSIDE,
+  DEFAULT_SUPPLIER_OUTSIDE,
+  feasibleBand,
+  sampleSplitCurve,
+  splitOutcome,
+} from "./learn/split";
+export type { SplitConfig, SplitPoint } from "./learn/split";
