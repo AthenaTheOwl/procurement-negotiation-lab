@@ -60,6 +60,16 @@ Current active specs:
 - `0009-factory-dev-control-plane/acceptance.md`
 - `0009-factory-dev-control-plane/research.md`
 - `0009-factory-dev-control-plane/traceability.md`
+- `0010-pedagogical-redesign/PLAN.md`
+- `0010-pedagogical-redesign/requirements.md`
+- `0010-pedagogical-redesign/design.md`
+- `0010-pedagogical-redesign/tasks.md`
+- `0010-pedagogical-redesign/acceptance.md`
+- `0010-pedagogical-redesign/research.md`
+- `0010-pedagogical-redesign/traceability.md`
+- `0010-pedagogical-redesign/character-system.md`
+- `0010-pedagogical-redesign/tokens.css`
+- `0010-pedagogical-redesign/levels/01.md` … `levels/08.md`
 
 The development loop is:
 

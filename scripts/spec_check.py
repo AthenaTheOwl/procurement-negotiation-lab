@@ -15,6 +15,7 @@ SPECS = [
     ROOT / "specs" / "0007-production-hardening",
     ROOT / "specs" / "0008-data-bridges",
     ROOT / "specs" / "0009-factory-dev-control-plane",
+    ROOT / "specs" / "0010-pedagogical-redesign",
 ]
 
 REQUIRED_FILE_NAMES = [
@@ -88,6 +89,17 @@ REQUIREMENT_IDS = [
     "R-FACTORY-004",
     "R-FACTORY-005",
     "R-SPEC-009",
+    "R-LEARN-001",
+    "R-LEARN-002",
+    "R-LEARN-003",
+    "R-LEARN-004",
+    "R-LEARN-005",
+    "R-LEARN-006",
+    "R-LEARN-007",
+    "R-MOBILE-001",
+    "R-MOBILE-002",
+    "R-MONO-001",
+    "R-SPEC-010",
 ]
 
 
