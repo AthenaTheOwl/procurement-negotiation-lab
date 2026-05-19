@@ -1,121 +1,65 @@
-import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
-import App from "./App";
-import { BERGEMANN_ARTICLE_URL } from "./components/Hero";
-import { labTakeaway, makeScenario } from "@lab/engine";
-describe("App", () => {
-  it("claims the mechanism-design field with a live dollar gap and source link", async () => {
-    const user = userEvent.setup();
-    const expectedGap = `$${Math.round(labTakeaway(makeScenario()).coordinationGap).toLocaleString()}`;
-    render(<App />);
+import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import App, { parseRoute } from "./App";
+import { clearProgress } from "./state/learnProgress";
 
-    expect(screen.getByText(/mechanism design/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: new RegExp(expectedGap.replace("$", "\\$")) })).toBeInTheDocument();
-    const sourceLink = screen.getByRole("link", { name: /read the source article/i });
-    expect(sourceLink).toHaveAttribute("href", BERGEMANN_ARTICLE_URL);
-    expect(sourceLink).toHaveAttribute("target", "_blank");
-    expect(sourceLink).toHaveAttribute("rel", "noreferrer");
+afterEach(() => {
+  cleanup();
+  clearProgress();
+  if (typeof window !== "undefined") {
+    window.history.replaceState(null, "", "/");
+  }
+});
 
-    const heroActions = within(screen.getByTestId("hero-actions"));
-    expect(heroActions.getAllByRole("button")).toHaveLength(3);
-    expect(heroActions.getByRole("button", { name: /walk the arc/i })).toBeInTheDocument();
+function setLocation(hash: string, search: string = "") {
+  if (typeof window === "undefined") return;
+  window.history.replaceState(null, "", `/${search}${hash}`);
+}
 
-    await user.click(heroActions.getByRole("button", { name: /walk the arc/i }));
-    expect(screen.getByTestId("arc-surface")).toBeInTheDocument();
+describe("App router", () => {
+  it("parseRoute returns home for empty hash", () => {
+    setLocation("");
+    expect(parseRoute()).toEqual({ kind: "home" });
   });
 
-  it("opens with the player role and the procurement job", () => {
-    render(<App />);
-    expect(screen.getByText(/you are the buyer/i)).toBeInTheDocument();
-    expect(screen.getByText(/cinder lithography services/i)).toBeInTheDocument();
-    expect(screen.getByText(/reserve enough long-lead capacity/i)).toBeInTheDocument();
+  it("parseRoute returns learn at the requested level", () => {
+    setLocation("#/learn/3");
+    expect(parseRoute()).toEqual({ kind: "learn", level: 3 });
   });
 
-  it("reveals consequences before showing the next week", async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(screen.getAllByRole("button", { name: /choose this move/i })[1]);
-    expect(screen.getByTestId("consequence-reveal")).toBeInTheDocument();
-    expect(screen.getByText(/cinder's response/i)).toBeInTheDocument();
-    expect(screen.queryByText(/week 3 of 12/i)).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /continue to the next week/i }));
-    expect(screen.getByText(/Week 3 of 12/i)).toBeInTheDocument();
+  it("parseRoute clamps out-of-range learn levels to 1", () => {
+    setLocation("#/learn/99");
+    expect(parseRoute()).toEqual({ kind: "learn", level: 1 });
   });
 
-  it("walks the arc through algorithms, formula authoring, joint cases, and CBT", async () => {
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(within(screen.getByTestId("hero-actions")).getByRole("button", { name: /walk the arc/i }));
-    expect(screen.getByTestId("arc-step-gap")).toBeInTheDocument();
-    expect(screen.getAllByText(/coordination gap/i).length).toBeGreaterThan(0);
-
-    await user.click(screen.getByRole("button", { name: /^next$/i }));
-    expect(screen.getByTestId("arc-step-privacy")).toBeInTheDocument();
-    expect(screen.getByText(/utility rises, privacy exposure rises too/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /^next$/i }));
-    expect(screen.getByTestId("arc-step-truth")).toBeInTheDocument();
-    expect(screen.getAllByText(/CPP \+ VCG\/CBT/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/α clipping/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /^next$/i }));
-    expect(screen.getByTestId("arc-step-admm")).toBeInTheDocument();
-    expect(screen.getByText(/residual path/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /^next$/i }));
-    expect(screen.getByTestId("arc-step-algorithms")).toBeInTheDocument();
-    expect(screen.getAllByText(/price-only coordination/i).length).toBeGreaterThan(0);
-
-    await user.click(screen.getByRole("button", { name: /^next$/i }));
-    expect(screen.getByTestId("arc-step-author")).toBeInTheDocument();
-    const formulaEditor = screen.getByLabelText(/utility formula/i);
-    await user.clear(formulaEditor);
-    await user.type(formulaEditor, "__import__('os')");
-    expect(screen.getByText(/private\/dunder|not allowed/i)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /test against decoys/i }));
-    expect(screen.getByTestId("arc-decoy-results")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /^next$/i }));
-    expect(screen.getByTestId("arc-step-joint-cases")).toBeInTheDocument();
-    await user.click(screen.getByRole("tab", { name: /ADMM oscillates/i }));
-    expect(screen.getAllByText(/oscillating/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/ε controls/i)).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /^next$/i }));
-    expect(screen.getByTestId("arc-step-cbt")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /equal split/i }));
-    expect(screen.getAllByText(/no worse off/i).length).toBeGreaterThan(0);
+  it("parseRoute returns sandbox for #/sandbox", () => {
+    setLocation("#/sandbox");
+    expect(parseRoute()).toEqual({ kind: "sandbox" });
   });
 
-  it("renders lab explanations and algorithm comparison", async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(screen.getAllByRole("button", { name: /lab arena/i })[0]);
-    expect(screen.getByTestId("lab-surface")).toBeInTheDocument();
-    expect(screen.getByTestId("lab-so-what")).toBeInTheDocument();
-    expect(screen.getByText(/make your own agents/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/coordination gap/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/centralized oracle/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/CPP \+ VCG\/CBT/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/alternating best response/i).length).toBeGreaterThan(0);
-    expect(screen.getByTestId("alpha-slider")).toBeInTheDocument();
-    expect(screen.getByTestId("buyer-reliability-slider")).toBeInTheDocument();
-    expect(screen.getByTestId("supplier-reliability-slider")).toBeInTheDocument();
-    expect(screen.getByTestId("epsilon-slider")).toBeInTheDocument();
-    expect(screen.getByTestId("frontier-panel")).toBeInTheDocument();
-    await user.click(screen.getByLabelText(/Audit Mode/i));
-    expect(screen.getByTestId("decoy-audit-panel")).toBeInTheDocument();
+  it('parseRoute treats legacy "#arc" / "#play" / "#lab" / "#study" as sandbox', () => {
+    for (const legacy of ["#arc", "#play", "#lab", "#study"]) {
+      setLocation(legacy);
+      expect(parseRoute().kind).toBe("sandbox");
+    }
   });
 
-  it("renders tutorial definitions for technical terms", async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(screen.getAllByRole("button", { name: /^tutorial$/i })[0]);
-    expect(screen.getByTestId("study-surface")).toBeInTheDocument();
-    expect(screen.getByText(/utility is a dollar-like score/i)).toBeInTheDocument();
-    expect(screen.getByText(/residual is the gap/i)).toBeInTheDocument();
-    expect(screen.getByText(/risk score is a teaching knob/i)).toBeInTheDocument();
+  it("parseRoute returns report when ?report=<id> is present", () => {
+    setLocation("", "?report=run-abc");
+    expect(parseRoute()).toEqual({ kind: "report" });
   });
+
+  it("App renders HomeSurface at default route", () => {
+    setLocation("");
+    render(<App />);
+    expect(screen.getByTestId("home-surface")).toBeTruthy();
+  });
+
+  // We deliberately don't render the full LearnShell or SandboxApp inside
+  // this file. LearnShell + Level01 pull the full @lab/engine surface, and
+  // SandboxApp pulls cytoscape on top of that. Mounting either twice in
+  // the same vitest worker exhausted the jsdom worker's heap budget on
+  // Windows. The dedicated Level01.test.tsx and SandboxApp.test.tsx files
+  // cover their respective surfaces in isolation; the route assertions for
+  // #/learn/N and #/sandbox are exercised via parseRoute() above.
 });

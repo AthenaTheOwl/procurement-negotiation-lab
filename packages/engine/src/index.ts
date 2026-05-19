@@ -200,3 +200,14 @@ export { substrateCrunch } from "./data/story";
 export { glossary, termOrder } from "./data/glossary";
 export { arcSteps } from "./data/arc";
 export type { ArcStep, ArcStepId } from "./data/arc";
+
+// --- learn surface helpers ----------------------------------------------
+export {
+  buyerUtilityAt,
+  supplierUtilityAt,
+  jointUtilityAt,
+  sampleJointCurve,
+  findJointOptimum,
+  defaultLearnScenario,
+} from "./learn/jointUtility";
+export type { JointPoint, LearnScenarioDefaults } from "./learn/jointUtility";
