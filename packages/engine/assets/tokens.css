@@ -1,0 +1,85 @@
+/*
+ * Design tokens for spec 0010.
+ *
+ * This file ships in packages/engine/assets/tokens.css during Phase 1.
+ * Web reads it directly via @import. Mobile mirrors the values in a
+ * TS module (packages/engine/src/tokens.ts) so RN style objects can
+ * read them without a CSS parser.
+ *
+ * Round-friendly system: generous radii, soft colors, simple motion.
+ */
+
+:root {
+  /* --- colors: semantic --- */
+  --surplus-good:     #1bb676;  /* green: value created */
+  --surplus-lost:     #d64545;  /* red:   value left on the table */
+  --walkaway-bad:     #d64545;  /* same: a party would walk */
+  --deal-zone:        #1bb6761a;/* tinted green for deal-zone background */
+  --walkaway-zone:    #d645451a;/* tinted red for walkaway-zone background */
+  --privacy-cost:     #f4a85f;  /* orange: information disclosed */
+  --neutral-bg:       #f7f7f4;  /* warm-light page bg */
+  --neutral-bg-2:     #ffffff;  /* card bg */
+  --neutral-fg:       #1c1c1f;  /* primary text */
+  --neutral-fg-soft:  #5b5b62;  /* secondary text */
+  --neutral-line:     #e3e3df;  /* hairlines + dividers */
+
+  /* --- colors: role accents (match character-system.md) --- */
+  --role-buyer:        #3a78ff;
+  --role-supplier:     #f4a85f;
+  --role-packager:     #9b8cff;
+  --role-logistics:    #1bb6c5;
+  --role-distributor:  #c64bd5;
+  --role-coordinator:  #65d195;
+
+  /* --- type scale (clamp for fluid) --- */
+  --type-1: clamp(0.78rem, 1vw + 0.5rem, 0.88rem);  /* fine print */
+  --type-2: clamp(0.92rem, 1vw + 0.7rem, 1.00rem);  /* body */
+  --type-3: clamp(1.05rem, 1vw + 0.8rem, 1.18rem);  /* prompt */
+  --type-4: clamp(1.30rem, 2vw + 0.8rem, 1.60rem);  /* section */
+  --type-5: clamp(1.80rem, 3vw + 0.9rem, 2.40rem);  /* level title */
+  --type-6: clamp(2.40rem, 4vw + 1.0rem, 3.40rem);  /* hero */
+
+  /* --- spacing (4 / 8 / 12 / 16 / 24 / 32 / 48 / 64) --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* --- motion --- */
+  --motion-quick: 120ms;
+  --motion-mid:   240ms;
+  --motion-slow:  480ms;
+  --easing-soft:  cubic-bezier(0.22, 0.61, 0.36, 1);
+  --easing-snap:  cubic-bezier(0.45, 0, 0.55, 1);
+
+  /* --- radius (round-friendly is the brand) --- */
+  --radius-pill:  999px;
+  --radius-card:  16px;
+  --radius-knob:  24px;
+  --radius-tile:  12px;
+
+  /* --- elevation --- */
+  --shadow-sm: 0 1px 2px rgba(28, 28, 31, 0.06), 0 1px 1px rgba(28, 28, 31, 0.04);
+  --shadow-md: 0 4px 12px rgba(28, 28, 31, 0.10), 0 2px 4px rgba(28, 28, 31, 0.05);
+  --shadow-lg: 0 12px 32px rgba(28, 28, 31, 0.14), 0 6px 12px rgba(28, 28, 31, 0.06);
+
+  /* --- focus ring (a11y) --- */
+  --focus-ring: 0 0 0 3px rgba(58, 120, 255, 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --neutral-bg:       #14141a;
+    --neutral-bg-2:     #1c1c24;
+    --neutral-fg:       #f7f7f4;
+    --neutral-fg-soft:  #aaa9b0;
+    --neutral-line:     #2a2a32;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45), 0 1px 1px rgba(0, 0, 0, 0.30);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.55), 0 2px 4px rgba(0, 0, 0, 0.30);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.70), 0 6px 12px rgba(0, 0, 0, 0.40);
+  }
+}

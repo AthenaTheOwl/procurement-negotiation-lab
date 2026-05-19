@@ -178,17 +178,23 @@ STRUCTURAL = [
 ALLOWLIST_RE = re.compile(r"voice_lint:allow\s+([A-Za-z0-9\-_ ]+)")
 
 TARGETS = [
-    "web/src/data/scenarios.ts",
-    "web/src/data/story.ts",
-    "web/src/data/agents.ts",
-    "web/src/data/arc.ts",
-    "web/src/data/glossary.ts",
-    "web/src/data/strategies.ts",
-    "web/src/App.tsx",
-    "web/src/components/*.tsx",
-    "web/src/surfaces/**/*.tsx",
-    "web/src/model/simulation.ts",
-    "web/src/model/decoys.ts",
+    # engine: user-facing copy in data files + a couple of model
+    # functions that emit rendered text
+    "packages/engine/src/data/scenarios.ts",
+    "packages/engine/src/data/story.ts",
+    "packages/engine/src/data/agents.ts",
+    "packages/engine/src/data/arc.ts",
+    "packages/engine/src/data/glossary.ts",
+    "packages/engine/src/data/strategies.ts",
+    "packages/engine/src/model/simulation.ts",
+    "packages/engine/src/model/decoys.ts",
+    # web app surface
+    "apps/web/src/App.tsx",
+    "apps/web/src/components/*.tsx",
+    "apps/web/src/surfaces/**/*.tsx",
+    # mobile app surface (Phase 6+)
+    "apps/mobile/src/**/*.tsx",
+    "apps/mobile/src/**/*.ts",
     "README.md",
 ]
 
