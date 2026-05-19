@@ -34,7 +34,7 @@ describe("Level01", () => {
     expect(screen.queryByTestId("settle-button")).toBeNull();
   });
 
-  it("disables Continue until the reveal beat elapses, then enables it", () => {
+  it("keeps Continue disabled until the reveal beat elapses, then unlocks it", () => {
     render(<Level01 progress={emptyProgress()} onComplete={() => {}} />);
     fireEvent.click(screen.getByTestId("settle-button"));
     const continueBtn = screen.getByTestId("level-continue") as HTMLButtonElement;
