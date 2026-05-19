@@ -20,6 +20,7 @@ import { Level04 } from "./Level04";
 import { Level05 } from "./Level05";
 import { Level06 } from "./Level06";
 import { Level07 } from "./Level07";
+import { Level08 } from "./Level08";
 import { LevelShell } from "../../primitives/LevelShell";
 import {
   TOTAL_LEVELS,
@@ -97,6 +98,7 @@ export function LearnShell({
   if (level === 5) return <Level05 {...commonProps} />;
   if (level === 6) return <Level06 {...commonProps} />;
   if (level === 7) return <Level07 {...commonProps} />;
+  if (level === 8) return <Level08 {...commonProps} />;
   return (
     <PlaceholderLevel
       level={level}
