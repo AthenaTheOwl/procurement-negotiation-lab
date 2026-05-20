@@ -34,6 +34,7 @@ claims:
 | 5 | Level 8 capstone + Sandbox bridge | shipped |
 | 6+7 | Mobile scaffold + Home + Levels 1-8 + Sandbox stub | shipped |
 | 8 | Level 9, RAG bridge, chip-map bridge, save/share, streak, negotiate surface | shipped |
+| 9 | Level 10 Model Studio for menu authoring and shared coordination kernel | shipped |
 
 ## Phase 8 Additions
 
@@ -52,6 +53,10 @@ claims:
   BroadcastChannel same-machine tab sync.
 - **Privacy claim tightening**: web and mobile copy now names what each mechanism
   exchanges instead of reducing the message to "ADMM is private."
+- **Model Studio in Level 10**: VCG-inspired menu authoring on top of a shared
+  coordination kernel. The engine now exposes a typed coordination-model
+  contract, scope resolution, menu generation, certification checks, and
+  settlement clearing. Web and mobile both surface the core workflow.
 
 ## Cross-Portfolio Work
 
@@ -69,10 +74,10 @@ Run locally on Windows with Node/npm, Python 3.11, and uv.
 | Check | Command | Result |
 |-------|---------|--------|
 | Clean npm install | `npm ci` | pass |
-| Production build | `npm run build` | pass, 182 modules |
-| Engine vitest | `npm run test:engine` | 185 / 185 |
-| Web vitest | `npm run test:web` | 179 / 179 |
-| Root JS tests | `npm run test` | 364 / 364 |
+| Production build | `npm run build` | pass, 184 modules; Level 10 split into its own chunk |
+| Engine vitest | `npm run test:engine` | 196 / 196 |
+| Web vitest | `npm run test:web` | 187 / 187 |
+| Root JS tests | `npm run test` | 383 / 383 |
 | Mobile Jest | `npm run test --workspace=@lab/mobile -- --runInBand` | 11 / 11 |
 | Mobile typecheck | `npm run typecheck --workspace=@lab/mobile` | pass |
 | Python tests | `python -m uv run pytest -q` | 92 / 92 |
@@ -80,13 +85,14 @@ Run locally on Windows with Node/npm, Python 3.11, and uv.
 | Mypy | `python -m uv run mypy src` | pass |
 | Bandit | `python -m uv run bandit -q -r src` | pass |
 | Python audit | `python -m uv run pip-audit` | no known Python vulns |
-| Voice lint | `python scripts/voice_lint.py` | clean, 75 files |
+| Voice lint | `python scripts/voice_lint.py` | clean, 78 files |
 | Spec check | `python scripts/spec_check.py` | OK |
-| Live Playwright smoke | `SMOKE_URL=https://procurement-negotiation-lab.vercel.app/ npm run smoke --workspace=@lab/web` | 6 / 6 |
+| Playwright smoke | `SMOKE_URL=<target> npm run smoke --workspace=@lab/web` | 7 / 7 locally; production rerun after deploy |
 
-Current verified count: **467 unit/integration tests** passing
-(92 pytest + 185 engine vitest + 179 web vitest + 11 mobile Jest), plus
-**6 Playwright smoke checks** against the live Vercel URL.
+Current verified count: **486 unit/integration tests** passing
+(92 pytest + 196 engine vitest + 187 web vitest + 11 mobile Jest), plus
+**7 Playwright smoke checks** against local preview. Production smoke should be
+rerun after Vercel deploys this commit.
 
 ## Remaining Caveats
 
@@ -121,7 +127,7 @@ requires user-account authentication at `share.streamlit.io`.
 
 ### Full Playwright Flow Coverage
 
-Live smoke is verified. A broader browser suite for every new Level 9,
+Live smoke is verified. A broader browser suite for every new Level 9/10,
 RAG/chip-map bridge, save/share, streak, and negotiate flow remains future work.
 
 ### npm Audit
@@ -157,6 +163,13 @@ a small backend channel.
 Level 9's optimum uses the level's own piecewise-linear utility model and avoids
 shipping a solver into the browser bundle.
 
+### Model Studio Standardizes the Interface
+
+Level 10 implements the BYOM pattern as typed preferences plus shared protocol:
+party models provide scope, objective, constraints, and allowed outputs; the
+kernel resolves scope, generates feasible menus, certifies guardrails, clears
+an agreement, and emits settlement terms.
+
 ## File Map
 
 ```text
@@ -164,14 +177,17 @@ NEW (engine, with tests):
   packages/engine/src/learn/multiPeriod.ts
   packages/engine/src/learn/shareEncoder.ts
   packages/engine/src/learn/negotiationSession.ts
+  packages/engine/src/learn/modelStudio.ts
 
 NEW (web):
   apps/web/src/surfaces/learn/Level09.tsx
+  apps/web/src/surfaces/learn/Level10.tsx
   apps/web/src/surfaces/negotiate/NegotiateSurface.tsx
   apps/web/src/state/streak.ts
 
 NEW (mobile):
   apps/mobile/src/screens/learn/Level09.tsx
+  apps/mobile/src/screens/learn/Level10.tsx
   apps/mobile/scripts/run-jest.cjs
 
 EDITED (verification/reproducibility):

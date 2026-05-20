@@ -69,7 +69,7 @@ describe("learnProgress", () => {
     expect(nextUnlocked(after1)).toBe(2);
     let state = emptyProgress();
     for (let l = 1; l <= TOTAL_LEVELS; l += 1) {
-      state = markComplete(state, l as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8);
+      state = markComplete(state, l as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10);
     }
     expect(nextUnlocked(state)).toBe(TOTAL_LEVELS);
   });

@@ -111,7 +111,7 @@ export function HomeScreen({ onStartPlaying, onOpenSandbox }: HomeScreenProps) {
             textAlign: "center",
           }}
         >
-          Walk through eight short levels and end up with the intuition to
+          Walk through ten short levels and end up with the intuition to
           build your own utility formulas in the Sandbox.
         </Text>
 
