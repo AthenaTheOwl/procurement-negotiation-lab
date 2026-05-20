@@ -27,6 +27,11 @@ describe("App router", () => {
     expect(parseRoute()).toEqual({ kind: "learn", level: 3 });
   });
 
+  it("parseRoute includes Level 10", () => {
+    setLocation("#/learn/10");
+    expect(parseRoute()).toEqual({ kind: "learn", level: 10 });
+  });
+
   it("parseRoute clamps out-of-range learn levels to 1", () => {
     setLocation("#/learn/99");
     expect(parseRoute()).toEqual({ kind: "learn", level: 1 });

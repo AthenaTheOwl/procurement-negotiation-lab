@@ -11,7 +11,7 @@
  * placeholder mode is dropped in Phases 3-5).
  */
 
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { Level01 } from "./Level01";
 import { Level02 } from "./Level02";
@@ -34,6 +34,10 @@ import {
   type LearnProgress,
   type LevelId,
 } from "../../state/learnProgress";
+
+const Level10 = lazy(() =>
+  import("./Level10").then((module) => ({ default: module.Level10 })),
+);
 
 export interface LearnShellProps {
   level: LevelId;
@@ -101,6 +105,13 @@ export function LearnShell({
   if (level === 7) return <Level07 {...commonProps} />;
   if (level === 8) return <Level08 {...commonProps} />;
   if (level === 9) return <Level09 {...commonProps} />;
+  if (level === 10) {
+    return (
+      <Suspense fallback={<div data-testid="level10-loading">Loading Model Studio...</div>}>
+        <Level10 {...commonProps} />
+      </Suspense>
+    );
+  }
   return (
     <PlaceholderLevel
       level={level}

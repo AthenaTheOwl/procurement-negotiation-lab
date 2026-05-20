@@ -17,6 +17,7 @@ import { Level06 } from "./src/screens/learn/Level06";
 import { Level07 } from "./src/screens/learn/Level07";
 import { Level08 } from "./src/screens/learn/Level08";
 import { Level09 } from "./src/screens/learn/Level09";
+import { Level10 } from "./src/screens/learn/Level10";
 import { SandboxStub } from "./src/screens/sandbox/SandboxStub";
 import { colors } from "./src/theme/tokens";
 import {
@@ -90,6 +91,7 @@ export default function App() {
       {route.kind === "learn" && route.level === 7 && <Level07 {...commonProps(7)} />}
       {route.kind === "learn" && route.level === 8 && <Level08 {...commonProps(8)} />}
       {route.kind === "learn" && route.level === 9 && <Level09 {...commonProps(9)} />}
+      {route.kind === "learn" && route.level === 10 && <Level10 {...commonProps(10)} />}
       {route.kind === "sandbox" && <SandboxStub onOpenHome={goHome} />}
     </SafeAreaView>
   );

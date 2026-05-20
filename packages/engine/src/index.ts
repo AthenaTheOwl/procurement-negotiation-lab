@@ -258,3 +258,30 @@ export type {
   Offer,
   RoundRecord,
 } from "./learn/negotiationSession";
+export {
+  DEFAULT_MENU_GUARDRAILS,
+  DEFAULT_MENU_SIGNALS,
+  MODEL_STATUSES,
+  SAMPLE_MODELS,
+  certifyCoordinationModel,
+  clearMenuAgreement,
+  fallbackOrderForScope,
+  generateMenuOptions,
+  matchesScope,
+  resolveCoordinationModel,
+  scopeSpecificity,
+} from "./learn/modelStudio";
+export type {
+  CertificationCheck,
+  ClearedAgreement,
+  CoordinationModel,
+  CoordinationScope,
+  ExplainabilityChip,
+  MenuCostSignals,
+  MenuGuardrails,
+  MenuOption,
+  MenuOptionKind,
+  ModelStatus,
+  ScopeResolution,
+  VendorReservation,
+} from "./learn/modelStudio";

@@ -51,4 +51,28 @@ test.describe("procurement-negotiation-lab smoke", () => {
     await expect(page.getByTestId("run-report-panel")).toBeVisible();
     await expect(page.getByTestId("export-json-btn")).toBeVisible();
   });
+
+  test("Level 10 Model Studio certifies and clears a menu", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.evaluate(() => {
+      window.localStorage.setItem(
+        "proc-lab.learnProgress",
+        JSON.stringify({
+          highest_completed: 9,
+          completion_timestamps: {},
+          last_seen_level: 10,
+        }),
+      );
+    });
+    await page.goto("/#/learn/10", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("menu-option-A")).toBeVisible();
+    await expect(page.getByTestId("selected-model")).toContainText(
+      "vendor-123.sku-001.abe8.w22.v4",
+    );
+    await page.getByTestId("certify-model").click();
+    await expect(page.getByTestId("certification-results")).toContainText("Pass");
+    await expect(page.getByTestId("cleared-agreement")).toContainText(
+      "selected_option",
+    );
+  });
 });
