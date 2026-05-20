@@ -50,16 +50,54 @@ const DEFAULT_PARAMS: AgentParameters = {
   riskAversion: 0.6,
 };
 
-// Variables the formula editor knows about. Includes parameters + a
-// stable "demand", "q", "unit_cost", etc. context.
+// Reference values fed into every formula evaluation. The set is wide
+// enough to cover every role's default formula in `strategies.ts` —
+// buyer, supplier, packager, logistics, distributor, foundry — so a
+// fresh role-chip click never produces an "unknown variable" error.
+const REFERENCE_VALUES: Record<string, number> = {
+  // shared
+  q: 425,
+  demand: 500,
+  unit_cost: 55,
+  service_value: 125,
+  shortage_penalty: 92,
+  excess_penalty: 7,
+  holding: 5,
+  // supplier
+  revenue_per_unit: 60,
+  production_cost: 38,
+  holding_cost: 5,
+  forecast: 480,
+  risk_premium: 8,
+  risk_score: 0.3,
+  loyalty_bonus: 12,
+  relationship_score: 0.6,
+  // foundry
+  yield_value: 180,
+  effective_q: 380,
+  rework_cost: 15,
+  capacity: 500,
+  yield_rate: 0.85,
+  // packager
+  package_margin: 45,
+  bonding_cost: 12,
+  substrate_carry: 7,
+  substrate_pool: 400,
+  // logistics
+  lane_margin: 22,
+  lane_cost: 10,
+  export_penalty: 18,
+  export_flag: 0,
+  delay_penalty: 4,
+  lead_time_days: 28,
+  // distributor
+  channel_margin: 28,
+  committed_demand: 450,
+};
+
 const ALLOWED_VARS = new Set<string>([
-  "q",
-  "demand",
-  "unit_cost",
-  "service_value",
-  "shortage_penalty",
-  "excess_penalty",
-  "holding",
+  ...Object.keys(REFERENCE_VALUES),
+  // slider names (override at eval time from `params`)
   "urgency",
   "flexibility",
   "truthfulness",
@@ -67,17 +105,33 @@ const ALLOWED_VARS = new Set<string>([
   "risk_aversion",
 ]);
 
+// Some strategies.ts entries (notably coordinator) carry prose
+// instead of a parseable expression. Fall back to a sane default so
+// the editor doesn't open in an error state.
+const SAFE_FALLBACK_FORMULA = "service_value * min(q, demand) - unit_cost * q";
+
 const VARIABLES_HELP = `
 allowed variables:
-  q                    units committed
-  demand               buyer's demand
-  unit_cost            per-unit cost
-  service_value        per-unit value to buyer
-  shortage_penalty     penalty per missing unit
-  excess_penalty       penalty per excess unit
-  holding              supplier holding cost per unit
+  q, demand, unit_cost, service_value, shortage_penalty,
+  excess_penalty, holding                  (buyer-side defaults)
+
+  revenue_per_unit, production_cost, holding_cost, forecast,
+  risk_premium, risk_score, loyalty_bonus,
+  relationship_score                       (supplier-side defaults)
+
+  yield_value, effective_q, rework_cost, capacity, yield_rate
+                                            (foundry-side defaults)
+
+  package_margin, bonding_cost, substrate_carry, substrate_pool
+                                            (packager-side defaults)
+
+  lane_margin, lane_cost, export_penalty, export_flag,
+  delay_penalty, lead_time_days            (logistics-side defaults)
+
+  channel_margin, committed_demand         (distributor-side defaults)
+
   urgency, flexibility, truthfulness,
-  privacy_preference, risk_aversion (your sliders)
+  privacy_preference, risk_aversion        (your sliders)
 
 allowed functions: min, max, abs, sqrt, log, exp, clip, pow
 `;
@@ -94,7 +148,19 @@ export function Level08({
     () => strategiesForRole(role)[0],
     [role],
   );
-  const [formula, setFormula] = useState(defaultStrategy.defaultUtilityFormula);
+  // Some strategies.ts entries are prose, not parseable expressions.
+  // Coerce those to a parseable fallback so the editor never opens on
+  // an error.
+  const initialFormula = (() => {
+    const raw = defaultStrategy.defaultUtilityFormula;
+    try {
+      compileFormula(raw, ALLOWED_VARS);
+      return raw;
+    } catch {
+      return SAFE_FALLBACK_FORMULA;
+    }
+  })();
+  const [formula, setFormula] = useState(initialFormula);
   const [params, setParams] = useState<AgentParameters>({
     ...DEFAULT_PARAMS,
     ...defaultStrategy.defaultParameters,
@@ -138,11 +204,20 @@ export function Level08({
     }
   };
 
-  // re-pin formula & params when the user switches role.
+  // re-pin formula & params when the user switches role. If a role's
+  // default formula is prose (e.g. coordinator), fall back to a sane
+  // parseable expression so the editor doesn't flash an error.
   const handleRoleChange = (next: ParticipantRole) => {
     const strategy = strategiesForRole(next)[0];
     setRole(next);
-    setFormula(strategy.defaultUtilityFormula);
+    const raw = strategy.defaultUtilityFormula;
+    let nextFormula = raw;
+    try {
+      compileFormula(raw, ALLOWED_VARS);
+    } catch {
+      nextFormula = SAFE_FALLBACK_FORMULA;
+    }
+    setFormula(nextFormula);
     setParams({
       ...DEFAULT_PARAMS,
       ...strategy.defaultParameters,
@@ -154,13 +229,7 @@ export function Level08({
     try {
       const compiled = compileFormula(formula, ALLOWED_VARS);
       const namespace: Record<string, number> = {
-        q: 425,
-        demand: 500,
-        unit_cost: 55,
-        service_value: 125,
-        shortage_penalty: 92,
-        excess_penalty: 7,
-        holding: 5,
+        ...REFERENCE_VALUES,
         urgency: params.urgency,
         flexibility: params.flexibility,
         truthfulness: params.truthfulness,
@@ -175,20 +244,20 @@ export function Level08({
   }, [formula, params]);
 
   // Compare-against-default surplus, so the bar always has scale.
+  // Use the same parseable-fallback path the editor uses, so the
+  // baseline for the comparison never silently degrades to 0 just
+  // because the role's strategy entry is prose.
   const defaultEval = useMemo(() => {
+    let source = defaultStrategy.defaultUtilityFormula;
     try {
-      const compiled = compileFormula(
-        defaultStrategy.defaultUtilityFormula,
-        ALLOWED_VARS,
-      );
+      compileFormula(source, ALLOWED_VARS);
+    } catch {
+      source = SAFE_FALLBACK_FORMULA;
+    }
+    try {
+      const compiled = compileFormula(source, ALLOWED_VARS);
       const namespace: Record<string, number> = {
-        q: 425,
-        demand: 500,
-        unit_cost: 55,
-        service_value: 125,
-        shortage_penalty: 92,
-        excess_penalty: 7,
-        holding: 5,
+        ...REFERENCE_VALUES,
         urgency: defaultStrategy.defaultParameters.urgency,
         flexibility: defaultStrategy.defaultParameters.flexibility,
         truthfulness: defaultStrategy.defaultParameters.truthfulness,

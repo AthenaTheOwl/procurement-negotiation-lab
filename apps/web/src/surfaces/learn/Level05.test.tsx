@@ -69,6 +69,34 @@ describe("Level05", () => {
     expect(stats.textContent).not.toContain("—");
   });
 
+  it("Run again replays the animations after completion (regression for stuck-running bug)", () => {
+    setup();
+    // First run
+    fireEvent.click(screen.getByTestId("run-all"));
+    act(() => {
+      flushRaf(0);
+    });
+    act(() => {
+      flushRaf(2_500);
+    });
+    // Button should re-enable and read "Run again"
+    const button = screen.getByTestId("run-all") as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+    expect(button.textContent).toMatch(/run again/i);
+    // Click it; animations should play again (button disabled, finished resets)
+    fireEvent.click(button);
+    expect((screen.getByTestId("run-all") as HTMLButtonElement).disabled).toBe(true);
+    // Drain the new raf cycle
+    act(() => {
+      flushRaf(0);
+    });
+    act(() => {
+      flushRaf(2_500);
+    });
+    // Re-enabled and back to "Run again" after the replay
+    expect((screen.getByTestId("run-all") as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it("after Run all completes, reveal blurb appears and Continue unlocks", () => {
     const onComplete = vi.fn();
     setup({ onComplete });

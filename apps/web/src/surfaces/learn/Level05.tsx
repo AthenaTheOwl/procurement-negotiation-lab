@@ -7,7 +7,7 @@
  * Spec: specs/0010-pedagogical-redesign/levels/05.md
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { algorithmResults, makeScenario, type AlgorithmResult } from "@lab/engine";
 import { ConvergenceAnimation, type ConvergenceKind } from "../../primitives/ConvergenceAnimation";
@@ -73,6 +73,7 @@ export function Level05({
   }, [results]);
 
   const [running, setRunning] = useState(false);
+  const [runKey, setRunKey] = useState(0);
   const [finished, setFinished] = useState<Record<ConvergenceKind, boolean>>({
     oracle: false,
     admm: false,
@@ -82,10 +83,22 @@ export function Level05({
     finished.oracle && finished.admm && finished.vcg;
 
   const handleRun = () => {
-    if (running) return;
+    // First click starts the run; subsequent clicks (after completion) replay.
+    // While running, the button is disabled below so this guard mainly
+    // protects against rapid double-clicks before any panel completes.
+    if (running && !completedAll) return;
     setFinished({ oracle: false, admm: false, vcg: false });
+    setRunKey((k) => k + 1);
     setRunning(true);
   };
+
+  // Once every panel finishes, snap back to "not running" so the button
+  // unlocks and the next click can start a fresh run.
+  useEffect(() => {
+    if (completedAll && running) {
+      setRunning(false);
+    }
+  }, [completedAll, running]);
 
   const handlePanelComplete = (kind: ConvergenceKind) => {
     setFinished((prev) => ({ ...prev, [kind]: true }));
@@ -180,6 +193,7 @@ export function Level05({
                 <h2 style={title}>{name}</h2>
                 <p style={caption}>{cap}</p>
                 <ConvergenceAnimation
+                  key={`${kind}-${runKey}`}
                   kind={kind}
                   playing={running}
                   duration={2_400}
