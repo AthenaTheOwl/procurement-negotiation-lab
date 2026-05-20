@@ -37,14 +37,45 @@ const DEFAULT_PARAMS: AgentParameters = {
   riskAversion: 0.6,
 };
 
+// Reference values fed into every formula evaluation. Wide enough
+// for every role's default formula in strategies.ts.
+const REFERENCE_VALUES: Record<string, number> = {
+  q: 425,
+  demand: 500,
+  unit_cost: 55,
+  service_value: 125,
+  shortage_penalty: 92,
+  excess_penalty: 7,
+  holding: 5,
+  revenue_per_unit: 60,
+  production_cost: 38,
+  holding_cost: 5,
+  forecast: 480,
+  risk_premium: 8,
+  risk_score: 0.3,
+  loyalty_bonus: 12,
+  relationship_score: 0.6,
+  yield_value: 180,
+  effective_q: 380,
+  rework_cost: 15,
+  capacity: 500,
+  yield_rate: 0.85,
+  package_margin: 45,
+  bonding_cost: 12,
+  substrate_carry: 7,
+  substrate_pool: 400,
+  lane_margin: 22,
+  lane_cost: 10,
+  export_penalty: 18,
+  export_flag: 0,
+  delay_penalty: 4,
+  lead_time_days: 28,
+  channel_margin: 28,
+  committed_demand: 450,
+};
+
 const ALLOWED_VARS = new Set<string>([
-  "q",
-  "demand",
-  "unit_cost",
-  "service_value",
-  "shortage_penalty",
-  "excess_penalty",
-  "holding",
+  ...Object.keys(REFERENCE_VALUES),
   "urgency",
   "flexibility",
   "truthfulness",
@@ -52,17 +83,22 @@ const ALLOWED_VARS = new Set<string>([
   "risk_aversion",
 ]);
 
+const SAFE_FALLBACK_FORMULA = "service_value * min(q, demand) - unit_cost * q";
+
+function ensureParseable(formula: string): string {
+  try {
+    compileFormula(formula, ALLOWED_VARS);
+    return formula;
+  } catch {
+    return SAFE_FALLBACK_FORMULA;
+  }
+}
+
 function evaluate(formula: string, params: AgentParameters) {
   try {
     const compiled = compileFormula(formula, ALLOWED_VARS);
     const namespace: Record<string, number> = {
-      q: 425,
-      demand: 500,
-      unit_cost: 55,
-      service_value: 125,
-      shortage_penalty: 92,
-      excess_penalty: 7,
-      holding: 5,
+      ...REFERENCE_VALUES,
       urgency: params.urgency,
       flexibility: params.flexibility,
       truthfulness: params.truthfulness,
@@ -95,7 +131,9 @@ export function Level08({
 }: Level08Props) {
   const [role, setRole] = useState<ParticipantRole>("buyer");
   const defaultStrategy = useMemo(() => strategiesForRole(role)[0], [role]);
-  const [formula, setFormula] = useState(defaultStrategy.defaultUtilityFormula);
+  const [formula, setFormula] = useState(
+    ensureParseable(defaultStrategy.defaultUtilityFormula),
+  );
   const [params, setParams] = useState<AgentParameters>({
     ...DEFAULT_PARAMS,
     ...defaultStrategy.defaultParameters,
@@ -106,14 +144,14 @@ export function Level08({
   const handleRoleChange = (next: ParticipantRole) => {
     const strategy = strategiesForRole(next)[0];
     setRole(next);
-    setFormula(strategy.defaultUtilityFormula);
+    setFormula(ensureParseable(strategy.defaultUtilityFormula));
     setParams({ ...DEFAULT_PARAMS, ...strategy.defaultParameters });
   };
 
   const evalResult = useMemo(() => evaluate(formula, params), [formula, params]);
   const defaultEval = useMemo(
     () =>
-      evaluate(defaultStrategy.defaultUtilityFormula, {
+      evaluate(ensureParseable(defaultStrategy.defaultUtilityFormula), {
         ...DEFAULT_PARAMS,
         ...defaultStrategy.defaultParameters,
       }),
@@ -126,7 +164,9 @@ export function Level08({
 
   const handleFormula = (value: string) => {
     setFormula(value);
-    if (value !== defaultStrategy.defaultUtilityFormula) setEditedFormula(true);
+    if (value !== ensureParseable(defaultStrategy.defaultUtilityFormula)) {
+      setEditedFormula(true);
+    }
   };
 
   const handleParamChange = (key: keyof AgentParameters, next: number) => {

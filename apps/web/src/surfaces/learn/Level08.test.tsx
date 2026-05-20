@@ -38,6 +38,27 @@ describe("Level08", () => {
     expect(editor.value).not.toBe(before);
   });
 
+  it("switching to any role keeps the formula parseable (regression for unknown-variable errors)", () => {
+    setup();
+    // Visit every role chip we render on the screen. After each click,
+    // there must be no formula-error block: the role's default
+    // formula has to parse against the level's allowed-vars set, OR
+    // be coerced to the parseable fallback.
+    for (const role of [
+      "buyer",
+      "supplier",
+      "packager",
+      "logistics",
+      "distributor",
+    ]) {
+      fireEvent.click(screen.getByTestId(`role-chip-${role}`));
+      expect(
+        screen.queryByTestId("formula-error"),
+        `formula-error visible after switching to ${role}`,
+      ).toBeNull();
+    }
+  });
+
   it("invalid formula surfaces an error message without crashing", () => {
     setup();
     const editor = screen.getByTestId("formula-editor") as HTMLTextAreaElement;
