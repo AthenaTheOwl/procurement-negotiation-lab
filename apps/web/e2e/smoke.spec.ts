@@ -21,6 +21,16 @@ test.describe("procurement-negotiation-lab smoke", () => {
     await expect(page.getByTestId("participant-roster")).toBeVisible();
   });
 
+  test("sandbox convergence and transfer tabs render", async ({ page }) => {
+    await page.goto("/#lab", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("sandbox-tab-convergence").click();
+    await expect(page.getByTestId("convergence-playground")).toBeVisible();
+    await expect(page.getByTestId("convergence-menu-balanced")).toBeVisible();
+    await page.getByTestId("sandbox-tab-transfers").click();
+    await expect(page.getByTestId("transfer-pricing-studio")).toBeVisible();
+    await expect(page.getByTestId("transfer-guardrail")).toBeVisible();
+  });
+
   test("clicking a preset re-runs algorithms", async ({ page }) => {
     await openClassicLabArena(page);
     const preset = page.getByRole("button", { name: /advanced packaging/i });

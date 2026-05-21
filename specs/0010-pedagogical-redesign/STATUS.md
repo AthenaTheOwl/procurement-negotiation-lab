@@ -37,6 +37,30 @@ claims:
 | 8 | Level 9, RAG bridge, chip-map bridge, save/share, streak, negotiate surface | shipped |
 | 9 | Level 10 Model Studio for menu authoring and shared coordination kernel | shipped |
 | 10 | Negotiate UX fixes + Level 11 mechanism catalog + multi-SKU BuyPlanStudio (replaces legacy lab as default sandbox; Classic kept as a tab) | shipped |
+| 11 | Sandbox convergence playground + transfer-pricing workbench for consensus/menu/CBT exploration | shipped |
+
+## Phase 11 Additions
+
+- **Per-product convergence playground**. New Sandbox tab that simulates four
+  coordination loops: consensus/ADMM, damped averaging, price tatonnement, and
+  Lagrangian shadow-price updates. The surface exposes round-by-round residuals,
+  demand gaps, vendor proposal messages, the information crossing the trust
+  boundary, and the one-shot contract-menu fallback when iteration is not worth
+  the overhead. The method map also covers the non-simulated alternatives from
+  the product notes: progressive hedging, gossip, federated averaging,
+  projection methods, no-regret learning, auctions, voting/scoring, Bayesian
+  pooling, and contract menus.
+- **Transfer-pricing workbench**. New Sandbox tab for cost-benefit-transfer
+  pricing. It separates real welfare from transfers, computes the acceptance
+  interval, blocks negative-welfare plans, and compares surplus-sharing,
+  marginal-externality, two-part-tariff, and VCG-style pricing lenses. The
+  two-part-tariff mode keeps marginal shadow-price signals separate from the
+  fixed surplus-sharing credit.
+- **Engine helpers with tests**. `packages/engine/src/learn/convergencePlayground.ts`
+  and `packages/engine/src/learn/transferPricing.ts` are exported through
+  `@lab/engine` and covered by focused vitest suites. The web components have
+  their own rendering and interaction tests, and Playwright smoke now verifies
+  both new Sandbox tabs.
 
 ## Phase 10 Additions
 
@@ -115,9 +139,9 @@ Run locally on Windows with Node/npm, Python 3.11, and uv.
 |-------|---------|--------|
 | Clean npm install | `npm ci` | pass |
 | Production build | `npm run build` | pass; Level 9, Level 10, Level 11, SandboxShell, SandboxApp, and cytoscape split into their own chunks; main chunk under Vite's 500 kB warning threshold |
-| Engine vitest | `npm run test:engine` | 218 / 218 |
-| Web vitest | `npm run test:web` | 207 / 207 |
-| Root JS tests | `npm run test` | 425 / 425 |
+| Engine vitest | `npm run test:engine` | 229 / 229 |
+| Web vitest | `npm run test:web` | 215 / 215 |
+| Root JS tests | `npm run test` | 444 / 444 |
 | Mobile Jest | `npm run test --workspace=@lab/mobile -- --runInBand` | 11 / 11 |
 | Mobile typecheck | `npm run typecheck --workspace=@lab/mobile` | pass |
 | Python tests | `python -m uv run pytest -q` | 92 / 92 |
@@ -127,11 +151,11 @@ Run locally on Windows with Node/npm, Python 3.11, and uv.
 | Python audit | `python -m uv run pip-audit` | no known Python vulns |
 | Voice lint | `python scripts/voice_lint.py` | clean |
 | Spec check | `python scripts/spec_check.py` | OK |
-| Playwright smoke | `SMOKE_URL=<target> npm run smoke --workspace=@lab/web` | 7 / 7 locally and 7 / 7 against `https://procurement-negotiation-lab.vercel.app/` |
+| Playwright smoke | `SMOKE_URL=<target> npm run smoke --workspace=@lab/web` | 8 / 8 locally and 8 / 8 against `https://procurement-negotiation-lab.vercel.app/` |
 
-Current verified count: **528 unit/integration tests** passing
-(92 pytest + 218 engine vitest + 207 web vitest + 11 mobile Jest), plus
-**7 Playwright smoke checks** against local preview and **7 Playwright smoke
+Current verified count: **547 unit/integration tests** passing
+(92 pytest + 229 engine vitest + 215 web vitest + 11 mobile Jest), plus
+**8 Playwright smoke checks** against local preview and **8 Playwright smoke
 checks** against the canonical production URL.
 
 ## Remaining Caveats
@@ -218,11 +242,15 @@ NEW (engine, with tests):
   packages/engine/src/learn/shareEncoder.ts
   packages/engine/src/learn/negotiationSession.ts
   packages/engine/src/learn/modelStudio.ts
+  packages/engine/src/learn/convergencePlayground.ts
+  packages/engine/src/learn/transferPricing.ts
 
 NEW (web):
   apps/web/src/surfaces/learn/Level09.tsx
   apps/web/src/surfaces/learn/Level10.tsx
   apps/web/src/surfaces/negotiate/NegotiateSurface.tsx
+  apps/web/src/surfaces/sandbox/convergence/ConvergencePlayground.tsx
+  apps/web/src/surfaces/sandbox/transfer/TransferPricingStudio.tsx
   apps/web/src/state/streak.ts
 
 NEW (mobile):

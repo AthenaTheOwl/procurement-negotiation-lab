@@ -311,3 +311,31 @@ export type {
   SkuParameters,
   SkuRow,
 } from "./learn/buyPlan";
+export {
+  CONVERGENCE_GUIDES,
+  CONVERGENCE_METHODS,
+  DEFAULT_CONSENSUS_CONFIG,
+  DEFAULT_CONSENSUS_VENDORS,
+  simulateConvergence,
+} from "./learn/convergencePlayground";
+export type {
+  ConsensusConfig,
+  ConvergenceGuide,
+  ConvergenceMethod,
+  ConvergenceResult,
+  ConvergenceRound,
+  MenuFallbackOption,
+  VendorConsensusProfile,
+  VendorRoundProposal,
+} from "./learn/convergencePlayground";
+export {
+  DEFAULT_TRANSFER_SCENARIO,
+  TRANSFER_METHODS,
+  evaluateTransferPricing,
+} from "./learn/transferPricing";
+export type {
+  TransferComponent,
+  TransferMethod,
+  TransferPricingResult,
+  TransferPricingScenario,
+} from "./learn/transferPricing";
