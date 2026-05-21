@@ -102,4 +102,96 @@ describe("NegotiateSurface", () => {
     fireEvent.click(screen.getByTestId("negotiate-home"));
     expect(onOpenHome).toHaveBeenCalled();
   });
+
+  it("role picker suggests the other side when URL state already has offers", async () => {
+    // Pre-seed the URL with a buyer-only session.
+    const { encodeSession, newSession, appendRound } = await import(
+      "@lab/engine"
+    );
+    const seeded = appendRound(newSession(), {
+      role: "buyer",
+      offer: { q: 400, unitPrice: 80, note: "seed" },
+      at: new Date().toISOString(),
+    });
+    window.history.replaceState(null, "", `/?n=${encodeSession(seeded)}`);
+
+    render(<NegotiateSurface onOpenHome={() => {}} />);
+    const suggestion = screen.getByTestId("role-suggestion");
+    expect(suggestion.textContent).toMatch(/supplier/i);
+    // The supplier chip should also carry the "suggested" marker.
+    expect(screen.getByTestId("role-supplier").textContent).toMatch(
+      /suggested/i,
+    );
+  });
+
+  it("picking the same role as the partner shows a conflict banner and switch button", async () => {
+    const { encodeSession, newSession, appendRound } = await import(
+      "@lab/engine"
+    );
+    // Partner posted as supplier.
+    const seeded = appendRound(newSession(), {
+      role: "supplier",
+      offer: { q: 350, unitPrice: 90, note: "" },
+      at: new Date().toISOString(),
+    });
+    window.history.replaceState(null, "", `/?n=${encodeSession(seeded)}`);
+
+    render(<NegotiateSurface onOpenHome={() => {}} />);
+    // Pick supplier too — that's a conflict.
+    fireEvent.click(screen.getByTestId("role-supplier"));
+    expect(screen.getByTestId("role-conflict-banner")).toBeTruthy();
+    // Switch button flips to buyer
+    fireEvent.click(screen.getByTestId("role-switch"));
+    expect(screen.queryByTestId("role-conflict-banner")).toBeNull();
+  });
+
+  it("Accept opens a confirmation card; confirming closes the deal when both sides accept", async () => {
+    const { encodeSession, newSession, appendRound, applyAccept } = await import(
+      "@lab/engine"
+    );
+    // Partner (supplier) posted an offer + already accepted; this user
+    // is the buyer.
+    let seeded = appendRound(newSession(), {
+      role: "supplier",
+      offer: { q: 350, unitPrice: 92, note: "" },
+      at: new Date().toISOString(),
+    });
+    seeded = applyAccept(seeded, "supplier");
+    window.history.replaceState(null, "", `/?n=${encodeSession(seeded)}`);
+
+    render(<NegotiateSurface onOpenHome={() => {}} />);
+    fireEvent.click(screen.getByTestId("role-buyer"));
+    fireEvent.click(screen.getByTestId("accept-offer"));
+    // Confirmation card appears, naming the offer being accepted.
+    const detail = screen.getByTestId("accept-confirm-detail");
+    expect(detail.textContent).toMatch(/q = 350/);
+    expect(detail.textContent).toMatch(/\$92\/unit/);
+    fireEvent.click(screen.getByTestId("accept-confirm-yes"));
+    // Now both have accepted → deal-closed surface with final terms.
+    expect(screen.getByTestId("deal-closed")).toBeTruthy();
+    const terms = screen.getByTestId("deal-final-terms");
+    expect(terms.textContent).toMatch(/quantity:.*350/);
+    expect(terms.textContent).toMatch(/unit price:.*\$92/);
+  });
+
+  it("Accept can be cancelled", async () => {
+    const { encodeSession, newSession, appendRound } = await import(
+      "@lab/engine"
+    );
+    const seeded = appendRound(newSession(), {
+      role: "supplier",
+      offer: { q: 350, unitPrice: 92, note: "" },
+      at: new Date().toISOString(),
+    });
+    window.history.replaceState(null, "", `/?n=${encodeSession(seeded)}`);
+
+    render(<NegotiateSurface onOpenHome={() => {}} />);
+    fireEvent.click(screen.getByTestId("role-buyer"));
+    fireEvent.click(screen.getByTestId("accept-offer"));
+    expect(screen.getByTestId("accept-confirm")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("accept-confirm-no"));
+    expect(screen.queryByTestId("accept-confirm")).toBeNull();
+    // Half-accepted banner did NOT trip
+    expect(screen.queryByTestId("half-accepted-banner")).toBeNull();
+  });
 });

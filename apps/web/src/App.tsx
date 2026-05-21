@@ -20,8 +20,8 @@ import { TOTAL_LEVELS, type LevelId } from "./state/learnProgress";
 // cytoscape and the legacy sandbox bundle into the initial render path.
 // Vitest workers in particular crashed importing SandboxApp at module
 // init, so this keeps the App.test.tsx router tests safe.
-const SandboxApp = lazy(() =>
-  import("./surfaces/sandbox/SandboxApp").then((m) => ({ default: m.SandboxApp })),
+const SandboxShell = lazy(() =>
+  import("./surfaces/sandbox/SandboxShell").then((m) => ({ default: m.SandboxShell })),
 );
 const ReportSurface = lazy(() =>
   import("./surfaces/report/ReportSurface").then((m) => ({ default: m.ReportSurface })),
@@ -137,11 +137,9 @@ export default function App() {
 
   // sandbox
   return (
-    <div data-testid="sandbox-shell">
-      <Suspense fallback={<div data-testid="sandbox-loading">Loading sandbox…</div>}>
-        <SandboxApp />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div data-testid="sandbox-loading">Loading sandbox…</div>}>
+      <SandboxShell />
+    </Suspense>
   );
 }
 
