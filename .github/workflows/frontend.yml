@@ -16,7 +16,34 @@ jobs:
           cache: npm
       - name: install
         run: npm ci
+      - name: lint
+        run: npm run lint
       - name: build
         run: npm run build
       - name: tests
         run: npm run test
+      - name: mobile tests
+        run: npm run test --workspace=@lab/mobile -- --runInBand
+      - name: mobile typecheck
+        run: npm run typecheck --workspace=@lab/mobile
+      - name: install playwright
+        run: npx playwright install --with-deps chromium
+      - name: smoke built web
+        shell: bash
+        run: |
+          npm run preview --workspace=@lab/web -- --host 127.0.0.1 --port 4173 &
+          PREVIEW_PID=$!
+          trap 'kill "$PREVIEW_PID" 2>/dev/null || true' EXIT
+          READY=0
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
+              READY=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$READY" -ne 1 ]; then
+            echo "preview server did not become ready"
+            exit 1
+          fi
+          SMOKE_URL=http://127.0.0.1:4173/ npm run smoke --workspace=@lab/web

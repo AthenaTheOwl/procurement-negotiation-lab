@@ -18,6 +18,7 @@ import { Level07 } from "./src/screens/learn/Level07";
 import { Level08 } from "./src/screens/learn/Level08";
 import { Level09 } from "./src/screens/learn/Level09";
 import { Level10 } from "./src/screens/learn/Level10";
+import { Level11 } from "./src/screens/learn/Level11";
 import { SandboxStub } from "./src/screens/sandbox/SandboxStub";
 import { colors } from "./src/theme/tokens";
 import {
@@ -29,11 +30,34 @@ import {
   type LearnProgress,
   type LevelId,
 } from "./src/state/learnProgress";
+import type { ComponentType } from "react";
 
 type Route =
   | { kind: "home" }
   | { kind: "learn"; level: LevelId }
   | { kind: "sandbox" };
+
+type LearnLevelProps = {
+  progress: LearnProgress;
+  onComplete: () => void;
+  onJumpTo?: (level: number) => void;
+  onOpenHome?: () => void;
+  onOpenSandbox?: () => void;
+};
+
+const LEVEL_COMPONENTS = {
+  1: Level01,
+  2: Level02,
+  3: Level03,
+  4: Level04,
+  5: Level05,
+  6: Level06,
+  7: Level07,
+  8: Level08,
+  9: Level09,
+  10: Level10,
+  11: Level11,
+} satisfies Record<LevelId, ComponentType<LearnLevelProps>>;
 
 export default function App() {
   const [route, setRoute] = useState<Route>({ kind: "home" });
@@ -82,16 +106,11 @@ export default function App() {
       {route.kind === "home" && (
         <HomeScreen onStartPlaying={goLearn} onOpenSandbox={goSandbox} />
       )}
-      {route.kind === "learn" && route.level === 1 && <Level01 {...commonProps(1)} />}
-      {route.kind === "learn" && route.level === 2 && <Level02 {...commonProps(2)} />}
-      {route.kind === "learn" && route.level === 3 && <Level03 {...commonProps(3)} />}
-      {route.kind === "learn" && route.level === 4 && <Level04 {...commonProps(4)} />}
-      {route.kind === "learn" && route.level === 5 && <Level05 {...commonProps(5)} />}
-      {route.kind === "learn" && route.level === 6 && <Level06 {...commonProps(6)} />}
-      {route.kind === "learn" && route.level === 7 && <Level07 {...commonProps(7)} />}
-      {route.kind === "learn" && route.level === 8 && <Level08 {...commonProps(8)} />}
-      {route.kind === "learn" && route.level === 9 && <Level09 {...commonProps(9)} />}
-      {route.kind === "learn" && route.level === 10 && <Level10 {...commonProps(10)} />}
+      {route.kind === "learn" &&
+        (() => {
+          const Level = LEVEL_COMPONENTS[route.level];
+          return <Level {...commonProps(route.level)} />;
+        })()}
       {route.kind === "sandbox" && <SandboxStub onOpenHome={goHome} />}
     </SafeAreaView>
   );

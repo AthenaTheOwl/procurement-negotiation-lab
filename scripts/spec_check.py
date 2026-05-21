@@ -1,22 +1,19 @@
-"""Validate the active spec-driven-development artifact set."""
+"""Validate the active spec-driven-development artifact set.
+
+The check is intentionally repo-specific. It prevents the failure mode where a
+feature ships with nice code and green tests, but the requirements, traceability,
+and proof gates are stale or missing.
+"""
 
 from __future__ import annotations
 
+import json
+import re
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SPECS = [
-    ROOT / "specs" / "0001-polished-simulator",
-    ROOT / "specs" / "0002-lab-authoring-workbench",
-    ROOT / "specs" / "0003-bergemann-arc",
-    ROOT / "specs" / "0004-operational-mechanism-refinements",
-    ROOT / "specs" / "0005-multi-party-portal",
-    ROOT / "specs" / "0006-run-reports-replay",
-    ROOT / "specs" / "0007-production-hardening",
-    ROOT / "specs" / "0008-data-bridges",
-    ROOT / "specs" / "0009-factory-dev-control-plane",
-    ROOT / "specs" / "0010-pedagogical-redesign",
-]
+SPECS_ROOT = ROOT / "specs"
 
 REQUIRED_FILE_NAMES = [
     "requirements.md",
@@ -27,115 +24,177 @@ REQUIRED_FILE_NAMES = [
     "traceability.md",
 ]
 
-REQUIREMENT_IDS = [
-    "R-PLAY-001",
-    "R-PLAY-002",
-    "R-PLAY-003",
-    "R-PLAY-004",
-    "R-LAB-001",
-    "R-LAB-002",
-    "R-LAB-003",
-    "R-LAB-004",
-    "R-LAB-005",
-    "R-LAB-006",
-    "R-LAB-007",
-    "R-LAB-008",
-    "R-LAB-009",
-    "R-ARC-001",
-    "R-ARC-002",
-    "R-ARC-003",
-    "R-ARC-004",
-    "R-ARC-005",
-    "R-ARC-006",
-    "R-ARC-007",
-    "R-STUDY-001",
-    "R-SPEC-001",
-    "R-SPEC-002",
-    "R-SPEC-003",
-    "R-OPS-001",
-    "R-OPS-002",
-    "R-OPS-003",
-    "R-OPS-004",
-    "R-SPEC-004",
-    "R-PORTAL-001",
-    "R-PORTAL-002",
-    "R-PORTAL-003",
-    "R-PORTAL-004",
-    "R-PORTAL-005",
-    "R-PORTAL-006",
-    "R-SPEC-005",
-    "R-REPORT-001",
-    "R-REPORT-002",
-    "R-REPORT-003",
-    "R-REPORT-004",
-    "R-REPORT-005",
-    "R-SPEC-006",
-    "R-HARDEN-001",
-    "R-HARDEN-002",
-    "R-HARDEN-003",
-    "R-HARDEN-004",
-    "R-HARDEN-005",
-    "R-HARDEN-006",
-    "R-SPEC-007",
-    "R-BRIDGE-001",
-    "R-BRIDGE-002",
-    "R-BRIDGE-003",
-    "R-BRIDGE-004",
-    "R-BRIDGE-005",
-    "R-SPEC-008",
-    "R-FACTORY-001",
-    "R-FACTORY-002",
-    "R-FACTORY-003",
-    "R-FACTORY-004",
-    "R-FACTORY-005",
-    "R-SPEC-009",
-    "R-LEARN-001",
-    "R-LEARN-002",
-    "R-LEARN-003",
-    "R-LEARN-004",
-    "R-LEARN-005",
-    "R-LEARN-006",
-    "R-LEARN-007",
-    "R-MOBILE-001",
-    "R-MOBILE-002",
-    "R-MONO-001",
-    "R-SPEC-010",
+REQUIREMENT_RE = re.compile(r"^###\s+(R-[A-Z0-9-]+):", re.MULTILINE)
+TRACEABILITY_ID_RE = re.compile(r"\b(R-[A-Z0-9-]+)\b")
+
+REQUIRED_ACCEPTANCE_GATES = [
+    "python -m uv run pytest",
+    "npm.cmd run build",
+    "Browser QA",
+]
+
+REQUIRED_WORKFLOW_PROOFS = {
+    ".github/workflows/tests.yml": [
+        "scripts/spec_check.py",
+        "scripts/voice_lint.py",
+        "uv run pytest",
+        "uv run ruff check .",
+        "uv run mypy src",
+    ],
+    ".github/workflows/frontend.yml": [
+        "npm ci",
+        "npm run lint",
+        "npm run build",
+        "npm run test",
+        "npm run test --workspace=@lab/mobile",
+        "npm run typecheck --workspace=@lab/mobile",
+        "npm run smoke --workspace=@lab/web",
+    ],
+    ".github/workflows/security.yml": [
+        "uv run bandit",
+        "uv run pip-audit",
+    ],
+    ".github/workflows/smoke.yml": [
+        "workflow_dispatch",
+        "schedule",
+        "procurement-negotiation-lab.vercel.app",
+        "playwright",
+    ],
+}
+
+REQUIRED_PACKAGE_SCRIPTS = {
+    "lint",
+    "test",
+    "build",
+    "smoke",
+    "verify:js",
+    "verify:py",
+    "verify",
+}
+
+REQUIRED_AGENT_PROTOCOL = [
+    "npm.cmd run verify",
+    "python scripts/spec_check.py",
+    "python scripts/voice_lint.py",
+    "npm.cmd run test --workspace=@lab/mobile -- --runInBand",
+    "SMOKE_URL=https://procurement-negotiation-lab.vercel.app/",
 ]
 
 
-def main() -> None:
+def active_specs() -> list[Path]:
+    return sorted(
+        path
+        for path in SPECS_ROOT.iterdir()
+        if path.is_dir() and re.match(r"^\d{4}-", path.name)
+    )
+
+
+def relative(path: Path) -> str:
+    return path.relative_to(ROOT).as_posix()
+
+
+def read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def requirement_ids(spec: Path) -> list[str]:
+    ids = REQUIREMENT_RE.findall(read(spec / "requirements.md"))
+    if not ids:
+        raise SystemExit(f"{relative(spec / 'requirements.md')} has no R-* headings")
+    return ids
+
+
+def check_required_files(specs: list[Path]) -> None:
     missing = [
         spec / file_name
-        for spec in SPECS
+        for spec in specs
         for file_name in REQUIRED_FILE_NAMES
         if not (spec / file_name).exists()
     ]
     if missing:
-        names = "\n".join(str(path.relative_to(ROOT)) for path in missing)
+        names = "\n".join(relative(path) for path in missing)
         raise SystemExit(f"missing spec files:\n{names}")
 
-    requirements = "\n".join(
-        (spec / "requirements.md").read_text(encoding="utf-8") for spec in SPECS
-    )
-    traceability = "\n".join(
-        (spec / "traceability.md").read_text(encoding="utf-8") for spec in SPECS
-    )
-    for requirement_id in REQUIREMENT_IDS:
-        if requirement_id not in requirements:
-            raise SystemExit(f"{requirement_id} missing from requirements.md")
-        if requirement_id not in traceability:
-            raise SystemExit(f"{requirement_id} missing from traceability.md")
 
-    acceptance = "\n".join((spec / "acceptance.md").read_text(encoding="utf-8") for spec in SPECS)
-    for gate in [
-        "python -m uv run pytest",
-        "npm.cmd run build",
-        "Browser QA",
-    ]:
-        if gate not in acceptance:
-            raise SystemExit(f"acceptance gate missing: {gate}")
+def check_readme_lists_specs(specs: list[Path]) -> None:
+    readme = read(SPECS_ROOT / "README.md")
+    missing = [spec.name for spec in specs if spec.name not in readme]
+    if missing:
+        names = "\n".join(missing)
+        raise SystemExit(f"specs/README.md missing active spec(s):\n{names}")
 
-    print("spec_check OK")
+
+def check_traceability(specs: list[Path]) -> None:
+    all_ids: list[str] = []
+    for spec in specs:
+        ids = requirement_ids(spec)
+        all_ids.extend(ids)
+        traceability = read(spec / "traceability.md")
+        traced_ids = set(TRACEABILITY_ID_RE.findall(traceability))
+        missing = [requirement_id for requirement_id in ids if requirement_id not in traced_ids]
+        if missing:
+            names = "\n".join(missing)
+            raise SystemExit(f"{relative(spec / 'traceability.md')} missing:\n{names}")
+
+    duplicates = [requirement_id for requirement_id, count in Counter(all_ids).items() if count > 1]
+    if duplicates:
+        names = "\n".join(sorted(duplicates))
+        raise SystemExit(f"duplicate requirement id(s):\n{names}")
+
+
+def check_acceptance_gates(specs: list[Path]) -> None:
+    acceptance = "\n".join(read(spec / "acceptance.md") for spec in specs)
+    missing = [gate for gate in REQUIRED_ACCEPTANCE_GATES if gate not in acceptance]
+    if missing:
+        names = "\n".join(missing)
+        raise SystemExit(f"acceptance gate missing:\n{names}")
+
+
+def check_workflow_proofs() -> None:
+    missing: list[str] = []
+    for workflow_name, needles in REQUIRED_WORKFLOW_PROOFS.items():
+        workflow = ROOT / workflow_name
+        if not workflow.exists():
+            missing.append(f"{workflow_name}: file missing")
+            continue
+        text = read(workflow)
+        for needle in needles:
+            if needle not in text:
+                missing.append(f"{workflow_name}: missing {needle!r}")
+    if missing:
+        raise SystemExit("workflow proof missing:\n" + "\n".join(missing))
+
+
+def check_local_protocol() -> None:
+    package = json.loads(read(ROOT / "package.json"))
+    scripts = package.get("scripts", {})
+    missing_scripts = sorted(REQUIRED_PACKAGE_SCRIPTS - set(scripts))
+    if missing_scripts:
+        raise SystemExit(
+            "package.json missing verification scripts:\n" + "\n".join(missing_scripts)
+        )
+
+    agents = read(ROOT / "AGENTS.md")
+    missing_agent_rules = [
+        needle for needle in REQUIRED_AGENT_PROTOCOL if needle not in agents
+    ]
+    if missing_agent_rules:
+        raise SystemExit(
+            "AGENTS.md missing execution protocol:\n" + "\n".join(missing_agent_rules)
+        )
+
+
+def main() -> None:
+    specs = active_specs()
+    if not specs:
+        raise SystemExit("no active specs found")
+    check_required_files(specs)
+    check_readme_lists_specs(specs)
+    check_traceability(specs)
+    check_acceptance_gates(specs)
+    check_workflow_proofs()
+    check_local_protocol()
+    print(f"spec_check OK ({len(specs)} active specs)")
 
 
 if __name__ == "__main__":
