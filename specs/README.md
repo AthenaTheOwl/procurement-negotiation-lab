@@ -71,6 +71,13 @@ Current active specs:
 - `0010-pedagogical-redesign/tokens.css`
 - `0010-pedagogical-redesign/levels/01.md` … `levels/08.md`
 
+- `0011-coordination-sandbox-governance/requirements.md`
+- `0011-coordination-sandbox-governance/design.md`
+- `0011-coordination-sandbox-governance/tasks.md`
+- `0011-coordination-sandbox-governance/acceptance.md`
+- `0011-coordination-sandbox-governance/research.md`
+- `0011-coordination-sandbox-governance/traceability.md`
+
 The development loop is:
 
 1. Write or update requirements in testable language.

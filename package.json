@@ -15,6 +15,9 @@
     "test:web": "npm run test --workspace=@lab/web -- --run",
     "test": "npm run test:engine && npm run test:web",
     "lint": "npm run lint --workspace=@lab/engine && npm run lint --workspace=@lab/web",
-    "smoke": "npm run smoke --workspace=@lab/web"
+    "smoke": "npm run smoke --workspace=@lab/web",
+    "verify:js": "npm run lint && npm run test && npm run build && npm run test --workspace=@lab/mobile -- --runInBand && npm run typecheck --workspace=@lab/mobile",
+    "verify:py": "python -m uv run pytest -q && python -m uv run ruff check . && python -m uv run mypy src && python -m uv run bandit -q -r src && python -m uv run pip-audit && python scripts/voice_lint.py && python scripts/spec_check.py",
+    "verify": "npm run verify:js && npm run verify:py"
   }
 }

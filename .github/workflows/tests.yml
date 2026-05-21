@@ -19,5 +19,7 @@ jobs:
         run: uv run ruff check .
       - name: mypy
         run: uv run mypy src
+      - name: voice lint
+        run: uv run python scripts/voice_lint.py
       - name: spec check
         run: uv run python scripts/spec_check.py

@@ -38,6 +38,26 @@ claims:
 | 9 | Level 10 Model Studio for menu authoring and shared coordination kernel | shipped |
 | 10 | Negotiate UX fixes + Level 11 mechanism catalog + multi-SKU BuyPlanStudio (replaces legacy lab as default sandbox; Classic kept as a tab) | shipped |
 | 11 | Sandbox convergence playground + transfer-pricing workbench for consensus/menu/CBT exploration | shipped |
+| 12 | Spec/workflow guardrail retrofit + mobile Level 11 route coverage | shipped |
+
+## Phase 12 Discipline Retrofit
+
+- **Spec 0011 added**. The convergence sandbox, transfer-pricing workbench,
+  mobile Level 11 fix, and workflow guardrails are now codified in
+  `specs/0011-coordination-sandbox-governance/`.
+- **`spec_check.py` hardened**. It now discovers every active `specs/NNNN-*`
+  directory instead of relying on a hand-maintained list. It fails if a core
+  spec file is missing, a requirement ID is duplicated, an `R-*` requirement is
+  absent from traceability, `specs/README.md` omits an active spec, or CI lacks
+  required proof commands.
+- **CI proof gates expanded**. Python CI now runs voice_lint before spec_check.
+  Frontend CI now runs lint, build, web+engine tests, mobile Jest, mobile
+  typecheck, and built-app Playwright smoke. Scheduled/manual smoke runs through
+  the repo's npm smoke script against the production Vercel URL.
+- **Mobile Level 11 bug fixed**. Mobile progress declared `TOTAL_LEVELS = 11`,
+  but `App.tsx` only rendered Levels 1-10. Completing Level 10 could route to a
+  blank screen. Mobile now has a Level 11 coordination-catalog screen and a
+  type-checked level registry so future count/renderer drift fails TypeScript.
 
 ## Phase 11 Additions
 
