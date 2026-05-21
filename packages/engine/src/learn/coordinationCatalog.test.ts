@@ -62,7 +62,7 @@ describe("coordinationCatalog", () => {
     const menu = entryById("posted-price").setupEffort;
     const admm = entryById("admm").setupEffort;
     const mpc = entryById("secure-mpc").setupEffort;
-    const order = { "very-low": 0, low: 1, medium: 2, high: 3 } as const;
+    const order = { minimal: 0, low: 1, medium: 2, high: 3 } as const;
     expect(order[rule]).toBeLessThan(order[admm]);
     expect(order[menu]).toBeLessThan(order[admm]);
     expect(order[admm]).toBeLessThanOrEqual(order[mpc]);

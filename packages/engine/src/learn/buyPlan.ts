@@ -107,6 +107,10 @@ const ALLOWED_VARS = new Set<string>([
   "holding",
 ]);
 
+function finiteNonNegative(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
 function evalSkuFormula(row: SkuRow): SkuEvalResult {
   try {
     const compiled = compileFormula(row.formula, ALLOWED_VARS);
@@ -145,6 +149,7 @@ function applyRelationship(
   const involved = rel.skuIds
     .map((id) => skuById.get(id))
     .filter((r): r is SkuRow => Boolean(r));
+  const strength = finiteNonNegative(rel.strength);
 
   if (rel.kind === "complement") {
     if (involved.length !== 2) {
@@ -157,15 +162,18 @@ function applyRelationship(
         note: "complement requires exactly two SKUs; correction skipped.",
       };
     }
-    const matched = Math.min(involved[0].q, involved[1].q);
-    const delta = matched * rel.strength;
+    const matched = Math.min(
+      finiteNonNegative(involved[0].q),
+      finiteNonNegative(involved[1].q),
+    );
+    const delta = matched * strength;
     return {
       id: rel.id,
       kind: rel.kind,
       skuIds: rel.skuIds,
       delta,
       binding: delta > 0,
-      note: `+$${Math.round(delta).toLocaleString()} bundle lift across ${involved.map((s) => s.name).join(" + ")} (matched ${matched} units × $${rel.strength}/unit).`,
+      note: `+$${Math.round(delta).toLocaleString()} bundle lift across ${involved.map((s) => s.name).join(" + ")} (matched ${matched} units x $${strength}/unit).`,
     };
   }
 
@@ -181,17 +189,19 @@ function applyRelationship(
       };
     }
     // Sum of q above combined demand is "wasted" (cannibalized). Charge
-    // the excess at the average service_value × strength.
+    // the excess at the average service_value times strength.
     const combinedDemand = Math.max(
-      involved[0].params.demand,
-      involved[1].params.demand,
+      finiteNonNegative(involved[0].params.demand),
+      finiteNonNegative(involved[1].params.demand),
     );
-    const combinedQ = involved[0].q + involved[1].q;
+    const combinedQ =
+      finiteNonNegative(involved[0].q) + finiteNonNegative(involved[1].q);
     const overlap = Math.max(0, combinedQ - combinedDemand);
     const avgValue =
-      (involved[0].params.service_value + involved[1].params.service_value) /
+      (finiteNonNegative(involved[0].params.service_value) +
+        finiteNonNegative(involved[1].params.service_value)) /
       2;
-    const delta = -overlap * rel.strength * avgValue * 0.25;
+    const delta = -overlap * strength * avgValue * 0.25;
     return {
       id: rel.id,
       kind: rel.kind,
@@ -208,13 +218,23 @@ function applyRelationship(
   }
 
   // shared-capacity: hard cap on sum(q).
-  const totalQ = involved.reduce((acc, s) => acc + s.q, 0);
-  const cap = rel.strength;
+  if (involved.length === 0) {
+    return {
+      id: rel.id,
+      kind: rel.kind,
+      skuIds: rel.skuIds,
+      delta: 0,
+      binding: false,
+      note: "shared-capacity relationship has no matching SKUs; correction skipped.",
+    };
+  }
+  const totalQ = involved.reduce((acc, s) => acc + finiteNonNegative(s.q), 0);
+  const cap = strength;
   const over = Math.max(0, totalQ - cap);
   if (over > 0) {
     // Heavy penalty: over * worst-case service value across involved SKUs.
     const worstService = Math.max(
-      ...involved.map((s) => s.params.service_value),
+      ...involved.map((s) => finiteNonNegative(s.params.service_value)),
     );
     const delta = -over * worstService;
     return {

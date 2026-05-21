@@ -19,6 +19,7 @@ import {
   optimalBuyPlan,
   type Relationship,
   type RelationshipKind,
+  type SkuParameters,
   type SkuRow,
 } from "@lab/engine";
 
@@ -36,6 +37,11 @@ const RELATIONSHIP_COLOR: Record<RelationshipKind, string> = {
 
 function money(v: number): string {
   return `$${Math.round(v).toLocaleString()}`;
+}
+
+function nonNegativeNumber(value: string, fallback = 0): number {
+  const next = Number(value);
+  return Number.isFinite(next) ? Math.max(0, next) : fallback;
 }
 
 export function BuyPlanStudio() {
@@ -63,9 +69,17 @@ export function BuyPlanStudio() {
     setSkus((prev) => {
       const next = prev.slice();
       next[idx] = { ...next[idx], ...patch };
-      if (patch.params) {
-        next[idx].params = { ...prev[idx].params, ...patch.params };
-      }
+      return next;
+    });
+  };
+
+  const updateSkuParams = (idx: number, patch: Partial<SkuParameters>) => {
+    setSkus((prev) => {
+      const next = prev.slice();
+      next[idx] = {
+        ...next[idx],
+        params: { ...next[idx].params, ...patch },
+      };
       return next;
     });
   };
@@ -275,7 +289,9 @@ export function BuyPlanStudio() {
                   max={5000}
                   step={10}
                   value={Math.round(sku.q)}
-                  onChange={(e) => updateSku(idx, { q: Number(e.target.value) })}
+                  onChange={(e) =>
+                    updateSku(idx, { q: nonNegativeNumber(e.target.value) })
+                  }
                   style={{
                     width: "100%",
                     padding: "var(--space-2, 8px)",
@@ -306,8 +322,8 @@ export function BuyPlanStudio() {
                         step={1}
                         value={Math.round(sku.params[key])}
                         onChange={(e) =>
-                          updateSku(idx, {
-                            params: { [key]: Number(e.target.value) } as never,
+                          updateSkuParams(idx, {
+                            [key]: nonNegativeNumber(e.target.value),
                           })
                         }
                         style={{
@@ -393,7 +409,7 @@ export function BuyPlanStudio() {
                   value={rel.strength}
                   onChange={(e) =>
                     updateRelationship(idx, {
-                      strength: Number(e.target.value),
+                      strength: nonNegativeNumber(e.target.value),
                     })
                   }
                   style={{

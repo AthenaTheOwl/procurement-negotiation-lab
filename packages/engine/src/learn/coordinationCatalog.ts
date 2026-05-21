@@ -55,7 +55,7 @@ export interface CoordinationEntry {
     | "ok"
     | "weak";
   /** setup effort */
-  setupEffort: "very-low" | "low" | "medium" | "high";
+  setupEffort: "minimal" | "low" | "medium" | "high";
   /** approximate runtime cost */
   compute: "constant" | "low" | "medium" | "iterative";
   /** is truthful reporting a dominant strategy under standard assumptions? */
@@ -80,7 +80,7 @@ export const COORDINATION_CATALOG: CoordinationEntry[] = [
       "The rule set itself, plus any state the engine reads. No iterative transcript.",
     confidentiality: "medium",
     welfare: "ok",
-    setupEffort: "very-low",
+    setupEffort: "minimal",
     compute: "constant",
     incentiveCompatible: false,
     bestFits: [

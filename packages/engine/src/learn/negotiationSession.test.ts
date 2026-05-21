@@ -32,6 +32,20 @@ describe("negotiationSession", () => {
     expect(back).toEqual(s);
   });
 
+  it("encode + decode preserves UTF-8 notes", () => {
+    const s = appendRound(newSession(), {
+      ...baseRound,
+      offer: {
+        ...baseRound.offer,
+        note: "capacity tight \u2014 supplier says \u201cyes\u201d \u2713",
+      },
+    });
+    const back = decodeSession(encodeSession(s));
+    expect(back?.history[0].offer.note).toBe(
+      "capacity tight \u2014 supplier says \u201cyes\u201d \u2713",
+    );
+  });
+
   it("rejects tampered version", () => {
     const bad = btoa(
       JSON.stringify({ ...newSession(), v: 99 }),
@@ -57,6 +71,23 @@ describe("negotiationSession", () => {
     expect(s.history.length).toBeLessThanOrEqual(24);
     // most recent round is the one with the highest q
     expect(s.history[s.history.length - 1].offer.q).toBe(39);
+  });
+
+  it("appendRound invalidates stale accepts when a counteroffer arrives", () => {
+    let s = appendRound(newSession(), baseRound);
+    s = applyAccept(s, "buyer");
+    s = applyAccept(s, "supplier");
+    expect(isDealClosed(s)).toBe(true);
+
+    s = appendRound(s, {
+      role: "supplier",
+      offer: { q: 300, unitPrice: 110, note: "counter" },
+      at: "2026-05-19T08:01:00.000Z",
+    });
+
+    expect(s.buyerAccepted).toBe(false);
+    expect(s.supplierAccepted).toBe(false);
+    expect(isDealClosed(s)).toBe(false);
   });
 
   it("applyAccept marks the right party", () => {

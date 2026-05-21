@@ -48,7 +48,7 @@ const WELFARE_LABEL: Record<CoordinationEntry["welfare"], string> = {
 };
 
 const SETUP_LABEL: Record<CoordinationEntry["setupEffort"], string> = {
-  "very-low": "minimal",
+  minimal: "minimal",
   low: "low",
   medium: "medium",
   high: "high",

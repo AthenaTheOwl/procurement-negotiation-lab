@@ -55,6 +55,37 @@ describe("buyPlan", () => {
     expect(result.corrections[0].delta).toBeLessThan(0);
   });
 
+  it("ignores relationships whose SKU ids no longer exist", () => {
+    const { skus } = defaultBuyPlan();
+    const rels: Relationship[] = [
+      {
+        id: "missing-cap",
+        kind: "shared-capacity",
+        skuIds: ["missing-a", "missing-b"],
+        strength: 100,
+      },
+    ];
+    const result = evaluateBuyPlan(skus, rels);
+    expect(result.corrections[0].delta).toBe(0);
+    expect(result.violations).toEqual([]);
+    expect(Number.isFinite(result.aggregate)).toBe(true);
+  });
+
+  it("clamps invalid relationship strength instead of flipping correction signs", () => {
+    const { skus } = defaultBuyPlan();
+    const rels: Relationship[] = [
+      {
+        id: "negative-complement",
+        kind: "complement",
+        skuIds: ["sku-a", "sku-c"],
+        strength: -10,
+      },
+    ];
+    const result = evaluateBuyPlan(skus, rels);
+    expect(result.corrections[0].delta).toBe(0);
+    expect(result.corrections[0].binding).toBe(false);
+  });
+
   it("invalid formula on one SKU surfaces a per-SKU error but doesn't crash the rest", () => {
     const { skus, relationships } = defaultBuyPlan();
     const broken = skus.slice();

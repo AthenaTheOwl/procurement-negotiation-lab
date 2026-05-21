@@ -1,14 +1,12 @@
 /**
- * LearnShell — router shell for the 8-level guided journey.
+ * LearnShell — router shell for the guided journey.
  *
  * Reads the URL hash (`#/learn/N`) and renders the requested level. Gates
  * navigation behind learnProgress: jumping to a level the user hasn't
  * unlocked redirects to the highest unlocked level.
  *
- * In Phase 2, only Level 1 is wired. Levels 2-8 fall through to a
- * placeholder card that says "coming soon" — clicking Continue from a
- * placeholder just calls markComplete so the user can keep moving (this
- * placeholder mode is dropped in Phases 3-5).
+ * Late, heavier levels are split into their own chunks so the first
+ * screen and early levels stay light.
  */
 
 import { Suspense, lazy, useEffect, useState } from "react";
@@ -21,8 +19,6 @@ import { Level05 } from "./Level05";
 import { Level06 } from "./Level06";
 import { Level07 } from "./Level07";
 import { Level08 } from "./Level08";
-import { Level09 } from "./Level09";
-import { Level11 } from "./Level11";
 import { LevelShell } from "../../primitives/LevelShell";
 import {
   TOTAL_LEVELS,
@@ -38,6 +34,12 @@ import {
 
 const Level10 = lazy(() =>
   import("./Level10").then((module) => ({ default: module.Level10 })),
+);
+const Level09 = lazy(() =>
+  import("./Level09").then((module) => ({ default: module.Level09 })),
+);
+const Level11 = lazy(() =>
+  import("./Level11").then((module) => ({ default: module.Level11 })),
 );
 
 export interface LearnShellProps {
@@ -105,7 +107,13 @@ export function LearnShell({
   if (level === 6) return <Level06 {...commonProps} />;
   if (level === 7) return <Level07 {...commonProps} />;
   if (level === 8) return <Level08 {...commonProps} />;
-  if (level === 9) return <Level09 {...commonProps} />;
+  if (level === 9) {
+    return (
+      <Suspense fallback={<div data-testid="level9-loading">Loading commitment workbench...</div>}>
+        <Level09 {...commonProps} />
+      </Suspense>
+    );
+  }
   if (level === 10) {
     return (
       <Suspense fallback={<div data-testid="level10-loading">Loading Model Studio...</div>}>
@@ -113,7 +121,13 @@ export function LearnShell({
       </Suspense>
     );
   }
-  if (level === 11) return <Level11 {...commonProps} />;
+  if (level === 11) {
+    return (
+      <Suspense fallback={<div data-testid="level11-loading">Loading mechanism catalog...</div>}>
+        <Level11 {...commonProps} />
+      </Suspense>
+    );
+  }
   return (
     <PlaceholderLevel
       level={level}
