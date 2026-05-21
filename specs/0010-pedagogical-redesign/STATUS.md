@@ -9,9 +9,9 @@
 
 Spec 0010 is implemented and locally reproducible after verification and polish.
 The major product additions are present, the app builds, the Python and
-TypeScript test suites pass, mobile Jest now runs, and the built local preview
-passes the Playwright smoke suite. Production smoke should be rerun after Vercel
-deploys this commit.
+TypeScript test suites pass, mobile Jest now runs, the built local preview
+passes the Playwright smoke suite, and the canonical Vercel production URL
+passes the same smoke suite after deploy.
 
 The original report was directionally right but had two stale verification
 claims:
@@ -127,12 +127,12 @@ Run locally on Windows with Node/npm, Python 3.11, and uv.
 | Python audit | `python -m uv run pip-audit` | no known Python vulns |
 | Voice lint | `python scripts/voice_lint.py` | clean |
 | Spec check | `python scripts/spec_check.py` | OK |
-| Playwright smoke | `SMOKE_URL=<target> npm run smoke --workspace=@lab/web` | 7 / 7 locally; production rerun after deploy |
+| Playwright smoke | `SMOKE_URL=<target> npm run smoke --workspace=@lab/web` | 7 / 7 locally and 7 / 7 against `https://procurement-negotiation-lab.vercel.app/` |
 
 Current verified count: **528 unit/integration tests** passing
 (92 pytest + 218 engine vitest + 207 web vitest + 11 mobile Jest), plus
-**7 Playwright smoke checks** against local preview. Production smoke should be
-rerun after Vercel deploys this commit.
+**7 Playwright smoke checks** against local preview and **7 Playwright smoke
+checks** against the canonical production URL.
 
 ## Remaining Caveats
 
@@ -146,9 +146,9 @@ The push that contains this correction should be treated as the durable CI proof
 ### Vercel
 
 The active production URL is
-`https://procurement-negotiation-lab.vercel.app/`. Vercel had a ready production
-deployment before this correction pass; after this pass, the production redeploy
-should be rechecked against the pushed commit.
+`https://procurement-negotiation-lab.vercel.app/`. Vercel deployment for the
+verified commit completed successfully and the production smoke suite passed
+against the canonical URL.
 
 ### iOS Simulator / Physical Device
 
@@ -167,7 +167,7 @@ requires user-account authentication at `share.streamlit.io`.
 
 ### Full Playwright Flow Coverage
 
-Local preview smoke is verified. A broader browser suite for every new Level 9/10,
+Local preview and production smoke are verified. A broader browser suite for every new Level 9/10,
 RAG/chip-map bridge, save/share, streak, and negotiate flow remains future work.
 
 ### npm Audit
