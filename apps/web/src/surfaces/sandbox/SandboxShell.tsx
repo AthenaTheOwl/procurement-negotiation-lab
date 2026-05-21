@@ -13,12 +13,14 @@
 import { Suspense, lazy, useState } from "react";
 import type { CSSProperties } from "react";
 import { BuyPlanStudio } from "./buyplan/BuyPlanStudio";
+import { ConvergencePlayground } from "./convergence/ConvergencePlayground";
+import { TransferPricingStudio } from "./transfer/TransferPricingStudio";
 
 const SandboxApp = lazy(() =>
   import("./SandboxApp").then((m) => ({ default: m.SandboxApp })),
 );
 
-type TabId = "buy-plan" | "classic";
+type TabId = "buy-plan" | "convergence" | "transfers" | "classic";
 
 export interface SandboxShellProps {
   /** Optional initial tab, useful for tests. */
@@ -34,9 +36,10 @@ export function SandboxShell({ initialTab = "buy-plan" }: SandboxShellProps) {
     padding: "var(--space-4, 16px)",
   };
   const tabRow: CSSProperties = {
-    maxWidth: "1100px",
+    maxWidth: "min(1100px, 100%)",
     margin: "0 auto var(--space-4, 16px)",
     display: "flex",
+    flexWrap: "wrap",
     gap: "var(--space-2, 8px)",
     background: "var(--neutral-bg-2, #ffffff)",
     borderRadius: "var(--radius-pill, 999px)",
@@ -82,6 +85,26 @@ export function SandboxShell({ initialTab = "buy-plan" }: SandboxShellProps) {
         <button
           type="button"
           role="tab"
+          aria-selected={tab === "convergence"}
+          style={tabBtn("convergence")}
+          onClick={() => setTab("convergence")}
+          data-testid="sandbox-tab-convergence"
+        >
+          Convergence
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "transfers"}
+          style={tabBtn("transfers")}
+          onClick={() => setTab("transfers")}
+          data-testid="sandbox-tab-transfers"
+        >
+          Transfers
+        </button>
+        <button
+          type="button"
+          role="tab"
           aria-selected={tab === "classic"}
           style={tabBtn("classic")}
           onClick={() => setTab("classic")}
@@ -93,6 +116,8 @@ export function SandboxShell({ initialTab = "buy-plan" }: SandboxShellProps) {
 
       <div style={body} role="tabpanel">
         {tab === "buy-plan" && <BuyPlanStudio />}
+        {tab === "convergence" && <ConvergencePlayground />}
+        {tab === "transfers" && <TransferPricingStudio />}
         {tab === "classic" && (
           <Suspense
             fallback={
