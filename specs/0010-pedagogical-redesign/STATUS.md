@@ -7,10 +7,11 @@
 
 ## Current Verdict
 
-Spec 0010 is implemented and locally reproducible after one correction pass.
+Spec 0010 is implemented and locally reproducible after verification and polish.
 The major product additions are present, the app builds, the Python and
-TypeScript test suites pass, mobile Jest now runs, and the live Vercel app
-passes the Playwright smoke suite.
+TypeScript test suites pass, mobile Jest now runs, and the built local preview
+passes the Playwright smoke suite. Production smoke should be rerun after Vercel
+deploys this commit.
 
 The original report was directionally right but had two stale verification
 claims:
@@ -46,7 +47,9 @@ claims:
   Accept button opens a confirmation card naming the exact terms; a
   "half-accepted" banner makes the asymmetric-acceptance state
   explicit; the deal-closed surface lists the final quantity and unit
-  price.
+  price. A post-verification fix clears stale accepts whenever a new
+  counteroffer is posted, so deal closure cannot mix old accept flags
+  with newer terms. URL-encoded negotiation notes now preserve UTF-8.
 - **Level 11 — How to coordinate without a solver**. Comparison surface
   for twelve mechanisms (rule engine, posted-price menu, score
   ranking, RFQ, sealed-bid VCG, matching, greedy-with-shadow-prices,
@@ -63,6 +66,9 @@ claims:
   flagged explicitly. Engine helper:
   `packages/engine/src/learn/buyPlan.ts`. The legacy LabArena is kept
   reachable as the "Classic Lab Arena" tab inside `SandboxShell`.
+  Post-verification polish clamps invalid relationship strengths and
+  missing relationship SKU ids so corrections stay finite and do not
+  flip sign.
 - **Privacy framing tightened in Level 11**. Vanilla ADMM gives
   structural privacy by decentralization, not formal privacy.
   DP-ADMM adds calibrated noise for an (ε, δ) guarantee. Secure MPC
@@ -108,10 +114,10 @@ Run locally on Windows with Node/npm, Python 3.11, and uv.
 | Check | Command | Result |
 |-------|---------|--------|
 | Clean npm install | `npm ci` | pass |
-| Production build | `npm run build` | pass; Level 10 and Sandbox split into their own chunks |
-| Engine vitest | `npm run test:engine` | 214 / 214 |
-| Web vitest | `npm run test:web` | 206 / 206 |
-| Root JS tests | `npm run test` | 420 / 420 |
+| Production build | `npm run build` | pass; Level 9, Level 10, Level 11, SandboxShell, SandboxApp, and cytoscape split into their own chunks; main chunk under Vite's 500 kB warning threshold |
+| Engine vitest | `npm run test:engine` | 218 / 218 |
+| Web vitest | `npm run test:web` | 207 / 207 |
+| Root JS tests | `npm run test` | 425 / 425 |
 | Mobile Jest | `npm run test --workspace=@lab/mobile -- --runInBand` | 11 / 11 |
 | Mobile typecheck | `npm run typecheck --workspace=@lab/mobile` | pass |
 | Python tests | `python -m uv run pytest -q` | 92 / 92 |
@@ -119,12 +125,12 @@ Run locally on Windows with Node/npm, Python 3.11, and uv.
 | Mypy | `python -m uv run mypy src` | pass |
 | Bandit | `python -m uv run bandit -q -r src` | pass |
 | Python audit | `python -m uv run pip-audit` | no known Python vulns |
-| Voice lint | `python scripts/voice_lint.py` | 0 FAIL, 1 advisory WARN on engine-defined `"very-low"` key |
+| Voice lint | `python scripts/voice_lint.py` | clean |
 | Spec check | `python scripts/spec_check.py` | OK |
 | Playwright smoke | `SMOKE_URL=<target> npm run smoke --workspace=@lab/web` | 7 / 7 locally; production rerun after deploy |
 
-Current verified count: **523 unit/integration tests** passing
-(92 pytest + 214 engine vitest + 206 web vitest + 11 mobile Jest), plus
+Current verified count: **528 unit/integration tests** passing
+(92 pytest + 218 engine vitest + 207 web vitest + 11 mobile Jest), plus
 **7 Playwright smoke checks** against local preview. Production smoke should be
 rerun after Vercel deploys this commit.
 
@@ -161,7 +167,7 @@ requires user-account authentication at `share.streamlit.io`.
 
 ### Full Playwright Flow Coverage
 
-Live smoke is verified. A broader browser suite for every new Level 9/10,
+Local preview smoke is verified. A broader browser suite for every new Level 9/10,
 RAG/chip-map bridge, save/share, streak, and negotiate flow remains future work.
 
 ### npm Audit

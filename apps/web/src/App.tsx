@@ -4,7 +4,7 @@
  * URL hash routes:
  *   (empty / "#/" / "#home")     → HomeSurface
  *   "#/learn/1" through "#/learn/8" → LearnShell at that level
- *   "#/sandbox"                  → SandboxApp (the renamed legacy Lab Arena)
+   *   "#/sandbox"                  → SandboxShell (Buy Plan + Classic Lab Arena)
  *
  * Query parameters take precedence for the legacy `?report=<id>` route,
  * which short-circuits to the read-only ReportSurface.

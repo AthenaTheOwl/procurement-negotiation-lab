@@ -194,4 +194,36 @@ describe("NegotiateSurface", () => {
     // Half-accepted banner did NOT trip
     expect(screen.queryByTestId("half-accepted-banner")).toBeNull();
   });
+
+  it("a counteroffer clears stale half-accepted state before any later accept", async () => {
+    const { encodeSession, newSession, appendRound, applyAccept } = await import(
+      "@lab/engine"
+    );
+    let seeded = appendRound(newSession(), {
+      role: "supplier",
+      offer: { q: 350, unitPrice: 92, note: "" },
+      at: new Date().toISOString(),
+    });
+    seeded = applyAccept(seeded, "supplier");
+    window.history.replaceState(null, "", `/?n=${encodeSession(seeded)}`);
+
+    render(<NegotiateSurface onOpenHome={() => {}} />);
+    fireEvent.click(screen.getByTestId("role-buyer"));
+    expect(screen.getByTestId("half-accepted-banner").textContent).toMatch(
+      /Supplier accepted/i,
+    );
+
+    fireEvent.change(screen.getByTestId("draft-q"), {
+      target: { value: "375" },
+    });
+    fireEvent.click(screen.getByTestId("submit-offer"));
+    expect(screen.queryByTestId("half-accepted-banner")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("accept-offer"));
+    fireEvent.click(screen.getByTestId("accept-confirm-yes"));
+    expect(screen.queryByTestId("deal-closed")).toBeNull();
+    expect(screen.getByTestId("half-accepted-banner").textContent).toMatch(
+      /Buyer accepted/i,
+    );
+  });
 });

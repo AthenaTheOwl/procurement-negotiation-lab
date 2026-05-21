@@ -33,9 +33,29 @@ export interface NegotiationState {
   supplierAccepted: boolean;
 }
 
+function binaryFromBytes(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return binary;
+}
+
+function bytesFromBinary(binary: string): Uint8Array {
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
 function base64UrlEncode(input: string): string {
-  if (typeof btoa === "function") {
-    return btoa(input).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  if (typeof btoa === "function" && typeof TextEncoder === "function") {
+    const bytes = new TextEncoder().encode(input);
+    return btoa(binaryFromBytes(bytes))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
   }
   return Buffer.from(input, "utf-8")
     .toString("base64")
@@ -48,8 +68,8 @@ function base64UrlDecode(input: string): string {
   const padded = input.replace(/-/g, "+").replace(/_/g, "/");
   const padding =
     padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
-  if (typeof atob === "function") {
-    return atob(padded + padding);
+  if (typeof atob === "function" && typeof TextDecoder === "function") {
+    return new TextDecoder().decode(bytesFromBinary(atob(padded + padding)));
   }
   return Buffer.from(padded + padding, "base64").toString("utf-8");
 }
@@ -128,6 +148,8 @@ export function appendRound(
   return {
     ...state,
     history: [...state.history, round].slice(-MAX_HISTORY),
+    buyerAccepted: false,
+    supplierAccepted: false,
   };
 }
 
