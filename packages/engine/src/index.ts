@@ -285,3 +285,29 @@ export type {
   ScopeResolution,
   VendorReservation,
 } from "./learn/modelStudio";
+export {
+  COORDINATION_CATALOG,
+  catalogSummary,
+  entryById,
+} from "./learn/coordinationCatalog";
+export type {
+  CoordinationEntry,
+  CoordinationFamily,
+  CoordinationSummary,
+  Confidentiality,
+} from "./learn/coordinationCatalog";
+export {
+  DEFAULT_SKU_PARAMS,
+  defaultBuyPlan,
+  evaluateBuyPlan,
+  optimalBuyPlan,
+} from "./learn/buyPlan";
+export type {
+  PlanResult,
+  Relationship,
+  RelationshipCorrection,
+  RelationshipKind,
+  SkuEvalResult,
+  SkuParameters,
+  SkuRow,
+} from "./learn/buyPlan";

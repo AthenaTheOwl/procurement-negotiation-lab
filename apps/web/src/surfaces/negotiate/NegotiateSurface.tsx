@@ -72,6 +72,16 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
   const [draftPrice, setDraftPrice] = useState<number>(85);
   const [draftNote, setDraftNote] = useState<string>("");
   const [shareCopied, setShareCopied] = useState(false);
+  // Track which round indices the user has already seen so we can
+  // flash a "new offer arrived" banner when the partner posts.
+  const lastSeenRoundsRef = useRef<number>(state.history.length);
+  const [newOfferFlash, setNewOfferFlash] = useState<{
+    roundIndex: number;
+    fromRole: NegotiationRole;
+  } | null>(null);
+  // Pending accept-confirmation. Holds the offer the user is about to
+  // accept until they confirm.
+  const [pendingAcceptIdx, setPendingAcceptIdx] = useState<number | null>(null);
   const channelRef = useRef<BroadcastChannel | null>(null);
 
   // Sync from URL once on mount.
@@ -111,6 +121,48 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
     channelRef.current?.postMessage(encoded);
   }, [state]);
 
+  // Detect new partner offers and flash a banner. A "new" offer is
+  // one whose round index is greater than the last seen index AND was
+  // posted by the role opposite to ours. If the user hasn't picked a
+  // role yet, every appended round counts as new.
+  useEffect(() => {
+    const newCount = state.history.length - lastSeenRoundsRef.current;
+    if (newCount <= 0) {
+      lastSeenRoundsRef.current = state.history.length;
+      return;
+    }
+    // walk forward through the new rounds; flash the most recent
+    // round that came from the partner.
+    let flashIdx: number | null = null;
+    let flashRole: NegotiationRole | null = null;
+    for (
+      let i = lastSeenRoundsRef.current;
+      i < state.history.length;
+      i += 1
+    ) {
+      const r = state.history[i];
+      if (!role || r.role !== role) {
+        flashIdx = i;
+        flashRole = r.role;
+      }
+    }
+    lastSeenRoundsRef.current = state.history.length;
+    if (flashIdx !== null && flashRole !== null) {
+      setNewOfferFlash({ roundIndex: flashIdx, fromRole: flashRole });
+      const timer = window.setTimeout(() => setNewOfferFlash(null), 4000);
+      return () => window.clearTimeout(timer);
+    }
+  }, [state.history.length, role]);
+
+  // Detect a "role conflict": this browser claims a role, but the
+  // session URL already carries offers from that same role posted by
+  // someone else (i.e. the partner also chose this role). Surface a
+  // warning so the demo doesn't silently produce a half-dead session.
+  const roleConflict =
+    role !== null &&
+    state.history.length > 0 &&
+    state.history.every((r) => r.role === role);
+
   const otherRole: NegotiationRole | null =
     role === "buyer" ? "supplier" : role === "supplier" ? "buyer" : null;
   const myLastOffer = role ? latestOfferFor(state, role) : null;
@@ -137,10 +189,38 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
     setDraftNote("");
   };
 
-  const handleAccept = () => {
+  // Suggest the OTHER role on the picker if the URL already carries
+  // offers from one side. Returns null if no signal either way.
+  const suggestedRole: NegotiationRole | null = (() => {
+    if (state.history.length === 0) return null;
+    const buyerCount = state.history.filter((r) => r.role === "buyer").length;
+    const supplierCount = state.history.length - buyerCount;
+    if (buyerCount > 0 && supplierCount === 0) return "supplier";
+    if (supplierCount > 0 && buyerCount === 0) return "buyer";
+    return null;
+  })();
+
+  // Two-step accept: clicking "Accept partner's latest" opens a
+  // confirmation card; clicking "Confirm" commits the accept.
+  const handleAcceptRequest = () => {
+    if (!role) return;
+    const partnerIdx = (() => {
+      for (let i = state.history.length - 1; i >= 0; i -= 1) {
+        if (state.history[i].role !== role) return i;
+      }
+      return null;
+    })();
+    if (partnerIdx === null) return;
+    setPendingAcceptIdx(partnerIdx);
+  };
+
+  const handleAcceptConfirm = () => {
     if (!role) return;
     setState((prev) => applyAccept(prev, role));
+    setPendingAcceptIdx(null);
   };
+
+  const handleAcceptCancel = () => setPendingAcceptIdx(null);
 
   const handleNewSession = () => {
     const fresh = newSession();
@@ -258,27 +338,112 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
             <h2 style={{ margin: 0, fontSize: "var(--type-3, 1.05rem)" }}>
               Pick your role
             </h2>
+            {suggestedRole && (
+              <p
+                data-testid="role-suggestion"
+                style={{
+                  margin: 0,
+                  fontSize: "var(--type-2, 1rem)",
+                  color: "var(--neutral-fg-soft, #5b5b62)",
+                }}
+              >
+                The partner has already posted as{" "}
+                <strong>
+                  {suggestedRole === "buyer" ? "supplier" : "buyer"}
+                </strong>
+                . Pick <strong>{suggestedRole}</strong> to take the other side
+                of the deal.
+              </p>
+            )}
             <div style={{ display: "flex", gap: "var(--space-3, 12px)", flexWrap: "wrap" }}>
               <button
                 type="button"
-                style={button}
+                style={{
+                  ...button,
+                  outline:
+                    suggestedRole === "buyer"
+                      ? "3px solid var(--surplus-good, #1bb676)"
+                      : undefined,
+                }}
                 onClick={() => handlePickRole("buyer")}
                 data-testid="role-buyer"
               >
-                I'm the buyer
+                I'm the buyer{suggestedRole === "buyer" ? " ← suggested" : ""}
               </button>
               <button
                 type="button"
-                style={{ ...button, background: "var(--role-supplier, #f4a85f)" }}
+                style={{
+                  ...button,
+                  background: "var(--role-supplier, #f4a85f)",
+                  outline:
+                    suggestedRole === "supplier"
+                      ? "3px solid var(--surplus-good, #1bb676)"
+                      : undefined,
+                }}
                 onClick={() => handlePickRole("supplier")}
                 data-testid="role-supplier"
               >
                 I'm the supplier
+                {suggestedRole === "supplier" ? " ← suggested" : ""}
               </button>
             </div>
           </div>
         ) : (
           <>
+            {roleConflict && (
+              <div
+                data-testid="role-conflict-banner"
+                style={{
+                  background: "var(--walkaway-zone, rgba(210, 74, 74, 0.1))",
+                  borderLeft: "4px solid var(--surplus-lost, #d24a4a)",
+                  borderRadius: "var(--radius-tile, 12px)",
+                  padding: "var(--space-3, 12px) var(--space-4, 16px)",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "var(--space-3, 12px)",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <span>
+                  <strong>Role conflict.</strong> Your partner already posted
+                  as <strong>{role}</strong>. A negotiation needs one of each.
+                  Switch sides to take the other half of the deal.
+                </span>
+                <button
+                  type="button"
+                  style={{
+                    ...button,
+                    background: "var(--surplus-lost, #d24a4a)",
+                  }}
+                  onClick={() =>
+                    handlePickRole(role === "buyer" ? "supplier" : "buyer")
+                  }
+                  data-testid="role-switch"
+                >
+                  Switch to {role === "buyer" ? "supplier" : "buyer"}
+                </button>
+              </div>
+            )}
+            {newOfferFlash && (
+              <div
+                data-testid="new-offer-flash"
+                role="status"
+                aria-live="polite"
+                style={{
+                  background: "var(--deal-zone, rgba(27, 182, 118, 0.18))",
+                  borderLeft: "4px solid var(--surplus-good, #1bb676)",
+                  borderRadius: "var(--radius-tile, 12px)",
+                  padding: "var(--space-3, 12px) var(--space-4, 16px)",
+                  fontWeight: 600,
+                  boxShadow:
+                    "0 0 0 4px color-mix(in srgb, var(--surplus-good, #1bb676) 30%, transparent)",
+                }}
+              >
+                New offer from {newOfferFlash.fromRole} (round{" "}
+                {newOfferFlash.roundIndex + 1}).
+              </div>
+            )}
             <div style={card}>
               <div
                 style={{
@@ -433,7 +598,7 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
               )}
             </div>
 
-            {!dealClosed && (
+            {!dealClosed && pendingAcceptIdx === null && (
               <div
                 style={{
                   display: "flex",
@@ -447,15 +612,20 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
                   style={button}
                   onClick={handleSubmit}
                   data-testid="submit-offer"
+                  disabled={roleConflict}
                 >
                   Submit offer
                 </button>
                 <button
                   type="button"
                   style={acceptBtn}
-                  onClick={handleAccept}
+                  onClick={handleAcceptRequest}
                   data-testid="accept-offer"
-                  disabled={state.history.length === 0}
+                  disabled={
+                    roleConflict ||
+                    state.history.length === 0 ||
+                    partnerLastOffer === null
+                  }
                 >
                   Accept partner's latest
                 </button>
@@ -470,19 +640,121 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
               </div>
             )}
 
+            {pendingAcceptIdx !== null && (
+              <div
+                data-testid="accept-confirm"
+                style={{
+                  background: "var(--neutral-bg-2, #ffffff)",
+                  borderRadius: "var(--radius-card, 16px)",
+                  padding: "var(--space-5, 24px)",
+                  border: "2px solid var(--surplus-good, #1bb676)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-4, 16px)",
+                }}
+              >
+                <h3 style={{ margin: 0 }}>Accept this offer?</h3>
+                <div data-testid="accept-confirm-detail">
+                  Partner ({state.history[pendingAcceptIdx].role}) offered{" "}
+                  <strong>q = {state.history[pendingAcceptIdx].offer.q}</strong> at{" "}
+                  <strong>
+                    ${state.history[pendingAcceptIdx].offer.unitPrice}/unit
+                  </strong>
+                  {state.history[pendingAcceptIdx].offer.note
+                    ? ` — "${state.history[pendingAcceptIdx].offer.note}"`
+                    : ""}
+                  . Accepting commits <strong>your half</strong> of the deal.
+                  The deal closes only when the partner also accepts.
+                </div>
+                <div style={{ display: "flex", gap: "var(--space-3, 12px)", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    style={acceptBtn}
+                    onClick={handleAcceptConfirm}
+                    data-testid="accept-confirm-yes"
+                  >
+                    Yes, accept
+                  </button>
+                  <button
+                    type="button"
+                    style={ghostBtn}
+                    onClick={handleAcceptCancel}
+                    data-testid="accept-confirm-no"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!dealClosed &&
+              (state.buyerAccepted || state.supplierAccepted) &&
+              pendingAcceptIdx === null && (
+                <div
+                  data-testid="half-accepted-banner"
+                  style={{
+                    background: "var(--deal-zone, rgba(27, 182, 118, 0.1))",
+                    borderLeft: "4px solid var(--surplus-good, #1bb676)",
+                    borderRadius: "var(--radius-tile, 12px)",
+                    padding: "var(--space-3, 12px) var(--space-4, 16px)",
+                  }}
+                >
+                  <strong>
+                    {state.buyerAccepted ? "Buyer" : "Supplier"} accepted.
+                  </strong>{" "}
+                  Waiting on the {state.buyerAccepted ? "supplier" : "buyer"}{" "}
+                  to confirm. The partner can accept the same offer to close
+                  the deal, or counter to keep negotiating.
+                </div>
+              )}
+
             {dealClosed && (
               <div
                 data-testid="deal-closed"
                 style={{
-                  background: "var(--deal-zone, rgba(27, 182, 118, 0.1))",
+                  background: "var(--deal-zone, rgba(27, 182, 118, 0.15))",
                   borderLeft: "4px solid var(--surplus-good, #1bb676)",
-                  borderRadius: "var(--radius-tile, 12px)",
-                  padding: "var(--space-4, 16px)",
+                  borderRadius: "var(--radius-card, 16px)",
+                  padding: "var(--space-5, 24px)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-3, 12px)",
                 }}
               >
-                Deal closed after {state.history.length} round
-                {state.history.length === 1 ? "" : "s"}. Both parties
-                accepted.
+                <h3 style={{ margin: 0 }}>Deal closed ✓</h3>
+                <div>
+                  Both parties accepted after {state.history.length} round
+                  {state.history.length === 1 ? "" : "s"}. The agreed terms:
+                </div>
+                {(() => {
+                  // Find the last round (the offer that both parties
+                  // agreed to) to surface the final terms explicitly.
+                  const lastRound = state.history[state.history.length - 1];
+                  return (
+                    <div
+                      data-testid="deal-final-terms"
+                      style={{
+                        background: "var(--neutral-bg, #f7f7f4)",
+                        padding: "var(--space-3, 12px) var(--space-4, 16px)",
+                        borderRadius: "var(--radius-tile, 12px)",
+                        fontFamily:
+                          "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+                      }}
+                    >
+                      quantity: <strong>{lastRound.offer.q}</strong>
+                      <br />
+                      unit price: <strong>${lastRound.offer.unitPrice}</strong>
+                      <br />
+                      total: <strong>${lastRound.offer.q * lastRound.offer.unitPrice}</strong>
+                      {lastRound.offer.note ? (
+                        <>
+                          <br />
+                          note: "{lastRound.offer.note}"
+                        </>
+                      ) : null}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 

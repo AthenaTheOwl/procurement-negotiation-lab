@@ -35,6 +35,40 @@ claims:
 | 6+7 | Mobile scaffold + Home + Levels 1-8 + Sandbox stub | shipped |
 | 8 | Level 9, RAG bridge, chip-map bridge, save/share, streak, negotiate surface | shipped |
 | 9 | Level 10 Model Studio for menu authoring and shared coordination kernel | shipped |
+| 10 | Negotiate UX fixes + Level 11 mechanism catalog + multi-SKU BuyPlanStudio (replaces legacy lab as default sandbox; Classic kept as a tab) | shipped |
+
+## Phase 10 Additions
+
+- **Negotiate UX fixes**. Role-conflict detection now warns and offers a
+  one-click switch when both browsers land on the same role. The role
+  picker suggests the opposite side when the URL state already has
+  offers. New offers from the partner trigger a flash banner. The
+  Accept button opens a confirmation card naming the exact terms; a
+  "half-accepted" banner makes the asymmetric-acceptance state
+  explicit; the deal-closed surface lists the final quantity and unit
+  price.
+- **Level 11 — How to coordinate without a solver**. Comparison surface
+  for twelve mechanisms (rule engine, posted-price menu, score
+  ranking, RFQ, sealed-bid VCG, matching, greedy-with-shadow-prices,
+  small LP, price-adjustment loop, ADMM, DP-ADMM, secure MPC). Each
+  carries the same provenance card: what it exchanges across the
+  trust boundary, what an observer can infer, welfare ranking, setup
+  effort, and whether truthful reporting is dominant. Owned by
+  `packages/engine/src/learn/coordinationCatalog.ts`.
+- **Multi-SKU BuyPlanStudio**. New default sandbox surface. Three
+  starting SKUs with editable per-SKU utility formulas, parameters,
+  and quantities. Typed inter-SKU relationships: substitute, complement,
+  and shared-capacity. Aggregate plan utility = sum of per-SKU
+  utilities + relationship corrections, with hard-cap violations
+  flagged explicitly. Engine helper:
+  `packages/engine/src/learn/buyPlan.ts`. The legacy LabArena is kept
+  reachable as the "Classic Lab Arena" tab inside `SandboxShell`.
+- **Privacy framing tightened in Level 11**. Vanilla ADMM gives
+  structural privacy by decentralization, not formal privacy.
+  DP-ADMM adds calibrated noise for an (ε, δ) guarantee. Secure MPC
+  is the formal-privacy ceiling. Cheaper protocols (posted-price,
+  scoring, RFQ) often cover ~80% of coordination value at a fraction
+  of the operational cost.
 
 ## Phase 8 Additions
 
@@ -74,10 +108,10 @@ Run locally on Windows with Node/npm, Python 3.11, and uv.
 | Check | Command | Result |
 |-------|---------|--------|
 | Clean npm install | `npm ci` | pass |
-| Production build | `npm run build` | pass, 184 modules; Level 10 split into its own chunk |
-| Engine vitest | `npm run test:engine` | 196 / 196 |
-| Web vitest | `npm run test:web` | 187 / 187 |
-| Root JS tests | `npm run test` | 383 / 383 |
+| Production build | `npm run build` | pass; Level 10 and Sandbox split into their own chunks |
+| Engine vitest | `npm run test:engine` | 214 / 214 |
+| Web vitest | `npm run test:web` | 206 / 206 |
+| Root JS tests | `npm run test` | 420 / 420 |
 | Mobile Jest | `npm run test --workspace=@lab/mobile -- --runInBand` | 11 / 11 |
 | Mobile typecheck | `npm run typecheck --workspace=@lab/mobile` | pass |
 | Python tests | `python -m uv run pytest -q` | 92 / 92 |
@@ -85,12 +119,12 @@ Run locally on Windows with Node/npm, Python 3.11, and uv.
 | Mypy | `python -m uv run mypy src` | pass |
 | Bandit | `python -m uv run bandit -q -r src` | pass |
 | Python audit | `python -m uv run pip-audit` | no known Python vulns |
-| Voice lint | `python scripts/voice_lint.py` | clean, 78 files |
+| Voice lint | `python scripts/voice_lint.py` | 0 FAIL, 1 advisory WARN on engine-defined `"very-low"` key |
 | Spec check | `python scripts/spec_check.py` | OK |
 | Playwright smoke | `SMOKE_URL=<target> npm run smoke --workspace=@lab/web` | 7 / 7 locally; production rerun after deploy |
 
-Current verified count: **486 unit/integration tests** passing
-(92 pytest + 196 engine vitest + 187 web vitest + 11 mobile Jest), plus
+Current verified count: **523 unit/integration tests** passing
+(92 pytest + 214 engine vitest + 206 web vitest + 11 mobile Jest), plus
 **7 Playwright smoke checks** against local preview. Production smoke should be
 rerun after Vercel deploys this commit.
 
