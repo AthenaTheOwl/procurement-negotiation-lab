@@ -4,7 +4,7 @@
 
 import { Pressable, Text, View } from "react-native";
 import type { InfoMode } from "@lab/engine";
-import { colors, radius, space, type } from "../theme/tokens";
+import { colors, radius, space } from "../theme/tokens";
 
 export const INFO_STOPS: InfoMode[] = [
   "private",

@@ -1,6 +1,8 @@
 // learnProgress (mobile) tests — exercise the same shape + helpers as
 // the web build. AsyncStorage is mocked by jest-expo by default.
 
+/* eslint-disable import/first */
+
 jest.mock("@react-native-async-storage/async-storage", () => ({
   __esModule: true,
   default: {
