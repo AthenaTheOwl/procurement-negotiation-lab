@@ -59,6 +59,15 @@ Standard set:
 - `SMOKE_URL=<local-preview> npm run smoke --workspace=@lab/web`
 - after deploy: `SMOKE_URL=https://procurement-negotiation-lab.vercel.app/ npm run smoke --workspace=@lab/web`
 
+## Pass F - control clarity
+
+| Check | Verification |
+|---|---|
+| Lab Arena sliders explain what they change and what to watch | Code review + browser QA |
+| Level 6 packager slider explains chokepoint purpose | `Level06.test.tsx` |
+| Convergence input fields define tuning parameters | Code review + web vitest |
+| Transfer-pricing input fields define pricing parameters | Code review + web vitest |
+
 ## Definition of done
 
 - This spec is registered in `specs/README.md`.

@@ -80,6 +80,7 @@ export function Level06({
 
   const canContinue = triedRules.size >= 2;
   const allHappy = rows.every((r) => r.utility >= r.party.outside);
+  const totalUtility = rows.reduce((sum, row) => sum + row.utility, 0);
 
   return (
     <LevelShell
@@ -117,6 +118,32 @@ export function Level06({
             />
           );
         })}
+      </View>
+
+      <View
+        testID="level6-capacity-explainer"
+        style={{
+          backgroundColor: colors.neutralBg,
+          borderLeftWidth: 4,
+          borderLeftColor: colors.rolePackager,
+          padding: space.s4,
+          gap: space.s2,
+        }}
+      >
+        <Text style={{ fontSize: type.t2, fontWeight: "600" }}>
+          Why touch packager capacity?
+        </Text>
+        <Text style={{ fontSize: type.t1, color: colors.neutralFgSoft }}>
+          The packager is the third-party chokepoint after wafers exist:
+          substrate, bonding, and advanced-packaging slots. Lower capacity means
+          the same buyer/supplier plan creates less real utility, so the split
+          rule has to decide who absorbs or gets compensated for that bottleneck.
+        </Text>
+        <Text style={{ fontSize: type.t1, color: colors.neutralFgSoft }}>
+          Current packager capacity is {capacityPct}% of the unconstrained plan,
+          producing {money(totalUtility)} total utility before the outside-option
+          check below.
+        </Text>
       </View>
 
       <QuantityKnob

@@ -28,6 +28,18 @@ const METHOD_COPY: Record<ConvergenceMethod, string> = {
     "A shadow price rises or falls with the shared capacity gap, then vendors respond privately.",
 };
 
+const INPUT_HELP: Record<keyof ConsensusConfig, string> = {
+  method: "Choose the convergence protocol.",
+  targetDemand: "Total units the coordinator needs across vendors. This is the shared constraint every method is trying to clear.",
+  initialTarget: "The first per-vendor quantity sent before anyone responds. Bad guesses usually take more rounds to settle.",
+  rho: "ADMM penalty weight. Higher rho pulls vendors harder toward consensus but can over-dampen private preferences.",
+  alpha: "Damping fraction for fixed-point averaging. Lower alpha moves slowly and steadily; higher alpha moves fast and can overshoot.",
+  eta: "Price/shadow-price step size. Larger eta makes prices react harder to shortage or excess supply.",
+  maxRounds: "Hard stop before falling back to a menu or manual decision.",
+  epsilon: "Residual tolerance. Once proposals are this close, the protocol calls the SKU-week plan converged.",
+  initialPrice: "Starting posted price for price-clearing methods. It shapes early vendor quantity responses.",
+};
+
 function numberValue(value: string, fallback: number): number {
   const next = Number(value);
   return Number.isFinite(next) ? next : fallback;
@@ -220,6 +232,16 @@ export function ConvergencePlayground() {
               style={inputStyle}
               data-testid={`convergence-input-${key}`}
             />
+            <span
+              style={{
+                marginTop: "var(--space-1, 4px)",
+                color: "var(--neutral-fg-soft, #5b5b62)",
+                fontSize: "var(--type-1, 0.85rem)",
+                lineHeight: 1.35,
+              }}
+            >
+              {INPUT_HELP[key as keyof ConsensusConfig]}
+            </span>
           </label>
         ))}
       </div>

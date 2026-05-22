@@ -28,6 +28,9 @@ describe("Level06", () => {
     expect(screen.getByTestId("row-supplier")).toBeTruthy();
     expect(screen.getByTestId("row-packager")).toBeTruthy();
     expect(screen.getByTestId("level6-rule")).toBeTruthy();
+    expect(screen.getByTestId("level6-capacity-explainer").textContent).toMatch(
+      /third-party chokepoint/i,
+    );
   });
 
   it("Continue disabled until at least 2 rules tried", () => {

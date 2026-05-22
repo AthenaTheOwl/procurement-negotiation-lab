@@ -617,6 +617,17 @@ input[type="range"] {
   width: 100%;
 }
 
+.slider-help {
+  color: #cbd5e1;
+  font-size: 0.86rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.slider-help strong {
+  color: #e5edf8;
+}
+
 select {
   border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: 8px;

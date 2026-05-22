@@ -117,6 +117,20 @@ Acceptance:
 - The rules say to update the spec before implementation when a change does
   not fit the active spec.
 
+### R-GUARD-004: interactive controls explain their purpose
+
+WHEN a user-facing sandbox control changes a scenario parameter, THE SYSTEM
+SHALL explain what the control changes, why the user would touch it, and which
+output to watch.
+
+Acceptance:
+- Core scenario sliders in the Lab Arena include short causal helper text.
+- Level 6 explains why packager capacity exists and how it affects third-party
+  transfer feasibility.
+- Convergence and transfer-pricing workbench inputs include parameter-specific
+  helper text.
+- Tests cover the Level 6 packager-capacity explanation.
+
 ### R-SPEC-011: traceability for this discipline pass
 
 WHEN this spec ships, THE SYSTEM SHALL record the new requirements,

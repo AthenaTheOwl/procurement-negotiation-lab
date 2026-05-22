@@ -373,6 +373,12 @@ export function BuyPlanStudio() {
         <h3 style={{ margin: 0, fontSize: "var(--type-3, 1.05rem)" }}>
           SKU relationships
         </h3>
+        <p style={{ margin: 0, color: "var(--neutral-fg-soft, #5b5b62)" }}>
+          These controls are the reason this is a buy-plan sandbox instead of
+          three isolated SKU calculators. Substitutes penalize overbuying both
+          SKUs, complements reward matched volume, and shared capacity creates a
+          hard cap across the selected SKUs.
+        </p>
         {relationships.map((rel, idx) => {
           const correction = result.corrections.find((c) => c.id === rel.id);
           return (

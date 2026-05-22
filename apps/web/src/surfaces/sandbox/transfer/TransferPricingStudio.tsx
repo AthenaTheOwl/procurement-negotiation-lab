@@ -15,6 +15,20 @@ const METHOD_LABEL: Record<TransferMethod, string> = {
   "vcg-style": "VCG-style",
 };
 
+const INPUT_HELP: Record<keyof TransferPricingScenario, string> = {
+  method: "Choose how the acceptable transfer is priced.",
+  units: "Affected units in the proposed operational change.",
+  vendorIncrementalCost: "Private cost the vendor bears to accept the new plan.",
+  platformBenefit: "Operational value the platform gets from the change before paying the transfer.",
+  networkCongestionCost: "Real network cost the plan imposes elsewhere. This reduces welfare.",
+  splitAlpha: "Surplus share paid above the vendor's minimum compensation. 0 means bare minimum; 1 gives the vendor all surplus.",
+  capacityShadowPricePerUnit: "Scarcity value per unit for constrained slots, lanes, or nodes.",
+  serviceCreditPerUnit: "Per-unit credit for improving service, fill rate, or stockout risk.",
+  timingPremiumPerUnit: "Per-unit premium for moving volume into the valuable arrival window.",
+  congestionChargePerUnit: "Per-unit charge for using overloaded network capacity.",
+  markdownRiskChargePerUnit: "Per-unit charge for creating excess or aging inventory risk.",
+};
+
 function numberValue(value: string, fallback: number): number {
   const next = Number(value);
   return Number.isFinite(next) ? next : fallback;
@@ -176,6 +190,16 @@ export function TransferPricingStudio() {
               style={inputStyle}
               data-testid={`transfer-input-${key}`}
             />
+            <span
+              style={{
+                marginTop: "var(--space-1, 4px)",
+                color: "var(--neutral-fg-soft, #5b5b62)",
+                fontSize: "var(--type-1, 0.85rem)",
+                lineHeight: 1.35,
+              }}
+            >
+              {INPUT_HELP[key as keyof TransferPricingScenario]}
+            </span>
           </label>
         ))}
       </div>
