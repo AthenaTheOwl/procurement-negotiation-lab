@@ -78,6 +78,13 @@ Current active specs:
 - `0011-coordination-sandbox-governance/research.md`
 - `0011-coordination-sandbox-governance/traceability.md`
 
+- `0012-mobile-release-and-agentic-sdlc/requirements.md`
+- `0012-mobile-release-and-agentic-sdlc/design.md`
+- `0012-mobile-release-and-agentic-sdlc/tasks.md`
+- `0012-mobile-release-and-agentic-sdlc/acceptance.md`
+- `0012-mobile-release-and-agentic-sdlc/research.md`
+- `0012-mobile-release-and-agentic-sdlc/traceability.md`
+
 The development loop is:
 
 1. Write or update requirements in testable language.
