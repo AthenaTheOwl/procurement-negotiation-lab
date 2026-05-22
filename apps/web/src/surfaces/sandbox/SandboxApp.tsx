@@ -470,6 +470,12 @@ function LabSurface() {
             Presets are canonical coordination failures. Use them as starting
             points, then change the structure below.
           </p>
+          <div className="callout">
+            <strong>How to use these knobs:</strong> move one at a time, then
+            watch the so-what panel, oracle gaps, and near-optimal frontier. A
+            useful knob should change the coordination problem, not just make a
+            number wiggle.
+          </div>
           <div className="preset-grid">
             {scenarioPresets.map((preset) => (
               <button
@@ -482,13 +488,76 @@ function LabSurface() {
               </button>
             ))}
           </div>
-          <Slider label="Demand volatility" value={scenario.volatility} min={0.05} max={0.6} step={0.01} onChange={(volatility) => setScenario({ ...scenario, volatility })} />
-          <Slider label="Capacity tightness" value={scenario.capacityTightness} min={0.2} max={1.0} step={0.01} onChange={(capacityTightness) => setScenario({ ...scenario, capacityTightness })} />
-          <Slider label="Lead time weeks" value={scenario.leadTimeWeeks} min={2} max={24} step={1} onChange={(leadTimeWeeks) => setScenario({ ...scenario, leadTimeWeeks })} />
-          <Slider label="Fulfillment centers" value={scenario.fulfillmentCenterCount} min={1} max={8} step={1} onChange={(fulfillmentCenterCount) => setScenario({ ...scenario, fulfillmentCenterCount })} />
-          <Slider label="Participants" value={scenario.participantCount} min={2} max={5} step={1} onChange={(participantCount) => setScenario({ ...scenario, participantCount })} />
-          <Slider label="Products" value={scenario.productCount} min={1} max={4} step={1} onChange={(productCount) => setScenario({ ...scenario, productCount })} />
-          <Slider label="Periods" value={scenario.periodCount} min={1} max={6} step={1} onChange={(periodCount) => setScenario({ ...scenario, periodCount })} />
+          <Slider
+            label="Demand volatility"
+            value={scenario.volatility}
+            min={0.05}
+            max={0.6}
+            step={0.01}
+            help="How uncertain demand is. Raise it to make forecast sharing and robust plans more valuable."
+            watch="info value, oracle gap, and the frontier notes."
+            onChange={(volatility) => setScenario({ ...scenario, volatility })}
+          />
+          <Slider
+            label="Capacity tightness"
+            value={scenario.capacityTightness}
+            min={0.2}
+            max={1.0}
+            step={0.01}
+            help="How scarce the constrained supplier, node, or slot is. Higher means local plans run into capacity sooner."
+            watch="residual, capacity priors, and which mechanism beats price-only coordination."
+            onChange={(capacityTightness) => setScenario({ ...scenario, capacityTightness })}
+          />
+          <Slider
+            label="Lead time weeks"
+            value={scenario.leadTimeWeeks}
+            min={2}
+            max={24}
+            step={1}
+            help="How early the buyer must commit before demand is known. Longer lead time makes uncertainty and transfers matter more."
+            watch="the coordination gap and whether near-optimal plans prefer more slack."
+            onChange={(leadTimeWeeks) => setScenario({ ...scenario, leadTimeWeeks })}
+          />
+          <Slider
+            label="Fulfillment centers"
+            value={scenario.fulfillmentCenterCount}
+            min={1}
+            max={8}
+            step={1}
+            help="How many nodes the plan must allocate across. More nodes make the problem less like a single price negotiation."
+            watch="practical mechanisms lose ground to rules that handle coupled constraints."
+            onChange={(fulfillmentCenterCount) => setScenario({ ...scenario, fulfillmentCenterCount })}
+          />
+          <Slider
+            label="Participants"
+            value={scenario.participantCount}
+            min={2}
+            max={5}
+            step={1}
+            help="How many parties must be kept no-worse-off. Add parties to expose packager, logistics, or distributor bottlenecks."
+            watch="the multi-party ledger and split-rule sensitivity."
+            onChange={(participantCount) => setScenario({ ...scenario, participantCount })}
+          />
+          <Slider
+            label="Products"
+            value={scenario.productCount}
+            min={1}
+            max={4}
+            step={1}
+            help="How many SKUs share the planning scope. More products make substitution and bundle effects more plausible."
+            watch="the dedicated Buy Plan tab when you want to inspect SKU interactions directly."
+            onChange={(productCount) => setScenario({ ...scenario, productCount })}
+          />
+          <Slider
+            label="Periods"
+            value={scenario.periodCount}
+            min={1}
+            max={6}
+            step={1}
+            help="How many planning windows the commitment spans. More periods turn a one-shot bargain into a schedule."
+            watch="the Level 9 multi-period commitment workbench for the full schedule view."
+            onChange={(periodCount) => setScenario({ ...scenario, periodCount })}
+          />
           <div className="callout">
             <strong>Near-optimal plans:</strong> the epsilon frontier below uses these problem knobs to show which almost-best plans buy more slack.
           </div>
@@ -514,6 +583,8 @@ function LabSurface() {
             max={1}
             step={0.01}
             testId="buyer-reliability-slider"
+            help="How much the coordinator trusts the buyer-side capacity or demand signal."
+            watch="Lower reliability discounts stated capacity into effective capacity."
             onChange={(buyerReliability) => setScenario({ ...scenario, buyerReliability })}
           />
           <p className="muted">
@@ -534,16 +605,63 @@ function LabSurface() {
             max={1}
             step={0.01}
             testId="supplier-reliability-slider"
+            help="How much the coordinator trusts the supplier's stated capacity."
+            watch="Lower reliability means the planner treats fewer units as usable."
             onChange={(supplierReliability) => setScenario({ ...scenario, supplierReliability })}
           />
           <p className="muted">
             Supplier capacity prior: {supplierCapacity.effective} effective units from {supplierCapacity.stated} stated units.
           </p>
-          <Slider label="Buyer urgency" value={scenario.customBuyerUrgency} min={0} max={1} step={0.01} onChange={(customBuyerUrgency) => setScenario({ ...scenario, customBuyerUrgency })} />
-          <Slider label="Supplier flexibility" value={scenario.customSupplierFlexibility} min={0} max={1} step={0.01} onChange={(customSupplierFlexibility) => setScenario({ ...scenario, customSupplierFlexibility })} />
-          <Slider label="Truthful response tendency" value={scenario.customTruthfulness} min={0} max={1} step={0.01} onChange={(customTruthfulness) => setScenario({ ...scenario, customTruthfulness })} />
-          <Slider label="Privacy preference" value={scenario.customPrivacyPreference} min={0} max={1} step={0.01} onChange={(customPrivacyPreference) => setScenario({ ...scenario, customPrivacyPreference })} />
-          <Slider label="Risk aversion" value={scenario.customRiskAversion} min={0} max={1} step={0.01} onChange={(customRiskAversion) => setScenario({ ...scenario, customRiskAversion })} />
+          <Slider
+            label="Buyer urgency"
+            value={scenario.customBuyerUrgency}
+            min={0}
+            max={1}
+            step={0.01}
+            help="How costly delay feels to the buyer. Higher urgency makes fast, scarce capacity more attractive."
+            watch="transfer feasibility and price-only performance."
+            onChange={(customBuyerUrgency) => setScenario({ ...scenario, customBuyerUrgency })}
+          />
+          <Slider
+            label="Supplier flexibility"
+            value={scenario.customSupplierFlexibility}
+            min={0}
+            max={1}
+            step={0.01}
+            help="How willing the supplier is to shift timing or quantity if compensated."
+            watch="ADMM/VCG-style rules recover more value than rigid local planning."
+            onChange={(customSupplierFlexibility) => setScenario({ ...scenario, customSupplierFlexibility })}
+          />
+          <Slider
+            label="Truthful response tendency"
+            value={scenario.customTruthfulness}
+            min={0}
+            max={1}
+            step={0.01}
+            help="How closely agents report their real capacity and cost posture."
+            watch="incentive-compatible mechanisms improve relative to price-only negotiation."
+            onChange={(customTruthfulness) => setScenario({ ...scenario, customTruthfulness })}
+          />
+          <Slider
+            label="Privacy preference"
+            value={scenario.customPrivacyPreference}
+            min={0}
+            max={1}
+            step={0.01}
+            help="How strongly parties resist exposing forecasts, costs, or capacity bands."
+            watch="privacy exposure and information value diverge."
+            onChange={(customPrivacyPreference) => setScenario({ ...scenario, customPrivacyPreference })}
+          />
+          <Slider
+            label="Risk aversion"
+            value={scenario.customRiskAversion}
+            min={0}
+            max={1}
+            step={0.01}
+            help="How much parties penalize uncertain or fragile plans."
+            watch="near-optimal plans with more slack become more appealing."
+            onChange={(customRiskAversion) => setScenario({ ...scenario, customRiskAversion })}
+          />
         </div>
       </div>
       <div className="lab-grid">
@@ -561,17 +679,21 @@ function LabSurface() {
               min={0}
               max={1}
               step={0.01}
-              testId="alpha-slider"
-              onChange={(alpha) => setScenario({ ...scenario, alpha })}
-            />
+            testId="alpha-slider"
+            help="How much of the teaching transfer is paid in the settlement. Lower alpha caps spend, but weakens the truth-telling incentive."
+            watch="the transfer ledger and no-worse-off checks."
+            onChange={(alpha) => setScenario({ ...scenario, alpha })}
+          />
             <Slider
               label="ε near-optimal frontier"
               value={scenario.epsilon}
               min={0}
               max={0.12}
-              step={0.01}
-              testId="epsilon-slider"
-              onChange={(epsilon) => {
+            step={0.01}
+            testId="epsilon-slider"
+            help="How far below the best utility a plan can be and still count as worth inspecting."
+            watch="the frontier list grow from one best plan to robust alternatives."
+            onChange={(epsilon) => {
                 setScenario({ ...scenario, epsilon });
                 setSelectedPlanId("");
               }}
@@ -1019,6 +1141,8 @@ function Slider({
   max,
   step,
   testId,
+  help,
+  watch,
   onChange,
 }: {
   label: string;
@@ -1027,6 +1151,8 @@ function Slider({
   max: number;
   step: number;
   testId?: string;
+  help?: ReactNode;
+  watch?: ReactNode;
   onChange: (value: number) => void;
 }) {
   return (
@@ -1035,6 +1161,17 @@ function Slider({
         {label}: <strong>{step === 1 ? value : value.toFixed(2)}</strong>
       </span>
       <input data-testid={testId} type="range" min={min} max={max} step={step} value={value} onChange={(event) => onChange(Number(event.target.value))} />
+      {(help || watch) && (
+        <span className="slider-help">
+          {help}
+          {watch && (
+            <>
+              {" "}
+              <strong>Watch:</strong> {watch}
+            </>
+          )}
+        </span>
+      )}
     </label>
   );
 }

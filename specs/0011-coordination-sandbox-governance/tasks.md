@@ -47,6 +47,9 @@
 - [x] **D5**: Update `AGENTS.md` with spec-first and proof-gate rules.
   *(R-GUARD-003)*
 - [x] **D6**: Register this spec and update traceability. *(R-SPEC-011)*
+- [x] **D7**: Backfill causal helper text for scenario sliders,
+  convergence inputs, transfer inputs, and Level 6 packager capacity.
+  *(R-GUARD-004)*
 
 ## Verification
 
@@ -57,3 +60,5 @@
 - [x] **V3**: Full local gate sweep passes. *(R-GUARD-002)*
 - [x] **V4**: Push to `main`, wait for GitHub checks, verify Vercel
   deployment, and run production smoke. *(R-GUARD-002, R-GUARD-003)*
+- [x] **V5**: Add component coverage for the Level 6 packager-capacity
+  explanation and rerun focused UI tests. *(R-GUARD-004)*

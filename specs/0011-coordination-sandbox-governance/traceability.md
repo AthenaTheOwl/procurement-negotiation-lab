@@ -11,6 +11,7 @@
 | **R-GUARD-001** dynamic spec discovery | D1, D2 | Pass D: active specs discovered; files, IDs, README checked | done |
 | **R-GUARD-002** workflow proof gates | D3, D4, V3, V4 | Pass D/E: workflow proof commands plus local/CI/deploy checks | done |
 | **R-GUARD-003** local execution protocol | D5, V3, V4 | Pass E: AGENTS.md lists spec-first rules and proof sequence | done |
+| **R-GUARD-004** interactive controls explain their purpose | D7, V5 | Pass F: core control helper text plus Level 6 component coverage | done |
 | **R-SPEC-011** traceability for this discipline pass | D6, V3, V4 | Pass D/E: spec registered; spec_check passes; deploy verified | done |
 
 ## Final proof record

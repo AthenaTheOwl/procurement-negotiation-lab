@@ -137,6 +137,7 @@ export function Level06({
 
   const canContinue = triedRules.size >= 2;
   const allHappy = rows.every((r) => r.utility >= r.party.outside);
+  const totalUtility = rows.reduce((sum, row) => sum + row.utility, 0);
 
   const handleContinue = () => {
     if (canContinue) onComplete();
@@ -181,6 +182,20 @@ export function Level06({
     color: "var(--neutral-fg-soft, #5b5b62)",
     textAlign: "center",
   };
+  const explanation: CSSProperties = {
+    background: "var(--neutral-bg, #f7f7f4)",
+    border: "1px solid var(--neutral-line, #e3e3df)",
+    borderLeft: "4px solid var(--role-packager, #9b8cff)",
+    borderRadius: "var(--radius-tile, 12px)",
+    padding: "var(--space-4, 16px)",
+    color: "var(--neutral-fg, #1c1c1f)",
+  };
+  const explanationText: CSSProperties = {
+    margin: "var(--space-1, 4px) 0 0 0",
+    color: "var(--neutral-fg-soft, #5b5b62)",
+    fontSize: "var(--type-2, 1rem)",
+    lineHeight: 1.45,
+  };
 
   return (
     <LevelShell
@@ -214,6 +229,21 @@ export function Level06({
         </div>
 
         <div style={controls}>
+          <div style={explanation} data-testid="level6-capacity-explainer">
+            <strong>Why touch packager capacity?</strong>
+            <p style={explanationText}>
+              The packager is the third-party chokepoint after wafers exist:
+              substrate, bonding, and advanced-packaging slots. Lower capacity
+              means the same buyer/supplier plan creates less real utility, so
+              the transfer rule has to decide who absorbs or gets compensated
+              for that bottleneck.
+            </p>
+            <p style={explanationText}>
+              Current packager capacity is {capacityPct}% of the unconstrained
+              plan, producing {money(totalUtility)} total utility before the
+              outside-option check below.
+            </p>
+          </div>
           <QuantityKnob
             label="Packager capacity"
             value={capacityPct}
@@ -239,7 +269,7 @@ export function Level06({
             }}
           >
             <span style={{ fontSize: "var(--type-2, 1rem)" }}>
-              Use live chip-map chokepoint
+              Seed capacity from public chip-map chokepoints
             </span>
             <button
               type="button"
@@ -262,6 +292,12 @@ export function Level06({
               {chipMapOn ? "ON" : "OFF"}
             </button>
           </div>
+          <p style={helper}>
+            The chip-map toggle fetches public node data, averages packager
+            chokepoint scores, and converts that score into this teaching
+            capacity. It is a scenario seed, not a claim about current live
+            operations.
+          </p>
           {chipMapOn && (
             <div
               data-testid="chip-map-status"
