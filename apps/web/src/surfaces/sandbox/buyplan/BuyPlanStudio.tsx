@@ -179,6 +179,91 @@ export function BuyPlanStudio() {
         </p>
       </div>
 
+      <div
+        data-testid="buyplan-intro"
+        style={{
+          background: "var(--neutral-bg, #f7f7f4)",
+          border: "1px solid var(--neutral-line, #e3e3df)",
+          borderRadius: "var(--radius-tile, 12px)",
+          padding: "var(--space-4, 16px) var(--space-5, 24px)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-2, 8px)",
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontSize: "var(--type-2, 1rem)",
+            fontWeight: 600,
+          }}
+        >
+          How to read this surface
+        </p>
+        <p
+          style={{
+            margin: 0,
+            fontSize: "var(--type-2, 1rem)",
+            lineHeight: 1.5,
+            color: "var(--neutral-fg, #1c1c1f)",
+          }}
+        >
+          Real procurement is rarely one SKU at a time. Each card below
+          is one SKU with its own demand, value, and utility formula.
+          Edit <strong>q</strong> on each card to set how much of that
+          SKU you'd buy.
+        </p>
+        <p
+          style={{
+            margin: 0,
+            fontSize: "var(--type-2, 1rem)",
+            lineHeight: 1.5,
+            color: "var(--neutral-fg, #1c1c1f)",
+          }}
+        >
+          The lower section lists <strong>SKU relationships</strong> —
+          how the SKUs interact:
+        </p>
+        <ul
+          style={{
+            margin: 0,
+            paddingLeft: "var(--space-5, 24px)",
+            fontSize: "var(--type-2, 1rem)",
+            lineHeight: 1.5,
+            color: "var(--neutral-fg, #1c1c1f)",
+          }}
+        >
+          <li>
+            <strong>substitute</strong> — buying more of A reduces effective
+            demand for B. The <em>strength</em> is the substitution
+            fraction (0 = no overlap, 1 = perfect substitutes).
+          </li>
+          <li>
+            <strong>complement</strong> — buying both lifts joint utility by
+            <em> $ per matched unit</em>. Think chip + accessory bundle.
+          </li>
+          <li>
+            <strong>shared capacity</strong> — sum of q across the listed
+            SKUs cannot exceed a hard cap (e.g. fab line throughput). The
+            <em> strength</em> is the cap in units.
+          </li>
+        </ul>
+        <p
+          style={{
+            margin: 0,
+            fontSize: "var(--type-2, 1rem)",
+            lineHeight: 1.5,
+            color: "var(--neutral-fg, #1c1c1f)",
+          }}
+        >
+          The summary at the top shows your plan's aggregate utility
+          (per-SKU utilities + relationship corrections), the heuristic
+          optimum, and your gap to it. "Snap to per-SKU optimum"
+          replaces your q vector with each SKU's stand-alone optimum;
+          notice it may exceed shared-capacity caps — that's the lesson.
+        </p>
+      </div>
+
       <div style={summary}>
         <div style={stat}>
           <div style={provLabel}>your aggregate</div>

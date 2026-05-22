@@ -116,6 +116,16 @@ export function Level01({
     cursor: settled ? "default" : "pointer",
     transition: "background var(--motion-quick, 120ms) var(--easing-soft, ease)",
   };
+  const introCard: CSSProperties = {
+    background: "var(--neutral-bg-2, #ffffff)",
+    border: "1px solid var(--neutral-line, #e3e3df)",
+    borderRadius: "var(--radius-card, 16px)",
+    padding: "var(--space-4, 16px) var(--space-5, 24px)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-2, 8px)",
+    maxWidth: "640px",
+  };
 
   const moodAfter: "neutral" | "worried" = settled ? "worried" : "neutral";
 
@@ -146,6 +156,33 @@ export function Level01({
       onOpenHome={onOpenHome}
     >
       <div style={stage}>
+        <div style={introCard} data-testid="level1-intro">
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              fontWeight: 600,
+            }}
+          >
+            What this level shows
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            The buyer needs 500 units. The supplier can only ship 350.
+            Without coordination, each side acts on their own information
+            — the supplier ships what they have, the buyer accepts what
+            comes. That's the <strong>local plan</strong>. Click
+            "Settle now" to see what value gets created — and what gets
+            left on the table.
+          </p>
+        </div>
+
         <div style={figureRow}>
           <div style={figureCol}>
             <div style={thoughtBubble} data-testid="buyer-thought">

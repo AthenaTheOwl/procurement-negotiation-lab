@@ -112,6 +112,17 @@ export function Level02({
     color: "var(--neutral-fg, #1c1c1f)",
     textAlign: "center",
   };
+  const introCard: CSSProperties = {
+    background: "var(--neutral-bg-2, #ffffff)",
+    border: "1px solid var(--neutral-line, #e3e3df)",
+    borderRadius: "var(--radius-card, 16px)",
+    padding: "var(--space-4, 16px) var(--space-5, 24px)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-2, 8px)",
+    maxWidth: "640px",
+    alignSelf: "center",
+  };
 
   return (
     <LevelShell
@@ -128,6 +139,33 @@ export function Level02({
       onOpenSandbox={onOpenSandbox}
     >
       <div style={stage}>
+        <div style={introCard} data-testid="level2-intro">
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              fontWeight: 600,
+            }}
+          >
+            What you're looking for
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Level 1 settled at the supplier's 350 because each side was
+            optimizing alone. This level lets you pick the quantity{" "}
+            <strong>q</strong> directly. As you drag, the green bar shows
+            the joint surplus the two parties capture together at that q.
+            Your job: find the q that maximizes the bar. Release the
+            slider when you think you've found it.
+          </p>
+        </div>
+
         <div style={figureRow}>
           <AgentFigure role="buyer" mood={mood} size="medium" label="Buyer" />
           <AgentFigure role="supplier" mood={mood} size="medium" label="Supplier" />

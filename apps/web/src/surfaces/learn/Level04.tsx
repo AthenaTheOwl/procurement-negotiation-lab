@@ -169,6 +169,60 @@ export function Level04({
       onOpenSandbox={onOpenSandbox}
     >
       <div style={stage}>
+        <div
+          data-testid="level4-intro"
+          style={{
+            background: "var(--neutral-bg-2, #ffffff)",
+            border: "1px solid var(--neutral-line, #e3e3df)",
+            borderRadius: "var(--radius-card, 16px)",
+            padding: "var(--space-4, 16px) var(--space-5, 24px)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-2, 8px)",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              fontWeight: 600,
+            }}
+          >
+            What the share slider does
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Closing the gap and sharing information (Levels 2–3) created
+            joint value. Now someone has to decide who gets how much.
+            The slider below is the <strong>buyer's share</strong> of the
+            joint surplus — from 0% (supplier takes everything) to 100%
+            (buyer takes everything). The two curves show each party's
+            payoff as the share moves, with a dashed line marking each
+            side's <strong>outside option</strong> — what they could get
+            by walking away.
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Your job: find a share where <strong>both parties</strong>{" "}
+            sit above their outside-option line. That's the deal zone —
+            the only place where the deal closes. The marker on
+            each curve turns green when that side is in the deal zone,
+            red when they'd walk.
+          </p>
+        </div>
+
         <div style={figureRow}>
           <AgentFigure
             role="buyer"

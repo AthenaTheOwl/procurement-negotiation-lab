@@ -146,6 +146,60 @@ export function Level07({
       onOpenSandbox={onOpenSandbox}
     >
       <div style={stage}>
+        <div
+          data-testid="level7-intro"
+          style={{
+            background: "var(--neutral-bg-2, #ffffff)",
+            border: "1px solid var(--neutral-line, #e3e3df)",
+            borderRadius: "var(--radius-card, 16px)",
+            padding: "var(--space-4, 16px) var(--space-5, 24px)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-2, 8px)",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              fontWeight: 600,
+            }}
+          >
+            What the honesty toggle models
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Every mechanism in the previous levels assumes the parties
+            tell the truth about their costs and capacity. They often
+            don't. The list below is a set of <strong>decoy patterns</strong>{" "}
+            — known fingerprints of misreporting (e.g. capacity inflated,
+            cost overstated, demand exaggerated). Each decoy has an
+            <em> expected pattern</em> the audit would see if the party
+            were honest, and an <em>actual pattern</em> the engine
+            generated under current participant behavior.
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Flip the toggle below from OFF to ON. With honesty OFF,
+            expected and actual diverge — rows go red. With honesty ON,
+            they match — rows go green. The lesson: the mechanism settles
+            the deal on the inputs it's given; an audit layer is what
+            catches when those inputs are being gamed.
+          </p>
+        </div>
+
         <div style={switchRow}>
           <span>Participants honest?</span>
           <button

@@ -29,24 +29,48 @@ interface MechanismPanel {
   caption: string;
 }
 
-const PANELS: MechanismPanel[] = [
+interface MechanismDetail extends MechanismPanel {
+  plainEnglish: string;
+  reveals: string;
+  drawback: string;
+}
+
+const PANELS: MechanismDetail[] = [
   {
     kind: "oracle",
     id: "centralized-oracle",
     title: "Centralized oracle",
-    caption: "one planner picks q. Highest surplus, no privacy.",
+    caption: "One planner picks q. Highest surplus, no privacy.",
+    plainEnglish:
+      "Both sides hand over their full cost structure to a neutral planner. The planner computes the joint optimum and tells everyone what to do.",
+    reveals: "Every cost and capacity curve in full detail.",
+    drawback:
+      "Requires complete trust in the planner. Any breach exposes everything.",
   },
   {
     kind: "admm",
     id: "cpp-admm",
     title: "CPP / ADMM",
-    caption: "buyer + supplier iterate to consensus. Most surplus is recovered.",
+    caption:
+      "Buyer + supplier iterate by exchanging price + quantity signals.",
+    plainEnglish:
+      "Each side keeps their cost curve private. They take turns: supplier proposes a quantity given the current price, buyer proposes a price given the current quantity. They converge on a deal without ever showing each other their cost math.",
+    reveals:
+      "Local decisions and a coordinator price each round — not the underlying cost curves.",
+    drawback:
+      "Many rounds of back-and-forth can still leak the shape of each side's marginal-cost curve.",
   },
   {
     kind: "vcg",
     id: "cpp-vcg",
-    title: "CPP + VCG",
-    caption: "ADMM plus a transfer that prices each side's externality.",
+    title: "CPP + VCG transfer",
+    caption:
+      "Same as ADMM, plus a transfer that prices each party's externality on the other.",
+    plainEnglish:
+      "ADMM-style iteration to find the quantity, plus an extra payment between the two sides that compensates each for the cost they impose on the other. Telling the truth becomes the strategy that maximizes your own payoff.",
+    reveals: "Same as ADMM — iterates and a transfer amount.",
+    drawback:
+      "More complex to compute and explain. The transfer can be large in absolute terms.",
   },
 ];
 
@@ -184,8 +208,61 @@ export function Level05({
       onOpenSandbox={onOpenSandbox}
     >
       <div style={stage}>
+        <div
+          data-testid="level5-intro"
+          style={{
+            background: "var(--neutral-bg-2, #ffffff)",
+            border: "1px solid var(--neutral-line, #e3e3df)",
+            borderRadius: "var(--radius-card, 16px)",
+            padding: "var(--space-4, 16px) var(--space-5, 24px)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-2, 8px)",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              fontWeight: 600,
+            }}
+          >
+            Why three panels?
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Levels 1–4 found the right quantity and the right share. This
+            level asks the next question: <strong>how do the two parties
+            arrive at those numbers in the first place?</strong> Different
+            negotiation protocols (mechanisms) produce different
+            trade-offs between three things: how much joint value they
+            recover, how much information leaks, and how many rounds it
+            takes. The three panels below run the same problem under
+            three protocols so you can compare side-by-side.
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Click <strong>Run all</strong> below. Each panel animates
+            from start to settlement; stats fill in when it finishes.
+            Read the per-panel descriptions to understand what each
+            mechanism does.
+          </p>
+        </div>
+
         <div style={grid}>
-          {PANELS.map(({ kind, id, title: name, caption: cap }) => {
+          {PANELS.map(({ kind, id, title: name, caption: cap, plainEnglish, reveals, drawback }) => {
             const data = lookup[id];
             const done = finished[kind];
             return (
@@ -200,6 +277,35 @@ export function Level05({
                   onComplete={() => handlePanelComplete(kind)}
                   testId={`panel-${kind}`}
                 />
+                <div
+                  data-testid={`detail-${kind}`}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "var(--space-1, 4px)",
+                    fontSize: "var(--type-1, 0.85rem)",
+                    color: "var(--neutral-fg, #1c1c1f)",
+                    background: "var(--neutral-bg, #f7f7f4)",
+                    padding: "var(--space-2, 8px) var(--space-3, 12px)",
+                    borderRadius: "var(--radius-tile, 12px)",
+                  }}
+                >
+                  <p style={{ margin: 0 }}>
+                    <strong>How it works:</strong> {plainEnglish}
+                  </p>
+                  <p style={{ margin: 0 }}>
+                    <strong>What gets revealed:</strong> {reveals}
+                  </p>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "var(--neutral-fg-soft, #5b5b62)",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    <strong>Catch:</strong> {drawback}
+                  </p>
+                </div>
                 <div style={statsList} data-testid={`stats-${kind}`}>
                   <div style={statRow}>
                     <span>surplus</span>

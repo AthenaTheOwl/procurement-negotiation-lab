@@ -388,6 +388,59 @@ export function Level08({
       onOpenSandbox={onOpenSandbox}
     >
       <div style={stage}>
+        <div
+          data-testid="level8-intro"
+          style={{
+            background: "var(--neutral-bg-2, #ffffff)",
+            border: "1px solid var(--neutral-line, #e3e3df)",
+            borderRadius: "var(--radius-card, 16px)",
+            padding: "var(--space-4, 16px) var(--space-5, 24px)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-2, 8px)",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              fontWeight: 600,
+            }}
+          >
+            What you're building
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Until now, the lab decided what each participant valued. This
+            level lets you design one. Pick a <strong>role</strong>{" "}
+            (buyer, supplier, packager, logistics, distributor), and the
+            editor pre-fills a sensible default utility formula for that
+            role. Edit the formula or the parameter sliders to change how
+            this participant weighs different outcomes. The bar at the
+            bottom shows the surplus your participant captures at a
+            reference quantity, vs the default for that role.
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Don't worry about the math syntax — every variable is
+            documented in the help panel below the editor. Once you've
+            touched a slider or the formula, the graduation card appears
+            and you can continue.
+          </p>
+        </div>
+
         <div style={chipRow} role="radiogroup" aria-label="participant role">
           {ROLES.map(({ role: r, label }) => {
             const isActive = r === role;
