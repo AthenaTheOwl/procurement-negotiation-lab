@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import type { SplitRule } from "@lab/engine";
 import { AgentFigure } from "../../primitives/AgentFigure";
+import { IntroCard } from "../../primitives/IntroCard";
 import { LevelShell } from "../../primitives/LevelShell";
 import { QuantityKnob } from "../../primitives/QuantityKnob";
 import { SplitRuleToggle } from "../../primitives/SplitRuleToggle";
@@ -96,6 +97,16 @@ export function Level06({
       onOpenHome={onOpenHome}
       onOpenSandbox={onOpenSandbox}
     >
+      <IntroCard
+        heading="A third party joined the deal"
+        body="The buyer wants chips. The supplier (foundry) makes wafers. The new packager bonds and tests them — and they're the slowest, most expensive link. If they have less capacity, the whole plan produces less value. You have two controls: packager capacity (changes how much value the joint plan can produce) and the split rule (changes how that value gets divided). Find a setting where all three parties stay above their outside option."
+        bullets={[
+          "proportional — split by stated contribution; default in long-standing relationships",
+          "equal — everyone gets the same slice; symbolic move, usually fails the biggest contributor",
+          "shapley — each party gets a slice equal to their marginal contribution; game-theory fair",
+        ]}
+        testID="level6-intro"
+      />
       <View
         testID="level6-graph"
         style={{

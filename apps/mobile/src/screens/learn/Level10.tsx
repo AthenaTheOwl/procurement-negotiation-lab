@@ -8,6 +8,7 @@ import {
   generateMenuOptions,
   resolveCoordinationModel,
 } from "@lab/engine";
+import { IntroCard } from "../../primitives/IntroCard";
 import { LevelShell } from "../../primitives/LevelShell";
 import { colors, radius, space, type } from "../../theme/tokens";
 import { TOTAL_LEVELS, type LearnProgress } from "../../state/learnProgress";
@@ -96,6 +97,16 @@ export function Level10({
       onOpenSandbox={onOpenSandbox}
     >
       <View style={{ gap: space.s4 }}>
+        <IntroCard
+          heading="What Model Studio is for"
+          body="Until now, the lab decided how surplus got split. In a real procurement platform, the buyer doesn't impose a split rule — they publish a menu of priced options (fast / standard / flexible) and let vendors choose. Model Studio is the authoring layer for that menu."
+          steps={[
+            "Resolve scope — pick how specific the policy is. SKU-level overrides category-level overrides global default.",
+            "Tune the cost signals — capacity shadow price, lateness penalty, holding-cost relief. These shape the prices on the menu.",
+            "Certify and clear — the platform checks monotonicity and margin guardrails, then lets the vendor click an option to clear an agreement.",
+          ]}
+          testID="level10-intro"
+        />
         <View
           style={{
             backgroundColor: colors.neutralBg,

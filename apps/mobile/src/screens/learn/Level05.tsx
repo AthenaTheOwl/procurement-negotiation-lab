@@ -9,6 +9,7 @@
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { algorithmResults, makeScenario, type AlgorithmResult } from "@lab/engine";
+import { IntroCard } from "../../primitives/IntroCard";
 import { LevelShell } from "../../primitives/LevelShell";
 import { colors, radius, space, type } from "../../theme/tokens";
 import { TOTAL_LEVELS, type LearnProgress } from "../../state/learnProgress";
@@ -77,6 +78,16 @@ export function Level05({
       onOpenHome={onOpenHome}
       onOpenSandbox={onOpenSandbox}
     >
+      <IntroCard
+        heading="Why three panels?"
+        body="Levels 1–4 found the right quantity and the right share. This level asks the next question: how do the two parties arrive at those numbers in the first place? Different negotiation protocols produce different trade-offs across joint value, information leakage, and rounds taken. The three panels run the same problem under three protocols so you can compare side-by-side. Tap Run all to see the stats."
+        bullets={[
+          "Centralized oracle — one planner gets everyone's full cost data and computes the joint optimum. Best surplus, worst privacy.",
+          "CPP / ADMM — buyer and supplier iterate prices + quantities without revealing their cost curves. Most surplus recovered with much less leakage.",
+          "CPP + VCG transfer — ADMM plus a transfer payment that makes truthful reporting the dominant strategy.",
+        ]}
+        testID="level5-intro"
+      />
       {PANELS.map(({ id, title, caption }) => {
         const data = lookup[id];
         return (

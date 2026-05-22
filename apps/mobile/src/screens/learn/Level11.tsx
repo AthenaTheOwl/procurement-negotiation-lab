@@ -5,6 +5,7 @@ import {
   type CoordinationEntry,
   type CoordinationFamily,
 } from "@lab/engine";
+import { IntroCard } from "../../primitives/IntroCard";
 import { LevelShell } from "../../primitives/LevelShell";
 import { colors, radius, space, type } from "../../theme/tokens";
 import { TOTAL_LEVELS, type LearnProgress } from "../../state/learnProgress";
@@ -80,6 +81,11 @@ export function Level11({
       onOpenSandbox={onOpenSandbox}
     >
       <View style={{ gap: space.s4 }}>
+        <IntroCard
+          heading="How to use this catalog"
+          body="Each tile is a coordination mechanism — a different way to settle a deal between parties. Tap a tile to see, in plain English: what it exchanges across the trust boundary, what an observer can infer, the welfare/setup/truth-dominance trade-offs, best fits, weaknesses, and further reading. Visit at least four tiles to see the spread, then hit Got it to unlock Continue."
+          testID="level11-intro"
+        />
         <View
           testID="level11-mobile-grid"
           style={{ flexDirection: "row", flexWrap: "wrap", gap: space.s2 }}

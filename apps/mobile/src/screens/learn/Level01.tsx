@@ -13,6 +13,7 @@ import {
   jointUtilityAt,
 } from "@lab/engine";
 import { AgentFigure } from "../../primitives/AgentFigure";
+import { IntroCard } from "../../primitives/IntroCard";
 import { LevelShell } from "../../primitives/LevelShell";
 import { SurplusBar } from "../../primitives/SurplusBar";
 import { colors, radius, space, type } from "../../theme/tokens";
@@ -93,6 +94,11 @@ export function Level01({
       onOpenHome={onOpenHome}
       onOpenSandbox={onOpenSandbox}
     >
+      <IntroCard
+        heading="What this level shows"
+        body="The buyer needs 500 units. The supplier can only ship 350. Without coordination, each side acts on their own information — the supplier ships what they have, the buyer accepts what comes. That's the local plan. Tap Settle now to see what value gets created and what gets left on the table."
+        testID="level1-intro"
+      />
       <View
         style={{
           flexDirection: "row",

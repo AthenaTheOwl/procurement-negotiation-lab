@@ -7,6 +7,7 @@ import { Text, View } from "react-native";
 import { informationSweep, makeScenario, type InfoMode } from "@lab/engine";
 import { AgentFigure } from "../../primitives/AgentFigure";
 import { InfoSlider } from "../../primitives/InfoSlider";
+import { IntroCard } from "../../primitives/IntroCard";
 import { LevelShell } from "../../primitives/LevelShell";
 import { PredictReveal } from "../../primitives/PredictReveal";
 import { PrivacyMeter } from "../../primitives/PrivacyMeter";
@@ -74,6 +75,19 @@ export function Level03({
       onOpenHome={onOpenHome}
       onOpenSandbox={onOpenSandbox}
     >
+      <IntroCard
+        heading="What the info slider models"
+        body="Closing the gap (Level 2) needed both sides to know each other's costs. In real procurement, no one wants to dump their cost structure. This slider's six stops represent how much information each side has agreed to share — from nothing on the left to full cost curves on the right. Each stop has a different cost in privacy and a different ceiling on the joint surplus you can recover."
+        bullets={[
+          "private — nothing shared; max privacy, surplus collapses",
+          "risk-only — single risk flag, too coarse to plan against",
+          "capacity-band — rough range; useful for sizing",
+          "cost-band — rough cost ranges; the sweet zone",
+          "forecast-band — adds forward-looking demand range",
+          "full oracle — hands everything to a trusted coordinator",
+        ]}
+        testID="level3-intro"
+      />
       <View
         style={{
           flexDirection: "row",

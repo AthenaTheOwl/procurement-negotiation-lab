@@ -16,6 +16,7 @@ import {
   splitOutcome,
 } from "@lab/engine";
 import { AgentFigure } from "../../primitives/AgentFigure";
+import { IntroCard } from "../../primitives/IntroCard";
 import { LevelShell } from "../../primitives/LevelShell";
 import { PredictReveal } from "../../primitives/PredictReveal";
 import { QuantityKnob } from "../../primitives/QuantityKnob";
@@ -101,6 +102,11 @@ export function Level04({
       onOpenHome={onOpenHome}
       onOpenSandbox={onOpenSandbox}
     >
+      <IntroCard
+        heading="What the share slider does"
+        body="Closing the gap and sharing information (Levels 2–3) created joint value. Now someone has to decide who gets how much. The slider below is the buyer's share of joint surplus, from 0% (supplier takes everything) to 100% (buyer takes everything). The two readouts show each party's payoff. Your job: find a share where both parties stay above their outside option (what they'd get by walking away). That's the deal zone — the only place where the deal closes."
+        testID="level4-intro"
+      />
       <View
         style={{
           flexDirection: "row",

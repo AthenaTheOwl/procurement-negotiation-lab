@@ -15,6 +15,7 @@ import {
   type ParticipantRole,
 } from "@lab/engine";
 import { AgentFigure } from "../../primitives/AgentFigure";
+import { IntroCard } from "../../primitives/IntroCard";
 import { LevelShell } from "../../primitives/LevelShell";
 import { QuantityKnob } from "../../primitives/QuantityKnob";
 import { SurplusBar } from "../../primitives/SurplusBar";
@@ -193,6 +194,11 @@ export function Level08({
       onOpenHome={onOpenHome}
       onOpenSandbox={onOpenSandbox}
     >
+      <IntroCard
+        heading="What you're building"
+        body="Until now, the lab decided what each participant valued. This level lets you design one. Pick a role and the editor pre-fills a sensible default utility formula for that role. Edit the formula or the parameter sliders to change how this participant weighs different outcomes. The bar at the bottom shows the surplus your participant captures vs the default. Once you've touched a slider or the formula, the graduation card appears."
+        testID="level8-intro"
+      />
       <View
         style={{
           flexDirection: "row",

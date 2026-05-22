@@ -14,6 +14,7 @@ import {
   jointUtilityAt,
 } from "@lab/engine";
 import { AgentFigure } from "../../primitives/AgentFigure";
+import { IntroCard } from "../../primitives/IntroCard";
 import { LevelShell } from "../../primitives/LevelShell";
 import { PredictReveal } from "../../primitives/PredictReveal";
 import { QuantityKnob } from "../../primitives/QuantityKnob";
@@ -81,6 +82,11 @@ export function Level02({
       onOpenHome={onOpenHome}
       onOpenSandbox={onOpenSandbox}
     >
+      <IntroCard
+        heading="What you're looking for"
+        body="Level 1 settled at the supplier's 350 because each side was optimizing alone. This level lets you pick the quantity q directly. As you change q, the green bar shows the joint surplus the two parties capture together. Your job: find the q that maximizes the bar, then reveal the optimum."
+        testID="level2-intro"
+      />
       <View
         style={{
           flexDirection: "row",
