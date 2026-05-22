@@ -25,6 +25,16 @@ function money(value: number): string {
   return `$${value.toFixed(2)}`;
 }
 
+const MODEL_SCOPE = {
+  vendor: "vendor_123",
+  sku: "SKU-001",
+  fc: "ABE8",
+  week: "2026-W22",
+  marketplace: "US",
+  category: "electronics.accessories",
+  contractType: "replenishment",
+};
+
 export function Level10({
   progress,
   onComplete,
@@ -37,16 +47,6 @@ export function Level10({
   );
   const [certified, setCertified] = useState(false);
 
-  const scope = {
-    vendor: "vendor_123",
-    sku: "SKU-001",
-    fc: "ABE8",
-    week: "2026-W22",
-    marketplace: "US",
-    category: "electronics.accessories",
-    contractType: "replenishment",
-  };
-
   const menu = useMemo(
     () =>
       generateMenuOptions({
@@ -56,7 +56,7 @@ export function Level10({
     [capacity],
   );
   const resolution = useMemo(
-    () => resolveCoordinationModel(SAMPLE_MODELS, scope),
+    () => resolveCoordinationModel(SAMPLE_MODELS, MODEL_SCOPE),
     [],
   );
   const checks = useMemo(
