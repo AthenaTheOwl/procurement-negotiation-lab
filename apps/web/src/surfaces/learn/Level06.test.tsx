@@ -118,4 +118,57 @@ describe("Level06", () => {
       );
     });
   });
+
+  it("intro card names the third party and what the two controls do", () => {
+    setup();
+    const intro = screen.getByTestId("level6-intro");
+    expect(intro.textContent).toMatch(/packager/i);
+    expect(intro.textContent).toMatch(/packager-capacity slider/i);
+    expect(intro.textContent).toMatch(/split-rule toggle/i);
+  });
+
+  it("rule explainer updates with the active rule and explains when to use it", () => {
+    setup();
+    const explainer = screen.getByTestId("level6-rule-explainer");
+    // default rule is proportional
+    expect(explainer.textContent).toMatch(/proportional/i);
+    expect(explainer.textContent).toMatch(/when you'd use it/i);
+    fireEvent.click(screen.getByTestId("split-rule-shapley"));
+    expect(screen.getByTestId("level6-rule-explainer").textContent).toMatch(
+      /shapley/i,
+    );
+    expect(screen.getByTestId("level6-rule-explainer").textContent).toMatch(
+      /marginal contribution/i,
+    );
+  });
+
+  it("deal-status flips red and names the walking party when a rule fails", () => {
+    setup();
+    // Drop capacity hard, switch to equal — usually the buyer walks
+    fireEvent.change(
+      screen.getByLabelText(/packager capacity/i) as HTMLInputElement,
+      { target: { value: "20" } },
+    );
+    fireEvent.click(screen.getByTestId("split-rule-equal"));
+    const status = screen.getByTestId("level6-deal-status");
+    expect(status.textContent).toMatch(/walk/i);
+  });
+
+  it("try-this sequence is rendered so the user has a guided path", () => {
+    setup();
+    const seq = screen.getByTestId("level6-try-sequence");
+    expect(seq.textContent).toMatch(/leave capacity at 100/i);
+    expect(seq.textContent).toMatch(/drop packager capacity/i);
+    expect(seq.textContent).toMatch(/switch to.*equal/i);
+    expect(seq.textContent).toMatch(/switch to.*shapley/i);
+  });
+
+  it("table headers carry plain-English sub-labels for the jargon columns", () => {
+    setup();
+    const table = screen.getByTestId("level6-table");
+    expect(table.textContent).toMatch(/outside option/i);
+    expect(table.textContent).toMatch(/\$ if they walk/i);
+    expect(table.textContent).toMatch(/stays in\?/i);
+    expect(table.textContent).toMatch(/only ✓ if utility ≥ outside/i);
+  });
 });
