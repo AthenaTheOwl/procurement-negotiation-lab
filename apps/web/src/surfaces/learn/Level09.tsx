@@ -180,6 +180,82 @@ export function Level09({
       onOpenSandbox={onOpenSandbox}
     >
       <div style={stage}>
+        <div
+          data-testid="level9-intro"
+          style={{
+            background: "var(--neutral-bg-2, #ffffff)",
+            border: "1px solid var(--neutral-line, #e3e3df)",
+            borderRadius: "var(--radius-card, 16px)",
+            padding: "var(--space-4, 16px) var(--space-5, 24px)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-2, 8px)",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              fontWeight: 600,
+            }}
+          >
+            What this workbench models
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            A real buy plan covers many weeks ahead, not a single
+            number. The table below has one row per week. For each week
+            you set <strong>q</strong> (units you'll buy) and a
+            <strong> commitment type</strong>, which controls how much it
+            costs you if you miss the promise.
+          </p>
+          <ul
+            style={{
+              margin: 0,
+              paddingLeft: "var(--space-5, 24px)",
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            <li>
+              <strong>firm</strong> — guaranteed delivery. Highest joint
+              value if you hit it, biggest penalty if you miss. Use for
+              weeks where demand is locked in.
+            </li>
+            <li>
+              <strong>soft</strong> — committed but cancellable with a
+              penalty. Mid-cost on miss. Use when demand is likely but
+              not certain.
+            </li>
+            <li>
+              <strong>forecast</strong> — non-binding signal. Cheapest on
+              miss but the supplier may not hold capacity. Use for
+              far-horizon weeks where the forecast is just a guess.
+            </li>
+          </ul>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            The <strong>confidence</strong> column shows how confident
+            the forecast is for each week (it fades over the horizon —
+            you know next week better than week 12). Your goal: pick a
+            commitment mix that matches confidence to risk. The
+            "Snap to optimum" preset shows the closed-form answer.
+          </p>
+        </div>
+
         <div style={summary}>
           <div style={stat}>
             <div

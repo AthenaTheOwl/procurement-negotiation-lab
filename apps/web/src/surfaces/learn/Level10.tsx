@@ -208,6 +208,79 @@ export function Level10({
       onOpenSandbox={onOpenSandbox}
     >
       <div style={stage}>
+        <div
+          data-testid="level10-intro"
+          style={{
+            background: "var(--neutral-bg-2, #ffffff)",
+            border: "1px solid var(--neutral-line, #e3e3df)",
+            borderRadius: "var(--radius-card, 16px)",
+            padding: "var(--space-4, 16px) var(--space-5, 24px)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-2, 8px)",
+            marginBottom: "var(--space-4, 16px)",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              fontWeight: 600,
+            }}
+          >
+            What Model Studio is for
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Until now, the lab decided how surplus got split. In a real
+            procurement platform, the buyer doesn't impose a split rule
+            — they publish a <strong>menu</strong> of priced options
+            (fast / standard / flexible) and let vendors choose. Model
+            Studio is the authoring layer for that menu.
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Three steps, left to right:
+          </p>
+          <ol
+            style={{
+              margin: 0,
+              paddingLeft: "var(--space-5, 24px)",
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            <li>
+              <strong>Resolve scope</strong> — pick how specific the
+              policy is. SKU-level overrides category-level overrides
+              global default. The bot shows you which model rules apply.
+            </li>
+            <li>
+              <strong>Tune the cost signals</strong> — capacity shadow
+              price, lateness penalty, holding-cost relief. These shape
+              the prices on the menu the vendor sees.
+            </li>
+            <li>
+              <strong>Certify + clear</strong> — the platform checks
+              monotonicity and margin guardrails, then lets the vendor
+              "click" an option to clear an agreement.
+            </li>
+          </ol>
+        </div>
+
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <section style={panel}>
             <h2 style={{ marginTop: 0, fontSize: "var(--type-4, 1.3rem)" }}>

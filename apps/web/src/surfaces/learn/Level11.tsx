@@ -170,6 +170,80 @@ export function Level11({
       onOpenSandbox={onOpenSandbox}
     >
       <div style={stage}>
+        <div
+          data-testid="level11-intro"
+          style={{
+            background: "var(--neutral-bg-2, #ffffff)",
+            border: "1px solid var(--neutral-line, #e3e3df)",
+            borderRadius: "var(--radius-card, 16px)",
+            padding: "var(--space-4, 16px) var(--space-5, 24px)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-2, 8px)",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              fontWeight: 600,
+            }}
+          >
+            How to use this catalog
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Each tile below is a coordination mechanism — a different way
+            to settle a deal between two or more parties. The colored
+            left edge encodes confidentiality (red = low / orange =
+            medium / green = high / purple = formal cryptographic
+            guarantee). Click a tile to see, in plain English:
+          </p>
+          <ul
+            style={{
+              margin: 0,
+              paddingLeft: "var(--space-5, 24px)",
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            <li>
+              <strong>What it exchanges</strong> across the trust
+              boundary — what data leaves each party.
+            </li>
+            <li>
+              <strong>What an observer can infer</strong> — the realistic
+              leakage, not the marketing claim.
+            </li>
+            <li>
+              <strong>Welfare / setup effort / truth-dominant?</strong>{" "}
+              — the trade-offs at a glance.
+            </li>
+            <li>
+              <strong>Best fits + weaknesses + further reading</strong>{" "}
+              — when to use it, when not, and where to learn more.
+            </li>
+          </ul>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Visit at least four tiles to see the spread, then hit "Got
+            it" to unlock Continue.
+          </p>
+        </div>
+
         <div style={grid} data-testid="level11-grid">
           {COORDINATION_CATALOG.map((entry) => (
             <button

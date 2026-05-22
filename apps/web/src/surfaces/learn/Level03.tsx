@@ -21,6 +21,42 @@ import { TOTAL_LEVELS, type LearnProgress } from "../../state/learnProgress";
 
 const SWEET_ZONE: InfoMode[] = ["cost-band", "forecast-band"];
 
+const INFO_MODE_EXPLAINER: Record<
+  InfoMode,
+  { headline: string; reveals: string; tradeoff: string }
+> = {
+  private: {
+    headline: "Private — nothing shared",
+    reveals: "Each party keeps their costs, capacity, and forecast to themselves. The supplier has no idea what the buyer wants; the buyer has no idea what the supplier can do.",
+    tradeoff: "Maximum privacy, near-zero coordination. Surplus collapses because no one can plan against the other side.",
+  },
+  "risk-only": {
+    headline: "Risk-only — share a single risk flag",
+    reveals: "Each party shares one bit: \"I'm at risk of shortage\" or \"I'm at risk of excess.\" No numbers attached.",
+    tradeoff: "Privacy still high, but the signal is too coarse to drive joint planning. Surplus barely moves.",
+  },
+  "capacity-band": {
+    headline: "Capacity band — share a rough capacity range",
+    reveals: "The supplier shares \"I can do roughly 200–400 units.\" Buyer shares \"I roughly need 400–600.\" Ranges, not point values.",
+    tradeoff: "Useful enough to size the deal directionally. Privacy still mostly intact — no costs revealed.",
+  },
+  "cost-band": {
+    headline: "Cost band — share rough cost / value bands",
+    reveals: "Each party shares value/cost in bands (\"my cost is between $40 and $55 per unit\"). Detailed cost curves stay hidden.",
+    tradeoff: "Sweet zone. Almost all the welfare gain of full disclosure, without revealing the exact economics.",
+  },
+  "forecast-band": {
+    headline: "Forecast band — share future demand range",
+    reveals: "On top of cost bands, parties share rough forward-looking demand: \"next quarter we expect 1500–1800.\"",
+    tradeoff: "Even more welfare recovered. Privacy cost rises modestly.",
+  },
+  "full-oracle": {
+    headline: "Full oracle — share everything to a coordinator",
+    reveals: "Each party hands over full cost curves, capacity profiles, forecasts, and outside options to a trusted coordinator. The coordinator computes the best joint plan.",
+    tradeoff: "Maximum welfare. The price: you need a coordinator you can trust without reservation, and any breach reveals everything.",
+  },
+};
+
 export interface Level03Props {
   progress: LearnProgress;
   onComplete: () => void;
@@ -117,6 +153,59 @@ export function Level03({
       onOpenSandbox={onOpenSandbox}
     >
       <div style={stage}>
+        <div
+          data-testid="level3-intro"
+          style={{
+            background: "var(--neutral-bg-2, #ffffff)",
+            border: "1px solid var(--neutral-line, #e3e3df)",
+            borderRadius: "var(--radius-card, 16px)",
+            padding: "var(--space-4, 16px) var(--space-5, 24px)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-2, 8px)",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              fontWeight: 600,
+            }}
+          >
+            What the info slider models
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Closing the gap (Level 2) needed both sides to know each
+            other's costs. In real procurement, no one wants to dump their
+            cost structure. This slider's six stops represent how much
+            information each side has agreed to disclose — from{" "}
+            <strong>nothing</strong> on the left to{" "}
+            <strong>full cost curves</strong> on the right. Each stop has
+            a different cost in privacy and a different ceiling on the
+            joint surplus you can recover.
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              lineHeight: 1.5,
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            Your job: try a few stops, watch the green (surplus) and
+            orange (privacy cost) bars move, and find the
+            "sweet zone" — the stop where most welfare is recovered
+            without giving away the whole cost structure.
+          </p>
+        </div>
+
         <div style={figureRow}>
           <AgentFigure
             role="buyer"
@@ -138,6 +227,51 @@ export function Level03({
           highlight={SWEET_ZONE}
           testId="level3-info-slider"
         />
+
+        <div
+          data-testid="level3-mode-explainer"
+          style={{
+            background: "var(--neutral-bg-2, #ffffff)",
+            border: "1px solid var(--neutral-line, #e3e3df)",
+            borderLeft: "4px solid var(--privacy-cost, #d3603a)",
+            borderRadius: "var(--radius-tile, 12px)",
+            padding: "var(--space-3, 12px) var(--space-4, 16px)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-1, 4px)",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-3, 1.05rem)",
+              fontWeight: 600,
+            }}
+          >
+            {INFO_MODE_EXPLAINER[mode].headline}
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-2, 1rem)",
+              color: "var(--neutral-fg, #1c1c1f)",
+            }}
+          >
+            <strong>What gets shared:</strong>{" "}
+            {INFO_MODE_EXPLAINER[mode].reveals}
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--type-1, 0.85rem)",
+              color: "var(--neutral-fg-soft, #5b5b62)",
+              fontStyle: "italic",
+            }}
+          >
+            <strong>Trade-off:</strong>{" "}
+            {INFO_MODE_EXPLAINER[mode].tradeoff}
+          </p>
+        </div>
 
         <div style={metersRow}>
           <SurplusBar
