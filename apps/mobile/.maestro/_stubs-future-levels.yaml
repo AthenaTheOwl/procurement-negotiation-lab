@@ -1,0 +1,57 @@
+appId: com.athenatheowl.proclab
+name: Future-level coverage stubs
+tags:
+  - stub
+  - todo
+---
+# Stub file. The R-MOBREL-003 acceptance list calls for Maestro coverage of
+# Levels 1, 3, 6, 8, 9, 10, and 11. Level 1 lives in level-1-walkthrough.yaml.
+# Each block below is a TODO that the next pass turns into its own flow file.
+# Run order is not fixed; pick whichever Level is cheapest to author next.
+#
+# TODO: Level 3 — information sharing + privacy.
+#   testIDs to drive: level3-intro, level3-info-slider, info-stop-* (tap a
+#   stop > 0), level3-privacy, level3-reveal, level-continue.
+#   Assertion: changing info-slider stop updates the helper copy and the
+#   privacy meter readout.
+#
+# TODO: Level 6 — capacity + split rule.
+#   testIDs to drive: level6-intro, level6-capacity (InfoSlider), level6-rule
+#   (SplitRuleToggle: split-rule-equal / split-rule-pro-rata / split-rule-priority),
+#   row-* (per-party rows), level-continue.
+#   Assertion: switching rule changes at least one row's payoff cell.
+#
+# TODO: Level 8 — formula editor + sliders.
+#   testIDs to drive: level8-intro, role-chip-* (pick a role), formula-editor,
+#   param-urgency / param-flexibility / param-truthfulness / param-privacy /
+#   param-risk, level8-surplus, level-continue, graduation-card.
+#   Assertion: changing a param slider updates level8-surplus value.
+#
+# TODO: Level 9 — multi-week commitments.
+#   testIDs to drive: level9-intro, preset-* (pick a preset), q-1..q-N
+#   (commitment knobs), level9-total / level9-optimum / level9-gap,
+#   level9-reveal-text, level-continue.
+#   Assertion: tapping a preset updates level9-total and level9-gap.
+#
+# TODO: Level 10 — menu of contracts + certification.
+#   testIDs to drive: level10-intro, capacity-down / capacity-up, selected-model,
+#   menu-option-* (pick one), option-*-fee, certify-model, certification-results,
+#   cleared-agreement, level-continue.
+#   Assertion: tapping certify-model produces certification-results.
+#
+# TODO: Level 11 — mechanism gallery.
+#   testIDs to drive: level11-intro, level11-mobile-grid, mechanism-* (tap one),
+#   level11-mobile-detail, level11-mobile-exchanges, level11-mobile-leaks,
+#   level11-mobile-got-it, level11-mobile-reveal, level-continue.
+#   Assertion: tapping a mechanism shows detail; tapping Got it reveals the
+#   debrief and enables Continue.
+#
+# Acceptance for the next pass: each TODO above becomes its own .yaml flow
+# file in this directory and gets called by `maestro test .maestro/`. The
+# R-MOBREL-003 traceability row flips from PARTIAL to COVERED once all six
+# stubs are real flows passing in CI.
+
+- launchApp:
+    stopApp: true
+- assertVisible:
+    id: "home-surface"

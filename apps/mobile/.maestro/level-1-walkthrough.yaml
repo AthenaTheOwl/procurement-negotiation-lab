@@ -1,0 +1,53 @@
+appId: com.athenatheowl.proclab
+name: Level 1 walkthrough
+tags:
+  - learn
+  - level-1
+  - smoke
+---
+# Level 1 (mobile) — "There is a gap"
+#
+# Asserts that:
+#  1. Home renders (home-surface).
+#  2. Tapping Start playing routes into Level 1 (level-shell-1).
+#  3. The intro card explains the level (level1-intro).
+#  4. Tapping Settle now reveals the joint-value bar + debrief.
+#  5. The Continue button surfaces and is tappable once the reveal beat fires.
+
+- launchApp:
+    clearState: true
+    stopApp: true
+
+# 1. Home renders.
+- assertVisible:
+    id: "home-surface"
+- assertVisible:
+    id: "home-start-cta"
+
+# 2. Enter the learn flow at Level 1.
+- tapOn:
+    id: "home-start-cta"
+- assertVisible:
+    id: "level-shell-1"
+
+# 3. Intro card is present before any interaction.
+- assertVisible:
+    id: "level1-intro"
+- assertVisible:
+    id: "settle-button"
+
+# 4. Settle now -> surplus bar appears in place of the button.
+- tapOn:
+    id: "settle-button"
+- assertVisible:
+    id: "level1-surplus"
+
+# 5. The reveal beat (REVEAL_BEAT_MS = 600ms) flips the Continue button to
+#    enabled state. We wait briefly, then assert the reveal copy + Continue.
+- assertVisible:
+    id: "level-reveal"
+    timeout: 5000
+- assertVisible:
+    id: "level-continue"
+- assertVisible:
+    text: "Continue"

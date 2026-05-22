@@ -11,7 +11,11 @@
     "test": "node scripts/run-jest.cjs --watchAll=false",
     "test:ci": "node scripts/run-jest.cjs --ci",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "maestro:test": "maestro test .maestro/",
+    "eas:build:development": "eas build --profile development --platform android --non-interactive",
+    "eas:build:preview": "eas build --profile preview --platform android --non-interactive",
+    "eas:build:production": "eas build --profile production --platform all --non-interactive"
   },
   "dependencies": {
     "@lab/engine": "*",
