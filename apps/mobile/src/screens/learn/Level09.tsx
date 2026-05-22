@@ -18,6 +18,7 @@ import {
   type MultiPeriodPreset,
   type WeekPlan,
 } from "@lab/engine";
+import { IntroCard } from "../../primitives/IntroCard";
 import { LevelShell } from "../../primitives/LevelShell";
 import { SurplusBar } from "../../primitives/SurplusBar";
 import { colors, radius, space, type } from "../../theme/tokens";
@@ -107,6 +108,16 @@ export function Level09({
       onOpenHome={onOpenHome}
       onOpenSandbox={onOpenSandbox}
     >
+      <IntroCard
+        heading="What this workbench models"
+        body="A real buy plan covers many weeks ahead, not a single number. The table below has one row per week. For each week you set q (units you'll buy) and a commitment type, which controls how much it costs you if you miss the promise. The confidence column shows how confident the forecast is for each week — it fades over the horizon (you know next week better than week 12). Your goal: match the commitment mix to the confidence."
+        bullets={[
+          "firm — guaranteed delivery; highest value when hit, biggest penalty on miss",
+          "soft — committed but cancellable; mid-cost on miss",
+          "forecast — non-binding signal; cheapest on miss but supplier may not hold capacity",
+        ]}
+        testID="level9-intro"
+      />
       <View
         style={{
           flexDirection: "row",

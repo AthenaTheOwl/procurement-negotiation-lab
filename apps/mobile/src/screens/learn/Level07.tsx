@@ -5,6 +5,7 @@
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { makeScenario, runDecoyAudit } from "@lab/engine";
+import { IntroCard } from "../../primitives/IntroCard";
 import { LevelShell } from "../../primitives/LevelShell";
 import { colors, radius, space, type } from "../../theme/tokens";
 import { TOTAL_LEVELS, type LearnProgress } from "../../state/learnProgress";
@@ -65,6 +66,11 @@ export function Level07({
       onOpenHome={onOpenHome}
       onOpenSandbox={onOpenSandbox}
     >
+      <IntroCard
+        heading="What the honesty toggle models"
+        body="Every mechanism so far assumes parties tell the truth about their costs and capacity. They often don't. The list below is a set of decoy patterns — fingerprints of misreporting. Each row has an expected pattern (what the audit would see if the party were honest) and an actual pattern (what the engine generated under current behavior). Flip the toggle from OFF to ON: with honesty OFF, expected and actual diverge and rows go red. With honesty ON, they match. The mechanism settles the deal on inputs; an audit layer is what catches when those inputs are being gamed."
+        testID="level7-intro"
+      />
       <View
         style={{
           flexDirection: "row",
