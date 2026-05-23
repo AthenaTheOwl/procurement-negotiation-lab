@@ -42,9 +42,14 @@ set, and the expanded Maestro flow set for the learning-path Tier 2 proof.
 ## CI run evidence
 
 - Workflow: `.github/workflows/mobile-e2e.yml`
-- Run URL: `pending`
-- Outcome: `pending`
-- Failure mode, if any: `pending`
+- Run URL: `https://github.com/AthenaTheOwl/procurement-negotiation-lab/actions/runs/26322456079`
+- Outcome: `failed`
+- Failure mode, if any: `expo prebuild --platform android` failed before
+  Gradle/Maestro because `apps/mobile/app.json` referenced
+  `./assets/adaptive-icon.png` but the mobile asset files were missing.
+  Remediation: add deterministic placeholder `icon.png`,
+  `adaptive-icon.png`, `splash.png`, and `favicon.png`, then re-run the
+  hosted workflow.
 
 ## Rollback path
 
