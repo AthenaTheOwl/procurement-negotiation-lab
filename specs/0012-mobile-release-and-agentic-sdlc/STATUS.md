@@ -10,9 +10,9 @@ every acceptance bullet ships.
 |---|---|---|---|
 | R-MOBREL-001 | COVERED | `apps/mobile/eas.json` defines development, preview, and production profiles with named channels and Android/iOS build types. | Pair profile names with a written JS-only vs native-runtime trigger matrix. |
 | R-MOBREL-002 | PARTIAL | Tier 0/1 gates exist, Tier 2 Maestro flow set exists, and `ops/releases/` records tier status. | Add a CI step that asserts the recorded proof tier matches the change set. |
-| R-MOBREL-003 | COVERED | Maestro flows cover Home plus Levels 1, 3, 6, 8, 9, 10, and 11 with intro-card checks and control interactions. | Hosted `mobile-e2e.yml` run evidence still needs to be recorded after dispatch. |
+| R-MOBREL-003 | COVERED | Maestro flows cover Home plus Levels 1, 3, 6, 8, 9, 10, and 11 with intro-card checks and control interactions. | Hosted `mobile-e2e.yml` has not reached Maestro yet; current failure is Gradle native build setup. |
 | R-MOBREL-004 | COVERED | `ops/releases/README.md`, `TEMPLATE.md`, and entry `001-2026-05-22-spec-0012-tier2-bootstrap.md` record release evidence. | Keep future build/update promotions in this ledger. |
-| R-MOBREL-005 | PARTIAL | `frontend.yml` runs the fast PR gate. `mobile-e2e.yml` runs on PR path/workflow dispatch with concurrency cancellation and failure artifacts. | Add scheduled nightly Tier 2 cadence and iOS simulator/device lane. |
+| R-MOBREL-005 | PARTIAL | `frontend.yml` runs the fast PR gate. `mobile-e2e.yml` runs on PR path/workflow dispatch with concurrency cancellation and failure artifacts; run failures are logged in `ops/releases/`. | Fix hosted Gradle resolution, add scheduled nightly Tier 2 cadence, and add iOS simulator/device lane. |
 
 ## R-SDLC-* coverage
 
@@ -30,8 +30,8 @@ every acceptance bullet ships.
 
 ## Next pass - proposed slice
 
-1. Run hosted `mobile-e2e.yml`, record run URL/outcome in
-   `ops/releases/001-2026-05-22-spec-0012-tier2-bootstrap.md`.
+1. Fix hosted Gradle resolution for `expo-module-gradle-plugin` so
+   `mobile-e2e.yml` reaches APK build and Maestro.
 2. Add scheduled nightly `mobile-e2e.yml` cadence.
 3. Add iOS simulator/device Tier 2 lane once runner budget is approved.
 4. Add parity table for R-SDLC-003.
