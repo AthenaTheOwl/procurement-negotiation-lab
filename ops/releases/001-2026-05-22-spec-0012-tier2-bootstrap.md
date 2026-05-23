@@ -19,7 +19,7 @@ set, and the expanded Maestro flow set for the learning-path Tier 2 proof.
 |---|---|---|
 | Tier 0 - unit logic | pass | `npm run verify:js` includes mobile Jest and package tests. |
 | Tier 1 - lint + typecheck | pass | `npm run verify:js` includes TypeScript and lint gates. |
-| Tier 2 - Android emulator E2E | partial | Seven Maestro flows are checked in and wired to `.github/workflows/mobile-e2e.yml`; hosted run evidence is recorded below after dispatch. |
+| Tier 2 - Android emulator E2E | failed | Seven Maestro flows are checked in and wired to `.github/workflows/mobile-e2e.yml`; hosted proof currently fails before Maestro at Gradle native build. |
 | Tier 3 - TestFlight / Play beta | open | No Apple Developer / Play Console promotion has run from this repo. |
 
 ## R-MOBREL coverage
@@ -42,14 +42,19 @@ set, and the expanded Maestro flow set for the learning-path Tier 2 proof.
 ## CI run evidence
 
 - Workflow: `.github/workflows/mobile-e2e.yml`
-- Run URL: `https://github.com/AthenaTheOwl/procurement-negotiation-lab/actions/runs/26322456079`
-- Outcome: `failed`
-- Failure mode, if any: `expo prebuild --platform android` failed before
+- Run URL 1: `https://github.com/AthenaTheOwl/procurement-negotiation-lab/actions/runs/26322456079`
+- Outcome 1: `failed`
+- Failure mode 1: `expo prebuild --platform android` failed before
   Gradle/Maestro because `apps/mobile/app.json` referenced
   `./assets/adaptive-icon.png` but the mobile asset files were missing.
-  Remediation: add deterministic placeholder `icon.png`,
-  `adaptive-icon.png`, `splash.png`, and `favicon.png`, then re-run the
-  hosted workflow.
+  Remediation landed in `93d5190`: deterministic placeholder `icon.png`,
+  `adaptive-icon.png`, `splash.png`, and `favicon.png`.
+- Run URL 2: `https://github.com/AthenaTheOwl/procurement-negotiation-lab/actions/runs/26322504712`
+- Outcome 2: `failed`
+- Failure mode 2: Expo prebuild completed, then Gradle `assembleDebug`
+  failed because `expo-module-gradle-plugin` was not resolved from the
+  generated Android project. Maestro did not run. This is a native Expo
+  monorepo build configuration issue, not a flow/testID failure.
 
 ## Rollback path
 
@@ -58,7 +63,8 @@ set, and the expanded Maestro flow set for the learning-path Tier 2 proof.
 
 ## Open items
 
-- Trigger and record hosted `mobile-e2e.yml` evidence. Owning spec: `R-MOBREL-005`.
+- Fix hosted Gradle resolution for `expo-module-gradle-plugin`, then re-run
+  `mobile-e2e.yml`. Owning spec: `R-MOBREL-005`.
 - Add nightly Tier 2 cadence. Owning spec: `R-MOBREL-005`.
 - Add iOS simulator/device Tier 2 lane once macOS runner budget is approved. Owning spec: `R-MOBREL-005`.
 - Add automatic PR proof-tier assertion. Owning spec: `R-MOBREL-002`.
