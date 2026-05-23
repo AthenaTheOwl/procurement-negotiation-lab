@@ -1,0 +1,176 @@
+appId: com.athenatheowl.proclab
+name: Level 11 walkthrough
+tags:
+  - learn
+  - level-11
+  - smoke
+---
+# Level 11 (mobile) - mechanism catalog.
+#
+# NOTE: This flow walks Levels 1-10 to reach the final catalog from a
+# fresh install. The Level 11 gate is accepted && visited.size >= 4.
+
+- launchApp:
+    clearState: true
+    stopApp: true
+
+- assertVisible:
+    id: "home-surface"
+- tapOn:
+    id: "home-start-cta"
+
+# Fast path through Levels 1-9.
+- assertVisible:
+    id: "level-shell-1"
+- tapOn:
+    id: "settle-button"
+- assertVisible:
+    id: "level-reveal"
+    timeout: 5000
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-2"
+    timeout: 5000
+- tapOn:
+    id: "quantity-knob-increase"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-3"
+    timeout: 5000
+- tapOn:
+    id: "info-stop-cost-band"
+- tapOn:
+    id: "info-stop-forecast-band"
+- tapOn:
+    id: "info-stop-risk-only"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-4"
+    timeout: 5000
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          id: "quantity-knob-increase"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-5"
+    timeout: 5000
+- tapOn:
+    id: "run-all"
+- assertVisible:
+    id: "level5-reveal"
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-6"
+    timeout: 5000
+- tapOn:
+    id: "split-rule-equal"
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-7"
+    timeout: 5000
+- tapOn:
+    id: "honesty-toggle"
+- assertVisible:
+    id: "level7-reveal"
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-8"
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "param-urgency"
+    direction: DOWN
+- tapOn:
+    id: "quantity-knob-increase"
+- scrollUntilVisible:
+    element:
+      id: "graduation-card"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-9"
+    timeout: 5000
+- tapOn:
+    id: "preset-optimal"
+- scrollUntilVisible:
+    element:
+      id: "level9-reveal"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "level9-reveal"
+- assertVisible:
+    id: "level9-reveal-text"
+- tapOn:
+    id: "level-continue"
+
+# Level 10.
+- assertVisible:
+    id: "level-shell-10"
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "certify-model"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "certify-model"
+- assertVisible:
+    id: "certification-results"
+- tapOn:
+    id: "level-continue"
+
+# Level 11 under test.
+- assertVisible:
+    id: "level-shell-11"
+    timeout: 5000
+- assertVisible:
+    id: "level11-intro"
+- assertVisible:
+    id: "level11-mobile-grid"
+- tapOn:
+    id: "mechanism-rule"
+- tapOn:
+    id: "mechanism-score"
+- tapOn:
+    id: "mechanism-rfq"
+- assertVisible:
+    id: "level11-mobile-detail"
+- assertVisible:
+    id: "level11-mobile-exchanges"
+- assertVisible:
+    id: "level11-mobile-leaks"
+- scrollUntilVisible:
+    element:
+      id: "level11-mobile-got-it"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "level11-mobile-got-it"
+- assertVisible:
+    id: "level11-mobile-reveal"
+- assertVisible:
+    id: "level-continue"

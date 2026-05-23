@@ -1,0 +1,145 @@
+appId: com.athenatheowl.proclab
+name: Level 8 walkthrough
+tags:
+  - learn
+  - level-8
+  - smoke
+---
+# Level 8 (mobile) - formula editor + parameters.
+#
+# NOTE: This flow walks Levels 1-7 to reach Level 8 from a fresh install.
+# The Level 8 gate is editedFormula || editedParams; the flow changes a
+# parameter knob and waits for the graduation card.
+
+- launchApp:
+    clearState: true
+    stopApp: true
+
+- assertVisible:
+    id: "home-surface"
+- tapOn:
+    id: "home-start-cta"
+
+# Level 1.
+- assertVisible:
+    id: "level-shell-1"
+- tapOn:
+    id: "settle-button"
+- assertVisible:
+    id: "level-reveal"
+    timeout: 5000
+- tapOn:
+    id: "level-continue"
+
+# Level 2.
+- assertVisible:
+    id: "level-shell-2"
+    timeout: 5000
+- tapOn:
+    id: "quantity-knob-increase"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- tapOn:
+    id: "level-continue"
+
+# Level 3.
+- assertVisible:
+    id: "level-shell-3"
+    timeout: 5000
+- tapOn:
+    id: "info-stop-cost-band"
+- tapOn:
+    id: "info-stop-forecast-band"
+- tapOn:
+    id: "info-stop-risk-only"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- tapOn:
+    id: "level-continue"
+
+# Level 4.
+- assertVisible:
+    id: "level-shell-4"
+    timeout: 5000
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          id: "quantity-knob-increase"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- tapOn:
+    id: "level-continue"
+
+# Level 5.
+- assertVisible:
+    id: "level-shell-5"
+    timeout: 5000
+- tapOn:
+    id: "run-all"
+- assertVisible:
+    id: "level5-reveal"
+- tapOn:
+    id: "level-continue"
+
+# Level 6.
+- assertVisible:
+    id: "level-shell-6"
+    timeout: 5000
+- tapOn:
+    id: "split-rule-equal"
+- assertVisible:
+    id: "level-continue"
+- tapOn:
+    id: "level-continue"
+
+# Level 7.
+- assertVisible:
+    id: "level-shell-7"
+    timeout: 5000
+- tapOn:
+    id: "honesty-toggle"
+- assertVisible:
+    id: "level7-reveal"
+- tapOn:
+    id: "level-continue"
+
+# Level 8 under test.
+- assertVisible:
+    id: "level-shell-8"
+    timeout: 5000
+- assertVisible:
+    id: "level8-intro"
+- assertVisible:
+    id: "formula-editor"
+- assertVisible:
+    id: "param-sliders"
+- tapOn:
+    id: "role-chip-supplier"
+- tapOn:
+    id: "role-chip-buyer"
+- scrollUntilVisible:
+    element:
+      id: "param-urgency"
+    direction: DOWN
+- assertVisible:
+    id: "param-urgency"
+- tapOn:
+    id: "quantity-knob-increase"
+- assertVisible:
+    id: "level8-surplus"
+- scrollUntilVisible:
+    element:
+      id: "graduation-card"
+    direction: DOWN
+    timeout: 5000
+- assertVisible:
+    id: "graduation-card"
+- assertVisible:
+    id: "level-continue"

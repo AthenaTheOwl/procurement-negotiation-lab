@@ -1,0 +1,78 @@
+appId: com.athenatheowl.proclab
+name: Level 3 walkthrough
+tags:
+  - learn
+  - level-3
+  - smoke
+---
+# Level 3 (mobile) - information sharing + privacy.
+#
+# NOTE: HomeScreen exposes a single Start CTA, so this flow walks
+# Levels 1 and 2 before it reaches Level 3 from a fresh install.
+
+- launchApp:
+    clearState: true
+    stopApp: true
+
+- assertVisible:
+    id: "home-surface"
+- tapOn:
+    id: "home-start-cta"
+
+# Level 1.
+- assertVisible:
+    id: "level-shell-1"
+- assertVisible:
+    id: "level1-intro"
+- tapOn:
+    id: "settle-button"
+- assertVisible:
+    id: "level1-surplus"
+- assertVisible:
+    id: "level-reveal"
+    timeout: 5000
+- tapOn:
+    id: "level-continue"
+
+# Level 2.
+- assertVisible:
+    id: "level-shell-2"
+    timeout: 5000
+- assertVisible:
+    id: "level2-intro"
+- tapOn:
+    id: "quantity-knob-increase"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- tapOn:
+    id: "level-continue"
+
+# Level 3 under test.
+- assertVisible:
+    id: "level-shell-3"
+    timeout: 5000
+- assertVisible:
+    id: "level3-intro"
+- assertVisible:
+    id: "level3-info-slider"
+
+# The gate is revealed && visited.size >= 3. Private is the default, so
+# these three taps also prove the info-stop controls are live.
+- tapOn:
+    id: "info-stop-cost-band"
+- tapOn:
+    id: "info-stop-forecast-band"
+- tapOn:
+    id: "info-stop-risk-only"
+- assertVisible:
+    id: "level3-helper"
+- assertVisible:
+    id: "level3-reveal"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- assertVisible:
+    id: "level-continue"

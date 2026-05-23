@@ -1,0 +1,141 @@
+appId: com.athenatheowl.proclab
+name: Level 9 walkthrough
+tags:
+  - learn
+  - level-9
+  - smoke
+---
+# Level 9 (mobile) - multi-week commitments.
+#
+# NOTE: This flow walks Levels 1-8 to reach Level 9 from a fresh install.
+# The Level 9 gate is edited && revealed; the optimal preset edits the
+# plan, then the reveal button opens the debrief.
+
+- launchApp:
+    clearState: true
+    stopApp: true
+
+- assertVisible:
+    id: "home-surface"
+- tapOn:
+    id: "home-start-cta"
+
+# Levels 1-8 setup.
+- assertVisible:
+    id: "level-shell-1"
+- tapOn:
+    id: "settle-button"
+- assertVisible:
+    id: "level-reveal"
+    timeout: 5000
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-2"
+    timeout: 5000
+- tapOn:
+    id: "quantity-knob-increase"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-3"
+    timeout: 5000
+- tapOn:
+    id: "info-stop-cost-band"
+- tapOn:
+    id: "info-stop-forecast-band"
+- tapOn:
+    id: "info-stop-risk-only"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-4"
+    timeout: 5000
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          id: "quantity-knob-increase"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-5"
+    timeout: 5000
+- tapOn:
+    id: "run-all"
+- assertVisible:
+    id: "level5-reveal"
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-6"
+    timeout: 5000
+- tapOn:
+    id: "split-rule-equal"
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-7"
+    timeout: 5000
+- tapOn:
+    id: "honesty-toggle"
+- assertVisible:
+    id: "level7-reveal"
+- tapOn:
+    id: "level-continue"
+- assertVisible:
+    id: "level-shell-8"
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "param-urgency"
+    direction: DOWN
+- tapOn:
+    id: "quantity-knob-increase"
+- scrollUntilVisible:
+    element:
+      id: "graduation-card"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "level-continue"
+
+# Level 9 under test.
+- assertVisible:
+    id: "level-shell-9"
+    timeout: 5000
+- assertVisible:
+    id: "level9-intro"
+- assertVisible:
+    id: "level9-total"
+- assertVisible:
+    id: "level9-optimum"
+- assertVisible:
+    id: "level9-gap"
+- tapOn:
+    id: "preset-optimal"
+- assertVisible:
+    id: "level9-list"
+- scrollUntilVisible:
+    element:
+      id: "level9-reveal"
+    direction: DOWN
+    timeout: 5000
+- tapOn:
+    id: "level9-reveal"
+- assertVisible:
+    id: "level9-reveal-text"
+- assertVisible:
+    id: "level-continue"
