@@ -1,0 +1,118 @@
+appId: com.athenatheowl.proclab
+name: Level 6 walkthrough
+tags:
+  - learn
+  - level-6
+  - smoke
+---
+# Level 6 (mobile) - third-party capacity + split rule.
+#
+# NOTE: This flow walks Levels 1-5 to reach Level 6 from a fresh install.
+# The split-rule IDs are split-rule-proportional, split-rule-equal, and
+# split-rule-shapley.
+
+- launchApp:
+    clearState: true
+    stopApp: true
+
+- assertVisible:
+    id: "home-surface"
+- tapOn:
+    id: "home-start-cta"
+
+# Level 1.
+- assertVisible:
+    id: "level-shell-1"
+- tapOn:
+    id: "settle-button"
+- assertVisible:
+    id: "level-reveal"
+    timeout: 5000
+- tapOn:
+    id: "level-continue"
+
+# Level 2.
+- assertVisible:
+    id: "level-shell-2"
+    timeout: 5000
+- tapOn:
+    id: "quantity-knob-increase"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- tapOn:
+    id: "level-continue"
+
+# Level 3.
+- assertVisible:
+    id: "level-shell-3"
+    timeout: 5000
+- tapOn:
+    id: "info-stop-cost-band"
+- tapOn:
+    id: "info-stop-forecast-band"
+- tapOn:
+    id: "info-stop-risk-only"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- tapOn:
+    id: "level-continue"
+
+# Level 4: 10 increments moves buyer share to 50%, inside the feasible band.
+- assertVisible:
+    id: "level-shell-4"
+    timeout: 5000
+- repeat:
+    times: 10
+    commands:
+      - tapOn:
+          id: "quantity-knob-increase"
+- assertVisible:
+    id: "level4-status"
+- tapOn:
+    id: "predict-reveal-button"
+- assertVisible:
+    id: "predict-reveal-truth"
+- tapOn:
+    id: "level-continue"
+
+# Level 5.
+- assertVisible:
+    id: "level-shell-5"
+    timeout: 5000
+- tapOn:
+    id: "run-all"
+- assertVisible:
+    id: "level5-reveal"
+- tapOn:
+    id: "level-continue"
+
+# Level 6 under test.
+- assertVisible:
+    id: "level-shell-6"
+    timeout: 5000
+- assertVisible:
+    id: "level6-intro"
+- assertVisible:
+    id: "level6-capacity"
+- assertVisible:
+    id: "level6-rule"
+- tapOn:
+    id: "quantity-knob-decrease"
+- assertVisible:
+    id: "level6-table"
+- assertVisible:
+    id: "row-buyer"
+- assertVisible:
+    id: "row-supplier"
+- assertVisible:
+    id: "row-packager"
+- tapOn:
+    id: "split-rule-equal"
+- assertVisible:
+    id: "level6-helper"
+- assertVisible:
+    id: "level-continue"

@@ -2,12 +2,11 @@
 
 ## Phase A: procurement-lab mobile release discipline
 
-- [ ] Audit `apps/mobile/eas.json` and define `development`, `preview`,
+- [x] Audit `apps/mobile/eas.json` and define `development`, `preview`,
   `staging`, and `production` profiles with channels.
-- [ ] Add `docs/mobile-release-ledger.md` with required evidence fields.
-- [ ] Add `.github/workflows/mobile-native.yml` as a manual/scheduled native
-  proof wrapper.
-- [ ] Add `.maestro/` flows or equivalent E2E scripts for Home and selected
+- [x] Add `ops/releases/` with required evidence fields.
+- [x] Add `.github/workflows/mobile-e2e.yml` as a manual native proof wrapper.
+- [x] Add `.maestro/` flows or equivalent E2E scripts for Home and selected
   levels.
 - [ ] Add a smoke command that can run against a built mobile binary when EAS
   credentials are available.
@@ -25,13 +24,13 @@
 
 ## Phase C: AI Brief repo bootstrap
 
-- [ ] Create `ai-field-brief` as a separate git repo.
-- [ ] Add a spec ledger and Phase 0 bootstrap spec.
-- [ ] Add monorepo package manager decision, CI skeleton, and placeholder apps.
-- [ ] Add source-ingestion contract and citation/eval fixtures before source
+- [x] Create `ai-field-brief` as a separate git repo.
+- [x] Add a spec ledger and Phase 0 bootstrap spec.
+- [x] Add monorepo package manager decision, CI skeleton, and placeholder apps.
+- [x] Add source-ingestion contract and citation/eval fixtures before source
   connectors.
 - [ ] Add Inngest workflow contract before background-job implementation.
-- [ ] Add Postgres/pgvector schema contract before retrieval implementation.
+- [x] Add Postgres schema contract before retrieval implementation.
 
 ## Phase D: verification
 
@@ -42,4 +41,3 @@
 - [ ] Prompt-library: `python library/scripts/promptos.py validate --strict`
 - [ ] Cargo-health: existing Nx affected/CI-equivalent smoke for changed docs
 - [ ] AI Brief: initial repo lint/spec check once scaffold exists
-
