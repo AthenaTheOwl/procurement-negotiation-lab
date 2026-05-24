@@ -15,7 +15,7 @@ Allowed:
 
 - public links to `https://github.com/amzn/FloPro`
 - deterministic synthetic data
-- public-style evidence cards clearly marked synthetic
+- public-style evidence cards marked synthetic
 - generic procurement concepts
 
 README wording must keep the same boundary: independent for-fun learning lab,

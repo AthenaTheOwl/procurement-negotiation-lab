@@ -7,13 +7,13 @@ production fraud models.
 ## Why decoys exist
 
 The guided arc teaches that CPP + VCG can compute an efficient plan with less
-direct disclosure than a centralized oracle. The operational question is
-harder: what do you do when a vendor's response pattern looks strategic,
+direct disclosure than a centralized oracle. The operational problem runs
+deeper: what do you do when a vendor's response pattern looks strategic,
 inconsistent, or too convenient?
 
 Decoys are small known-answer cases. A configured agent is run against each
 case and the app reports whether the behavior matches the expected pattern.
-The point is not to accuse an agent. The point is to make pilot governance
+The goal is not to accuse an agent. The goal is to make pilot governance
 visible.
 
 ## Decoys
