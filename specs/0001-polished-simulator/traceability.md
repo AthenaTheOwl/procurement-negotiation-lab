@@ -1,14 +1,14 @@
 # traceability
 
-| Requirement | Implementation | Tests |
-|---|---|---|
-| R-PLAY-001 | `web/src/App.tsx`, `web/src/data/story.ts` | `web/src/App.test.tsx` |
-| R-PLAY-002 | `web/src/App.tsx`, `web/src/model/simulation.ts` | `web/src/App.test.tsx` |
-| R-PLAY-003 | `web/src/App.tsx` | `web/src/App.test.tsx` |
-| R-PLAY-004 | `web/src/data/glossary.ts`, `web/src/App.tsx` | `web/src/App.test.tsx` |
-| R-LAB-001 | `web/src/App.tsx` | `web/src/App.test.tsx` |
-| R-LAB-002 | `web/src/model/simulation.ts`, `web/src/App.tsx` | `web/src/model/simulation.test.ts` |
-| R-LAB-003 | `web/src/model/simulation.ts`, `web/src/App.tsx` | `web/src/model/simulation.test.ts` |
-| R-LAB-004 | `web/src/model/simulation.ts`, `web/src/App.tsx` | `web/src/model/simulation.test.ts` |
-| R-STUDY-001 | `web/src/App.tsx`, `web/src/data/glossary.ts` | `web/src/App.test.tsx` |
-| R-SPEC-001 | `scripts/spec_check.py`, `specs/0001-polished-simulator/*` | `tests/test_spec_contract.py` |
+| Requirement | Decision | Implementation | Tests |
+|---|---|---|---|
+| R-PLAY-001 | [DEC-PLAY-001](../../decisions/DEC-PLAY-001-six-canonical-roles-fixed-set.md) | `apps/web/src/primitives/AgentFigure.tsx`, `apps/web/src/surfaces/learn/Level01.tsx` | `apps/web/src/primitives/AgentFigure.test.tsx`, `apps/web/src/surfaces/learn/Level01.test.tsx` |
+| R-PLAY-002 | [DEC-PLAY-002](../../decisions/DEC-PLAY-002-one-decision-per-round-design.md) | `apps/web/src/primitives/LevelShell.tsx`, `apps/web/src/surfaces/learn/Level0*.tsx` | `apps/web/src/primitives/LevelShell.test.tsx` |
+| R-PLAY-003 | [DEC-PLAY-003](../../decisions/DEC-PLAY-003-consequence-before-math.md) | `apps/web/src/primitives/LevelShell.tsx`, `apps/web/src/primitives/PredictReveal.tsx` | `apps/web/src/primitives/PredictReveal.test.tsx` |
+| R-PLAY-004 | [DEC-PLAY-004](../../decisions/DEC-PLAY-004-teach-terms-in-context.md) | `packages/engine/src/data/glossary.ts`, `apps/web/src/surfaces/sandbox/SandboxApp.tsx` | `apps/web/src/App.test.tsx` |
+| R-LAB-001 | (allowlisted) | `apps/web/src/App.tsx` | `apps/web/src/App.test.tsx` |
+| R-LAB-002 | (allowlisted) | `packages/engine/src/model/simulation.ts`, `apps/web/src/App.tsx` | engine `simulation.test.ts` |
+| R-LAB-003 | (allowlisted) | `packages/engine/src/model/simulation.ts`, `apps/web/src/App.tsx` | engine `simulation.test.ts` |
+| R-LAB-004 | (allowlisted) | `packages/engine/src/model/simulation.ts`, `apps/web/src/App.tsx` | engine `simulation.test.ts` |
+| R-STUDY-001 | (allowlisted) | `apps/web/src/App.tsx`, `packages/engine/src/data/glossary.ts` | `apps/web/src/App.test.tsx` |
+| R-SPEC-001 | (allowlisted) | `scripts/spec_check.py`, `specs/0001-polished-simulator/*` | `tests/test_spec_contract.py` |
