@@ -16,7 +16,8 @@
 deferred:
   # R-PLAY-* — spec 0001 polished simulator pedagogy backfilled in DEC-PLAY-001..004.
 
-  # R-LAB-* — spec 0001 + spec 0002 lab authoring workbench.
+  # R-LAB-005..009 — spec 0002 lab authoring workbench backfilled in DEC-LAB-005..009.
+  # R-LAB-001..004 still deferred (spec 0001 polished simulator).
   - id: R-LAB-001
     note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
   - id: R-LAB-002
@@ -25,16 +26,6 @@ deferred:
     note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
   - id: R-LAB-004
     note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
-  - id: R-LAB-005
-    note: phase pre-CDCP requirement (spec 0002 lab authoring workbench); backfill pending
-  - id: R-LAB-006
-    note: phase pre-CDCP requirement (spec 0002 lab authoring workbench); backfill pending
-  - id: R-LAB-007
-    note: phase pre-CDCP requirement (spec 0002 lab authoring workbench); backfill pending
-  - id: R-LAB-008
-    note: phase pre-CDCP requirement (spec 0002 lab authoring workbench); backfill pending
-  - id: R-LAB-009
-    note: phase pre-CDCP requirement (spec 0002 lab authoring workbench); backfill pending
 
   # R-STUDY-* — spec 0001 tutorial surface.
   - id: R-STUDY-001
