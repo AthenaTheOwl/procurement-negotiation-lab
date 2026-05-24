@@ -119,3 +119,9 @@ and QA evidence (`ops/qa-evidence/`) round out the scope.
   broken file lands.
 - A candidate that lacks evidence: rejected at the schema layer
   (`evidence` is required).
+
+## Published
+
+| Week | Date | Modes run | Candidates | Folder |
+|---|---|---|---|---|
+| 2026-W21 | 2026-05-24 | memory_consolidation, skill_extraction, eval_generation | 5 | [2026-W21](2026-W21/report.md) |
