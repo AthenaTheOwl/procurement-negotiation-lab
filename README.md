@@ -1,57 +1,90 @@
 # procurement-negotiation-lab
 
-A for-fun learning simulator for long-lead procurement commitments. You play
-the buyer, Cinder is the simulated supplier, and each round turns one decision
-into a visible consequence before the math appears.
+A for-fun learning simulator for long-lead procurement commitments.
+You play the buyer, Cinder is the simulated supplier, and each round
+turns one decision into a visible consequence before the math appears.
 
-**Live demo:** [procurement-negotiation-lab.vercel.app](https://procurement-negotiation-lab.vercel.app/)
+**Live:** [procurement-negotiation-lab.vercel.app](https://procurement-negotiation-lab.vercel.app/)
 
-This is not FloPro-branded and not an official Amazon example. It credits the
-public [amzn/FloPro](https://github.com/amzn/FloPro) repo as an ADMM
-implementation reference only.
+This is an independent public demo built against the open-source
+[amzn/FloPro](https://github.com/amzn/FloPro) ADMM implementation.
+Not FloPro-branded. Not an official Amazon example.
 
-## app surfaces
+## Read it for
 
-- **PLAY:** a six-beat management simulator, `The Substrate Crunch`
-- **LAB:** an authoring workbench for scenarios, canonical agents, mechanisms,
-  information, and transfers
-- **TUTORIAL:** plain-English explanations of utility, residuals, risk scores,
-  ADMM, oracle gaps, and cost-benefit transfers
+- A six-beat negotiated-commitment simulator that explains why JIT
+  planning leaves surplus on the table.
+- A lab workbench where you can compare CPP/ADMM against a centralized
+  oracle, menu contracts, alternating best response, and consensus
+  averaging — without crowning ADMM.
+- Tutorial pages that explain utility, residuals, risk scores, ADMM,
+  oracle gaps, and cost-benefit transfers in plain English.
+- A native iOS and Android port (Expo) that mirrors the web learn flow.
 
-## what it teaches
+## How it's organized
 
-- why two locally rational agents can choose a globally bad commitment plan
-- how large the coordination gap is versus a centralized oracle
-- how ADMM-style coordination works: local solve, consensus, prices, residuals
-- when CPP/ADMM helps, when CPP+VCG/CBT or menu contracts are stronger, and
-  when a simpler baseline is enough
-- how more shared information can buy better joint utility
-- how privacy exposure changes when agents reveal risk, capacity, cost, or
-  forecast bands
-- how cost-benefit transfers split surplus so every participant can be no worse off
+The repo runs the [Cognitive Delivery Control Plane](https://github.com/AthenaTheOwl/athena-site/blob/main/ops/control-plane.md)
+operating model: 13 specs with R-PREFIX requirements, 18 architectural
+decisions captured in `decisions/`, weekly dream-job retrospectives,
+six roles, twelve tools, six policies, four executable gate scripts.
 
-## lab workbench
+## App surfaces
 
-The lab starts with a "so what" panel: how much value local JIT planning leaves
-on the table, which non-oracle mechanism performs best, and what full
-information is worth in this synthetic setup.
+- **PLAY:** a six-beat management simulator, `The Substrate Crunch`.
+- **LAB:** an authoring workbench for scenarios, canonical agents,
+  mechanisms, information modes, and transfers.
+- **STUDY:** plain-English tutorial pages on utility, residuals, risk
+  scores, ADMM, oracle gaps, and cost-benefit transfers.
+
+## What it teaches
+
+- Why two locally rational agents can choose a globally bad commitment
+  plan.
+- How large the coordination gap is versus a centralized oracle.
+- How ADMM-style coordination works: local solve, consensus, prices,
+  residuals.
+- When CPP/ADMM helps, when CPP+VCG/CBT or menu contracts are stronger,
+  and when a simpler baseline is enough.
+- How more shared information can buy better joint utility.
+- How privacy exposure changes when agents reveal risk, capacity, cost,
+  or forecast bands.
+- How cost-benefit transfers split surplus so every participant ends
+  up no worse off.
+
+## Lab workbench
+
+The lab opens with a "so what" panel: how much value local JIT planning
+leaves on the table, which non-oracle mechanism performs best, and what
+full information is worth in the current synthetic setup.
 
 From there you can:
 
-- choose canonical problem presets such as substrate crunch, regional shipping
-  asymmetry, and multi-vendor shortage;
-- make your own scenario by changing demand volatility, capacity tightness,
-  lead time, FC count, product count, period count, and participant count;
-- pick canonical buyer/supplier strategies such as JIT buyer, launch-protection
-  buyer, truthful CPP responder, capacity guard, relationship supplier, and hard
-  bargainer;
-- tune agent behavior knobs for urgency, flexibility, truthfulness, privacy
-  preference, and risk aversion;
-- compare JIT baseline, centralized oracle, CPP/ADMM, CPP+VCG/CBT,
-  menu-of-contracts, alternating best response, price-only coordination, and
-  consensus averaging.
+- Pick canonical problem presets such as substrate crunch, regional
+  shipping asymmetry, and multi-vendor shortage.
+- Build your own scenario by changing demand volatility, capacity
+  tightness, lead time, FC count, product count, period count, and
+  participant count.
+- Pick canonical buyer and supplier strategies such as JIT buyer,
+  launch-protection buyer, truthful CPP responder, capacity guard,
+  relationship supplier, and hard bargainer.
+- Tune agent behavior knobs for urgency, flexibility, truthfulness,
+  privacy preference, and risk aversion.
+- Compare JIT baseline, centralized oracle, CPP/ADMM, CPP+VCG/CBT,
+  menu-of-contracts, alternating best response, price-only
+  coordination, and consensus averaging.
 
-## local run
+## The factory subsystem
+
+`scripts/factory/` is a durable agent-orchestration runtime with
+checkpoint interrupts, per-task git worktrees, artifact-as-refs,
+trace IDs, and a stub/real worker abstraction. Spec 0009 documents the
+contract; DEC-FACTORY-001..005 capture the architectural decisions.
+
+It's used internally to expand specs into review-gated task runs. The
+pattern is portable to other repos. See [`docs/factory.md`](docs/factory.md)
+for the adoption guide.
+
+## Local run
 
 Primary demo:
 
@@ -69,51 +102,80 @@ python -m uv sync --python 3.11
 python -m uv run pytest
 ```
 
-If Python 3.11 is not installed locally, Python 3.12 or 3.13 also works. The
-hosted path does not require FICO Xpress or FloPro.
+If Python 3.11 is not installed locally, Python 3.12 or 3.13 also works.
+The hosted path does not require FICO Xpress or FloPro.
 
-`app.py` is now a small compatibility entrypoint. The polished public demo is
-the React/TypeScript app.
+`app.py` is a small compatibility entrypoint. The polished public demo
+is the React/TypeScript app.
 
-## proof gates
+## Mobile
+
+Native iOS and Android port via Expo + EAS. Tier 0-3 proof ladder
+(unit logic / lint+typecheck / Android emulator E2E / TestFlight).
+Spec 0012 documents the discipline. The hosted `mobile-e2e.yml`
+workflow runs Maestro flows on a KVM-accelerated runner.
+
+## Proof gates
 
 ```powershell
 python -m uv run python scripts/spec_check.py
+python -m uv run python scripts/voice_lint.py
+python -m uv run python scripts/validate_decisions.py
+python -m uv run python scripts/validate_roles.py
+python -m uv run python scripts/validate_tools.py
+python -m uv run python scripts/validate_policies.py
 python -m uv run pytest
 python -m uv run ruff check .
 python -m uv run mypy src
 python -m uv run bandit -q -r src
 python -m uv run pip-audit
+npm.cmd run lint
+npm.cmd run test
 npm.cmd run build
-npm.cmd run test -- --run
 ```
 
-The rebuilt app has a browser-QA gate: PLAY, LAB, and TUTORIAL must be clicked
-through in a real browser before a checkpoint is called done.
+The rebuilt app also has a browser-QA gate: PLAY, LAB, and STUDY must
+be clicked through in a real browser before a checkpoint is called done.
 
-## spec-driven development
+## Spec-driven development
 
-The active specs live under `specs/`.
+The active specs live under `specs/`. The development loop is:
 
-- `0001-polished-simulator/` covers the React/Vite simulator rebuild.
-- `0002-lab-authoring-workbench/` covers the so-what panel, scenario authoring,
-  canonical agents, and mechanism-design comparison.
+1. Write or update requirements in testable language.
+2. Update the design so each requirement has a named surface or module.
+3. Implement only tasks traceable to the current spec.
+4. Run proof gates: Python engine tests, frontend tests, type checks,
+   browser QA.
+5. Update traceability and decisions before committing.
 
-## public boundary
+If a requested change does not fit the active spec, update the spec
+first.
 
-This repository uses deterministic synthetic data. It does not contain real
-purchase orders, internal supplier records, internal Amazon terminology,
-private FloPro roadmap information, or production recommendations.
+## What's intentionally not built
 
-## governance
+- Real procurement data. Synthetic only.
+- Multi-party negotiation beyond the six-role taxonomy (Domain Guild
+  TODO in `.agents/CATALOG.md`).
+- A production solver. Agents in the Domain Guild advise; deterministic
+  FloPro reference code decides anything consequential.
 
-The Cognitive Delivery Control Plane (CDCP) scaffold landed in spec 0013.
-It records what we build, why we build it, what we reuse, and what we
-learn, with executable gates that fail builds when any record drifts.
+## Public boundary
 
-- `specs/` — what we build. Spec ledgers under
-  `specs/NNNN-<slug>/` with the six-file pattern (requirements, design,
-  tasks, acceptance, research, traceability).
+This repository uses deterministic synthetic data. It does not contain
+real purchase orders, internal supplier records, internal Amazon
+terminology, private FloPro roadmap information, or production
+recommendations.
+
+## Governance
+
+The Cognitive Delivery Control Plane (CDCP) scaffold landed in spec
+0013. It records what we build, why we build it, what we reuse, and
+what we learn, with executable gates that fail builds when any record
+drifts.
+
+- `specs/` — what we build. Spec ledgers under `specs/NNNN-<slug>/`
+  with the six-file pattern (requirements, design, tasks, acceptance,
+  research, traceability).
 - `decisions/` — why we built it. One `DEC-*.md` per architectural or
   product decision, matching the cross-repo `decision.schema.json`.
 - `dreams/` — what we learned. Weekly offline-cognition outputs under
@@ -130,15 +192,10 @@ learn, with executable gates that fail builds when any record drifts.
 - `ops/run-ledger.md` — the factory subsystem's per-task pipeline
   ledger (separate from the release ledger).
 - The cross-repo CDCP charter lives at
-  `https://github.com/AthenaTheOwl/athena-site` under `ops/control-plane.md`.
+  `https://github.com/AthenaTheOwl/athena-site` under
+  `ops/control-plane.md`.
 
-Gates that run on every push:
+## License
 
-```powershell
-python scripts/spec_check.py
-python scripts/voice_lint.py
-python scripts/validate_decisions.py
-python scripts/validate_roles.py
-python scripts/validate_tools.py
-python scripts/validate_policies.py
-```
+Apache-2.0 for code. Credits the `amzn/FloPro` public repo (Apache-2.0)
+as a reference implementation only.
