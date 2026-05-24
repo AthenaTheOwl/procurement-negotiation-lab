@@ -21,10 +21,49 @@ Not FloPro-branded. Not an official Amazon example.
   oracle gaps, and cost-benefit transfers in plain English.
 - A native iOS and Android port (Expo) that mirrors the web learn flow.
 
+## For your role
+
+**Curious.** Open [procurement-negotiation-lab.vercel.app](https://procurement-negotiation-lab.vercel.app/)
+and play Level 1 at `apps/web/src/surfaces/learn/Level01.tsx`. Two
+figures, one settle button, lost surplus made visible. Each Level
+shows the consequence before the math.
+
+**Student.** Levels 1-11 under `apps/web/src/surfaces/learn/` teach
+utility, residuals, risk scores, ADMM, oracle gaps, and cost-benefit
+transfers in plain English. [`docs/tutorial.md`](docs/tutorial.md) is
+the reference companion; the LevelShell primitive at
+`apps/web/src/primitives/LevelShell.tsx` enforces the consequence-before-math
+discipline named in DEC-PLAY-003.
+
+**Domain expert.** This is an independent public demo against the
+open-source [amzn/FloPro](https://github.com/amzn/FloPro) ADMM
+implementation. The 13 specs under `specs/` document where the design
+follows the published literature (Bergemann + Morris information
+design in spec 0003; canonical ADMM in
+[`docs/algorithms.md`](docs/algorithms.md)) and where it departs:
+no crowning of ADMM (DEC-LAB-008), cost-benefit transfers prove
+no-worse-off participation, six-mode information-vs-privacy on the
+same instance (DEC-LAB-009).
+
+**Engineer.** Fork the factory subsystem at `scripts/factory/`.
+DEC-FACTORY-001..005 document the architectural choices: narrow MCP
+stdio over shell tools, spec tasks expanded into review-gated YAML,
+bounded dual review with conservative aggregation, real CLI ids with
+synthetic fallback, and an optional LangGraph router with a threadpool
+fallback. [`docs/factory.md`](docs/factory.md) is the adopt-in-your-repo
+guide.
+
+**Hiring manager.** 13 specs, 20 architectural decisions captured in
+`decisions/`, mobile plus web parity (spec 0012 + tier 0-3 proof
+ladder), the factory subsystem as orchestration runtime (spec 0009),
+the first weekly dream retrospective at `dreams/2026-W21/` with five
+candidates promoted. The throughline is the
+[Cognitive Delivery Control Plane](https://github.com/AthenaTheOwl/athena-site/blob/main/ops/control-plane.md).
+
 ## How it's organized
 
 The repo runs the [Cognitive Delivery Control Plane](https://github.com/AthenaTheOwl/athena-site/blob/main/ops/control-plane.md)
-operating model: 13 specs with R-PREFIX requirements, 18 architectural
+operating model: 13 specs with R-PREFIX requirements, 20 architectural
 decisions captured in `decisions/`, weekly dream-job retrospectives,
 six roles, twelve tools, six policies, four executable gate scripts.
 
