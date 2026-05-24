@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "operations.release-manager output",
+  "description": "Shape the release-manager writes when a release entry is ready for review.",
+  "type": "object",
+  "required": ["release_id", "sha", "scope", "release_note_path", "proof_refs"],
+  "additionalProperties": false,
+  "properties": {
+    "release_id": {
+      "type": "string",
+      "pattern": "^\\d{3}-\\d{4}-\\d{2}-\\d{2}-[a-z0-9][a-z0-9-]*$",
+      "description": "Zero-padded ordinal plus ISO date plus kebab slug. Example: 001-2026-05-22-spec-0012-tier2-bootstrap."
+    },
+    "sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,40}$",
+      "description": "Commit SHA the release ships."
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One- or two-sentence scope statement."
+    },
+    "release_note_path": {
+      "type": "string",
+      "pattern": "^ops/releases/.+\\.md$",
+      "description": "Path of the per-release note file."
+    },
+    "proof_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string"},
+      "description": "Pointers to the gate runs, workflow logs, or test reports backing the release."
+    },
+    "canary_status": {
+      "type": "string",
+      "enum": ["green", "pending", "red"],
+      "description": "Canary outcome at the time the entry was recorded."
+    }
+  }
+}

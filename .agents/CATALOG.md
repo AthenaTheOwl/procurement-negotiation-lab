@@ -8,7 +8,26 @@ under `.agents/` and a DEC records the rationale.
 The six baseline roles (control.coordinator, product.spec-writer,
 engineering.implementation, engineering.code-reviewer,
 science.proof-gate-runner, learning.dream-orchestrator) ship in this
-install. The roles below are deferred.
+install. Two further roles have graduated since; see the Graduated
+section below. The remaining roles are deferred.
+
+## Roles graduated
+
+- **domain.simulator-guide** — graduated 2026-05-24. Owns the
+  pedagogical surface of the simulator (level intros, glossary
+  placement, primitive copy, consequence-before-math discipline).
+  Originating evidence: Levels 1-11 under
+  `apps/web/src/surfaces/learn/`, the LevelShell primitive contract,
+  DEC-PLAY-003 consequence-before-math, DEC-PLAY-004 teach terms in
+  context. Role files at `.agents/roles/domain.simulator-guide/`.
+- **operations.release-manager** — graduated 2026-05-24. Owns the
+  path from merge to production: stages release candidates, runs
+  the mobile-release workflow, gates canary promotion, appends
+  release ledger entries with proof refs. Originating evidence:
+  `ops/releases/001-2026-05-22-spec-0012-tier2-bootstrap.md`, the
+  `.github/workflows/mobile-e2e.yml` workflow, DEC-MOBREL-001 EAS
+  three-profile strategy, DEC-MOBREL-004 release ledger as durable
+  evidence. Role files at `.agents/roles/operations.release-manager/`.
 
 ## Roles deferred (44)
 

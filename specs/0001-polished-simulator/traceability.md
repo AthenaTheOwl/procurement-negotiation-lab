@@ -10,5 +10,5 @@
 | R-LAB-002 | (allowlisted) | `packages/engine/src/model/simulation.ts`, `apps/web/src/App.tsx` | engine `simulation.test.ts` |
 | R-LAB-003 | (allowlisted) | `packages/engine/src/model/simulation.ts`, `apps/web/src/App.tsx` | engine `simulation.test.ts` |
 | R-LAB-004 | (allowlisted) | `packages/engine/src/model/simulation.ts`, `apps/web/src/App.tsx` | engine `simulation.test.ts` |
-| R-STUDY-001 | (allowlisted) | `apps/web/src/App.tsx`, `packages/engine/src/data/glossary.ts` | `apps/web/src/App.test.tsx` |
+| R-STUDY-001 | [DEC-STUDY-001](../../decisions/DEC-STUDY-001-tutorial-as-plain-english-companion.md) | `apps/web/src/surfaces/sandbox/SandboxApp.tsx`, `docs/tutorial.md`, `packages/engine/src/data/glossary.ts` | `apps/web/src/surfaces/sandbox/SandboxApp.test.tsx` |
 | R-SPEC-001 | (allowlisted) | `scripts/spec_check.py`, `specs/0001-polished-simulator/*` | `tests/test_spec_contract.py` |

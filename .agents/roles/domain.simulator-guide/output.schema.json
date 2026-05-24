@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "domain.simulator-guide output",
+  "description": "Shape the simulator-guide writes when a pedagogical copy patch is ready for review.",
+  "type": "object",
+  "required": ["level_id", "files_touched", "summary"],
+  "additionalProperties": false,
+  "properties": {
+    "level_id": {
+      "type": "string",
+      "description": "Identifier of the Level the patch targets. Example: Level01 or glossary."
+    },
+    "files_touched": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string"},
+      "description": "Paths of the files touched, relative to the repo root."
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One- or two-sentence summary of the pedagogical change."
+    },
+    "decision_ref": {
+      "type": "string",
+      "description": "Optional reference to a DEC-STUDY-* record when the change crosses a pedagogical threshold."
+    }
+  }
+}

@@ -27,9 +27,7 @@ deferred:
   - id: R-LAB-004
     note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
 
-  # R-STUDY-* — spec 0001 tutorial surface.
-  - id: R-STUDY-001
-    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
+  # R-STUDY-* — spec 0001 tutorial surface backfilled in DEC-STUDY-001.
 
   # R-SPEC-* — spec discipline requirements across specs 0001-0011.
   - id: R-SPEC-001

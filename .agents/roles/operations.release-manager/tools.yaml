@@ -1,0 +1,7 @@
+# Role-scoped tool subset for operations.release-manager.
+tools:
+  - repo.read
+  - repo.apply_patch
+  - gates.run_spec_check
+  - gates.run_voice_lint
+  - mobile.maestro_run

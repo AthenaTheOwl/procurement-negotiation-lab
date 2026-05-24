@@ -1,0 +1,11 @@
+gates:
+  - name: spec_check
+    command: python scripts/spec_check.py
+    blocking: true
+  - name: voice_lint
+    command: python scripts/voice_lint.py
+    blocking: true
+  - name: release_ledger_appended
+    command: |
+      git diff --cached --name-only | grep -q '^ops/releases/'
+    blocking: true
