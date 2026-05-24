@@ -150,17 +150,7 @@ deferred:
   - id: R-BRIDGE-005
     note: phase pre-CDCP requirement (spec 0008 data bridges); backfill pending
 
-  # R-FACTORY-* — spec 0009 factory dev control plane.
-  - id: R-FACTORY-001
-    note: phase pre-CDCP requirement (spec 0009 factory dev control plane); backfill pending
-  - id: R-FACTORY-002
-    note: phase pre-CDCP requirement (spec 0009 factory dev control plane); backfill pending
-  - id: R-FACTORY-003
-    note: phase pre-CDCP requirement (spec 0009 factory dev control plane); backfill pending
-  - id: R-FACTORY-004
-    note: phase pre-CDCP requirement (spec 0009 factory dev control plane); backfill pending
-  - id: R-FACTORY-005
-    note: phase pre-CDCP requirement (spec 0009 factory dev control plane); backfill pending
+  # R-FACTORY-* — spec 0009 factory dev control plane backfilled in DEC-FACTORY-001..005.
 
   # R-LEARN-* — spec 0010 pedagogical redesign.
   - id: R-LEARN-001
