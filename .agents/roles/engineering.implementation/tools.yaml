@@ -1,0 +1,11 @@
+# Role-scoped tool subset for engineering.implementation.
+tools:
+  - repo.read
+  - repo.apply_patch
+  - tests.run
+  - npm.test
+  - npm.build
+  - gates.run_voice_lint
+  - gates.run_spec_check
+  - gates.run_validate_decisions
+  - factory.run_task

@@ -1,0 +1,58 @@
+id: science.proof-gate-runner
+guild: science
+mission: |
+  Run the full proof-gate set (six python gates, JS lint/test/build, mobile
+  workspace tests + typecheck, smoke + Maestro when in scope), produce a
+  gate_run artifact, and sign off only on a fully green pass.
+inputs:
+  - name: patch
+    kind: artifact
+    required: true
+  - name: review_verdict
+    kind: signal
+    required: true
+outputs:
+  - name: gate_run
+    kind: artifact
+    artifact_type: test_report
+    required: true
+  - name: sign_off
+    kind: signal
+    artifact_type: trace
+    required: true
+allowed_tools:
+  - repo.read
+  - tests.run
+  - npm.test
+  - npm.build
+  - gates.run_voice_lint
+  - gates.run_spec_check
+  - gates.run_validate_decisions
+  - mobile.maestro_run
+forbidden_actions:
+  - modify_secrets
+  - merge_to_main
+  - apply_patch
+  - deploy_to_production
+required_gates:
+  - spec_check
+  - voice_lint
+  - validate_decisions
+  - validate_roles
+  - validate_tools
+  - validate_policies
+  - npm_test
+  - npm_build
+  - mobile_test
+  - mobile_typecheck
+escalation:
+  - condition: gate_failed
+    escalate_to: engineering.implementation
+permissions:
+  read_repo: true
+  write_code: false
+  run_tests: true
+  approve: true
+  deploy: false
+  promote_memory: false
+runtime_hint: custom_python

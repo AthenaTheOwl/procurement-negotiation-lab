@@ -1,0 +1,20 @@
+id: dream-candidates-require-human
+applies_to:
+  roles:
+    - learning.dream-orchestrator
+  tools:
+    - dream.write_candidate
+  actions: ["apply_candidate", "merge_candidate", "promote_memory"]
+decision: require_approval
+conditions: []
+priority: 100
+description: |
+  Every dream candidate (memory_update, test_generation, skill_patch,
+  backlog_item) routes to the human-approval queue rather than
+  auto-applying. The role itself cannot promote memory; that
+  permission flag is false on the role.
+rationale: |
+  The cross-repo dream-output schema defaults human_review_required
+  to true. This policy makes the rule structural at the harness layer
+  as well, so a misconfigured candidate cannot silently apply.
+owner: platform

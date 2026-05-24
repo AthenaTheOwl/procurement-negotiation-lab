@@ -1,0 +1,21 @@
+id: spec-check-blocks-merge
+applies_to:
+  roles: ["*"]
+  tools: ["*"]
+  actions: ["merge_to_main"]
+decision: deny
+conditions:
+  - field: gates.spec_check.exit_code
+    op: ne
+    value: 0
+priority: 100
+description: |
+  A merge to main is denied while scripts/spec_check.py exits non-zero.
+  Covers orphan R-* IDs, missing required files, missing acceptance
+  gates, missing workflow proofs, and missing DEC coverage with no
+  allowlist entry.
+rationale: |
+  The spec-driven loop only works if the check is enforced at the
+  merge boundary. CI already runs the gate; this policy makes the
+  rule visible at the harness layer.
+owner: platform

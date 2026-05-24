@@ -1,0 +1,43 @@
+gates:
+  - name: spec_check
+    command: python scripts/spec_check.py
+    blocking: true
+  - name: voice_lint
+    command: python scripts/voice_lint.py
+    blocking: true
+  - name: validate_decisions
+    command: python scripts/validate_decisions.py
+    blocking: true
+  - name: validate_roles
+    command: python scripts/validate_roles.py
+    blocking: true
+  - name: validate_tools
+    command: python scripts/validate_tools.py
+    blocking: true
+  - name: validate_policies
+    command: python scripts/validate_policies.py
+    blocking: true
+  - name: pytest
+    command: python -m uv run pytest
+    blocking: true
+  - name: ruff
+    command: python -m uv run ruff check .
+    blocking: true
+  - name: mypy
+    command: python -m uv run mypy src
+    blocking: true
+  - name: npm_lint
+    command: npm run lint
+    blocking: true
+  - name: npm_test
+    command: npm run test
+    blocking: true
+  - name: npm_build
+    command: npm run build
+    blocking: true
+  - name: mobile_test
+    command: npm run test --workspace=@lab/mobile -- --runInBand
+    blocking: true
+  - name: mobile_typecheck
+    command: npm run typecheck --workspace=@lab/mobile
+    blocking: true

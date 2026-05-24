@@ -1,0 +1,58 @@
+# .agents/workflows/weekly-dream.yaml
+#
+# The weekly dream pass workflow. The dream-orchestrator role drives
+# the pass; the resulting candidates land as human-gated proposals.
+
+id: weekly-dream
+version: 0.1.0
+owner_guild: learning
+description: |
+  Weekly offline-cognition pass. The dream-orchestrator reads recent
+  runs, exercises the eight dream modes, and writes structured output
+  plus a narrative report under dreams/YYYY-WNN/.
+
+triggers:
+  - cron: weekly Friday
+  - manual: /dream-then-brief
+  - manual: operator-initiated
+
+steps:
+  - id: gather
+    role: learning.dream-orchestrator
+    description: |
+      Read ops/run-ledger.md, ops/factory.db events, ops/factory-artifacts/,
+      ops/RELEASE_LEDGER.md, ops/RESET_LEDGER.md, and ops/qa-evidence/
+      from the lookback window (default: last 7 days).
+
+  - id: run-modes
+    role: learning.dream-orchestrator
+    description: |
+      Exercise the eight dream modes documented in dreams/README.md.
+      Each mode writes a section in report.md and appends typed
+      candidates to output.json.
+
+  - id: validate-output
+    role: science.proof-gate-runner
+    description: |
+      The future scripts/validate_dreams.py walks the output.json
+      against the cross-repo dream-output.schema.json. A failure
+      flags the file and the dream run gets re-recorded.
+
+  - id: surface-candidates
+    role: learning.dream-orchestrator
+    description: |
+      Every candidate carries human_review_required: true. The
+      candidates surface as a backlog list; an operator triages and
+      promotes via the single-change workflow.
+
+  - id: human-review
+    role: control.coordinator
+    description: |
+      An operator reviews the candidate set and decides which to
+      promote into the single-change workflow. No candidate
+      auto-applies.
+
+outputs:
+  - dreams/YYYY-WNN/report.md
+  - dreams/YYYY-WNN/output.json
+  - ops/event-log/YYYY-MM-DD.jsonl (dream.run, dream.candidate events)

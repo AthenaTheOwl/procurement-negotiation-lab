@@ -1,0 +1,118 @@
+# .agents/workflows/single-change.yaml
+#
+# The nine steps a single change moves through, from intake to release.
+# Each step names the role responsible, the output it produces, and
+# the status semantics the step uses to signal handoff. This YAML is
+# documentation, not execution code; the gates and the agents read it
+# to know what shape a change takes.
+
+id: single-change
+version: 0.1.0
+owner_guild: control
+description: |
+  The nine steps a single change moves through. Each step pins to one
+  role from .agents/roles/<id>/.
+
+steps:
+  - id: intake
+    role: control.coordinator
+    output_type: backlog_item
+    status_semantics:
+      - proposed: a human or dream candidate filed the change
+      - triaged: a human chose to act on the item this pass
+      - dropped: the item does not warrant work right now
+    description: |
+      A change request lands as a backlog item. Source may be a human,
+      a dream candidate, or a portfolio-audit finding.
+
+  - id: spec
+    role: product.spec-writer
+    output_type: spec_ledger
+    status_semantics:
+      - drafted: requirements.md and traceability.md exist
+      - approved: design.md and acceptance.md pass review
+    description: |
+      The change earns a spec ledger under specs/NNNN-<slug>/ with the
+      six-file pattern. R-* requirements ship in requirements.md.
+
+  - id: architecture
+    role: engineering.implementation
+    output_type: decision_memo
+    status_semantics:
+      - proposed: DEC file lands with alternatives and rationale
+      - approved: DEC file passes validate_decisions
+    description: |
+      Each R-* requirement gets at least one DEC file in decisions/
+      that names the alternatives, rationale, evidence, and rollback.
+
+  - id: implementation
+    role: engineering.implementation
+    output_type: patch
+    status_semantics:
+      - drafted: code lands in a per-task worktree
+      - merged: code reaches main
+    description: |
+      The narrowest traceable slice lands as code. Edit existing files
+      over Write; new algorithms return the common trace schema; React
+      + Tailwind for web, Expo + React Native for mobile.
+
+  - id: code-review
+    role: engineering.code-reviewer
+    output_type: review
+    status_semantics:
+      - requested: review asked of the reviewer worker
+      - approved: review passes
+      - changes_requested: review flags concerns
+    description: |
+      The reviewer reads the diff against the spec and the DEC.
+      Comments land inline; approval gates the merge. The factory's
+      bounded dual-review loop covers this step by default.
+
+  - id: tests
+    role: engineering.implementation
+    output_type: test_report
+    status_semantics:
+      - drafted: test cases exist
+      - passing: vitest, pytest, or Maestro flow green
+    description: |
+      Fixtures, golden cases, unit tests, and Maestro flows land
+      before the implementation lands. The relevant runner confirms
+      green.
+
+  - id: proof-gates
+    role: science.proof-gate-runner
+    output_type: test_report
+    status_semantics:
+      - running: gates in progress
+      - passing: every blocking gate exits 0
+      - failing: at least one gate failed; merge blocked
+    description: |
+      Six python gates (spec_check, voice_lint, validate_decisions,
+      validate_roles, validate_tools, validate_policies) plus the JS
+      lint/test/build, the mobile workspace tests + typecheck, and
+      pytest/ruff/mypy/bandit/pip-audit run on every push.
+
+  - id: human-approval
+    role: control.coordinator
+    output_type: review
+    status_semantics:
+      - pending: a human has not signed off
+      - approved: a human signed off
+    description: |
+      A human reviewer signs off on the change before it lands on
+      main. Dream candidates always require human approval; the rule
+      is structural, not configurable.
+
+  - id: release
+    role: control.coordinator
+    output_type: release_note
+    status_semantics:
+      - shipped: release lands on main with an entry in
+          ops/RELEASE_LEDGER.md
+      - rolled_back: release reverted; entry lands in
+          ops/RESET_LEDGER.md
+    description: |
+      The merge to main lands the release. An entry in
+      ops/RELEASE_LEDGER.md records the date, SHA, title, scope, and
+      proof refs. A rollback adds an entry to ops/RESET_LEDGER.md in
+      the same push.

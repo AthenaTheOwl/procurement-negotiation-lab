@@ -1,0 +1,8 @@
+gates:
+  - name: voice_lint
+    command: python scripts/voice_lint.py
+    blocking: true
+  - name: validate_dreams
+    command: python scripts/validate_dreams.py
+    blocking: false
+    note: future gate; lands with the first dream output

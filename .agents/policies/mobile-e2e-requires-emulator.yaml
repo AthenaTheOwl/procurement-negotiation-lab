@@ -1,0 +1,26 @@
+id: mobile-e2e-requires-emulator
+applies_to:
+  roles:
+    - science.proof-gate-runner
+  tools:
+    - mobile.maestro_run
+  actions: ["invoke"]
+decision: deny
+conditions:
+  - field: mobile.emulator_healthy
+    op: ne
+    value: true
+priority: 100
+description: |
+  The mobile.maestro_run tool is denied unless an active Android
+  emulator session reports healthy. Healthy means adb devices lists
+  the emulator and the boot animation has finished. When the emulator
+  is healthy, the tool runs without approval; the policy keeps the
+  gate honest, not slow.
+rationale: |
+  The .github/workflows/mobile-e2e.yml workflow uses
+  reactivecircus/android-emulator-runner@v2 with KVM acceleration.
+  A Maestro run against an unhealthy emulator produces noise, not
+  signal; deny up front and surface the emulator-not-ready failure
+  in a place an operator can act on.
+owner: mobile

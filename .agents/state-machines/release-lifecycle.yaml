@@ -1,0 +1,63 @@
+# State machine for a release.
+# A release is one commit on main that represents shippable scope.
+# Both the web app (Vercel) and the mobile app (EAS profiles) share
+# this lifecycle; the workflow YAML names the per-channel steps.
+
+id: release-lifecycle
+version: 0.1.0
+owner_guild: operations
+
+states:
+  - candidate
+  - gates_green
+  - human_approved
+  - shipped
+  - canary
+  - rolled_back
+
+initial: candidate
+terminal:
+  - shipped
+  - rolled_back
+
+transitions:
+  - from: candidate
+    to: gates_green
+    trigger: science.proof-gate-runner produces verdict=green
+    gate: every blocking gate exits 0
+
+  - from: gates_green
+    to: human_approved
+    trigger: human signs off on the candidate
+    gate: approval event appended to ops/event-log/
+
+  - from: human_approved
+    to: shipped
+    trigger: commit lands on main + RELEASE_LEDGER entry written
+    gate: RELEASE_LEDGER entry present for the SHA
+
+  - from: shipped
+    to: canary
+    trigger: mobile release deploys to internal channel via EAS profile
+    gate: canary event appended
+
+  - from: canary
+    to: shipped
+    trigger: canary clean for the agreed soak period
+    gate: no canary failure events
+
+  - from: shipped
+    to: rolled_back
+    trigger: production incident + rollback push
+    gate: RESET_LEDGER entry written in the same push
+
+  - from: canary
+    to: rolled_back
+    trigger: canary fails + rollback push
+    gate: RESET_LEDGER entry written in the same push
+
+notes: |
+  The mobile release path uses the .agents/workflows/mobile-release.yaml
+  workflow which composes EAS profiles, Maestro flows, and a canary
+  step. The web release path is shorter; the same lifecycle applies
+  with the canary step optional.

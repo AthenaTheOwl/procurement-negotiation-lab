@@ -1,0 +1,91 @@
+# State machine for a factory or workflow run.
+# Mirrors the state column on the tasks table in ops/factory.db so a
+# coding agent can read the YAML and understand the run shape.
+
+id: run-lifecycle
+version: 0.1.0
+owner_guild: engineering
+
+states:
+  - queued
+  - planning
+  - awaiting_approval
+  - implementing
+  - reviewing
+  - gating
+  - sign_off
+  - done
+  - failed
+  - cancelled
+
+initial: queued
+terminal:
+  - done
+  - failed
+  - cancelled
+
+transitions:
+  - from: queued
+    to: planning
+    trigger: control.coordinator routes the run to the planner worker
+    gate: change_request artifact exists
+
+  - from: planning
+    to: awaiting_approval
+    trigger: plan_review checkpoint configured and plan artifact written
+    gate: plan.txt present in ops/factory-artifacts/<task-id>/
+
+  - from: awaiting_approval
+    to: implementing
+    trigger: human approve via --resume --approve
+    gate: trace event approved appended
+
+  - from: planning
+    to: implementing
+    trigger: plan_review checkpoint not configured
+    gate: plan.txt present
+
+  - from: implementing
+    to: reviewing
+    trigger: implementer writes patch + tests + DEC
+    gate: spec_check + voice_lint + validate_decisions exit 0
+
+  - from: reviewing
+    to: implementing
+    trigger: reviewer verdict changes_requested AND patch_round < max_patch_rounds
+    gate: review_comments artifact written
+
+  - from: reviewing
+    to: gating
+    trigger: reviewer verdict approved
+    gate: review.txt artifact written
+
+  - from: gating
+    to: sign_off
+    trigger: science.proof-gate-runner produces gate_run with verdict=green
+    gate: every blocking gate exits 0
+
+  - from: sign_off
+    to: done
+    trigger: human approval + commit + push + (optional) draft PR opened
+    gate: RELEASE_LEDGER entry written when scope is shippable
+
+  - from: implementing
+    to: failed
+    trigger: factory_run_stuck + control.coordinator cannot re-route
+    gate: failure event appended
+
+  - from: gating
+    to: failed
+    trigger: gate_failed twice and implementer cannot fix
+    gate: failure event appended
+
+  - from: queued
+    to: cancelled
+    trigger: operator cancels before planning starts
+    gate: cancellation event appended
+
+notes: |
+  The factory subsystem in scripts/factory/ already implements most
+  of this state machine in SQLite. This YAML names the contract so a
+  coding agent can read it without inspecting the schema migrations.

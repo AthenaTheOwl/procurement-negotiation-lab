@@ -13,6 +13,8 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: sync
         run: uv sync --python 3.11
+      - name: install cdcp gate deps
+        run: uv pip install "jsonschema>=4.21" "pyyaml>=6.0"
       - name: pytest
         run: uv run pytest
       - name: ruff
@@ -23,3 +25,11 @@ jobs:
         run: uv run python scripts/voice_lint.py
       - name: spec check
         run: uv run python scripts/spec_check.py
+      - name: validate decisions
+        run: uv run python scripts/validate_decisions.py
+      - name: validate roles
+        run: uv run python scripts/validate_roles.py
+      - name: validate tools
+        run: uv run python scripts/validate_tools.py
+      - name: validate policies
+        run: uv run python scripts/validate_policies.py

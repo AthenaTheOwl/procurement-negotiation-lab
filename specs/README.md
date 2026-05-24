@@ -85,6 +85,13 @@ Current active specs:
 - `0012-mobile-release-and-agentic-sdlc/research.md`
 - `0012-mobile-release-and-agentic-sdlc/traceability.md`
 
+- `0013-cognitive-delivery-control-plane/requirements.md`
+- `0013-cognitive-delivery-control-plane/design.md`
+- `0013-cognitive-delivery-control-plane/tasks.md`
+- `0013-cognitive-delivery-control-plane/acceptance.md`
+- `0013-cognitive-delivery-control-plane/research.md`
+- `0013-cognitive-delivery-control-plane/traceability.md`
+
 The development loop is:
 
 1. Write or update requirements in testable language.

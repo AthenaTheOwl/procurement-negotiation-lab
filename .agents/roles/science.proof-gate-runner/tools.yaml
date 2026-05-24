@@ -1,0 +1,10 @@
+# Role-scoped tool subset for science.proof-gate-runner.
+tools:
+  - repo.read
+  - tests.run
+  - npm.test
+  - npm.build
+  - gates.run_voice_lint
+  - gates.run_spec_check
+  - gates.run_validate_decisions
+  - mobile.maestro_run

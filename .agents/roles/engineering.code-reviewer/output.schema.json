@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "engineering.code-reviewer output",
+  "description": "Shape the code-reviewer writes when a review completes.",
+  "type": "object",
+  "required": ["patch_ref", "verdict", "comments_ref"],
+  "additionalProperties": false,
+  "properties": {
+    "patch_ref": {
+      "type": "string",
+      "description": "Path or URL to the diff artifact reviewed."
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["approved", "changes_requested", "rejected"],
+      "description": "Review outcome."
+    },
+    "comments_ref": {
+      "type": "string",
+      "description": "Path or URL to the review-comments artifact."
+    },
+    "concerns": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Short labels for each concern raised."
+    }
+  }
+}

@@ -1,0 +1,49 @@
+id: learning.dream-orchestrator
+guild: learning
+mission: |
+  Run the weekly dream pass: read recent factory runs, releases, and QA
+  evidence, exercise the eight dream modes, write the structured output.json
+  plus the narrative report.md, and surface promotion candidates as
+  human-gated proposals.
+inputs:
+  - name: factory_run_ledger
+    kind: context
+    required: true
+  - name: release_ledger
+    kind: context
+    required: true
+  - name: qa_evidence
+    kind: context
+    required: false
+outputs:
+  - name: dream_report
+    kind: artifact
+    artifact_type: dream_report
+    required: true
+  - name: candidate_set
+    kind: artifact
+    artifact_type: memory_update
+    required: false
+allowed_tools:
+  - repo.read
+  - dream.read_recent_commits
+  - dream.write_candidate
+forbidden_actions:
+  - approve_own_work
+  - deploy_to_production
+  - modify_secrets
+  - merge_to_main
+  - apply_patch
+required_gates:
+  - voice_lint
+escalation:
+  - condition: dream_output_schema_invalid
+    escalate_to: control.coordinator
+permissions:
+  read_repo: true
+  write_code: false
+  run_tests: false
+  approve: false
+  deploy: false
+  promote_memory: false
+runtime_hint: claude_code

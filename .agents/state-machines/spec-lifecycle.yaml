@@ -1,0 +1,46 @@
+# State machine for a spec ledger.
+# Documents the states a specs/NNNN-*/ directory moves through, from
+# proposed through retired. The YAML is documentation, not execution
+# code; spec_check.py reads the file shape rather than the state name.
+
+id: spec-lifecycle
+version: 0.1.0
+owner_guild: product
+
+states:
+  - proposed
+  - drafted
+  - approved
+  - shipped
+  - retired
+
+initial: proposed
+terminal:
+  - shipped
+  - retired
+
+transitions:
+  - from: proposed
+    to: drafted
+    trigger: spec-writer authored requirements.md and traceability.md
+    gate: spec_check confirms required files present and R-* IDs traced
+
+  - from: drafted
+    to: approved
+    trigger: design.md and acceptance.md complete + code-reviewer signs off on the ledger
+    gate: spec_check confirms acceptance gates listed
+
+  - from: approved
+    to: shipped
+    trigger: at least one DEC resolves at least one R-* in the spec
+    gate: validate_decisions exits 0 + RELEASE_LEDGER entry lands
+
+  - from: shipped
+    to: retired
+    trigger: spec is superseded by a later spec
+    gate: spec_check still passes after retirement (no orphan R-* references)
+
+notes: |
+  A spec may stall in drafted while requirements iterate; the
+  spec-writer role owns the iteration. The approval transition is
+  human-gated when the spec carries reversible:false decisions.

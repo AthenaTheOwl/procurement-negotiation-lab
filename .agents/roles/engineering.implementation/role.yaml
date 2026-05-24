@@ -1,0 +1,63 @@
+id: engineering.implementation
+guild: engineering
+mission: |
+  Land the narrowest traceable code slice that resolves one or more R-*
+  requirements, with tests and a matching DEC, then hand the diff to
+  engineering.code-reviewer.
+inputs:
+  - name: spec_ledger
+    kind: spec
+    required: true
+  - name: design_doc
+    kind: spec
+    required: true
+  - name: existing_code
+    kind: context
+    required: true
+outputs:
+  - name: patch
+    kind: artifact
+    artifact_type: patch
+    required: true
+  - name: tests
+    kind: artifact
+    artifact_type: test_report
+    required: true
+  - name: decision_memo
+    kind: artifact
+    artifact_type: decision_memo
+    required: true
+allowed_tools:
+  - repo.read
+  - repo.apply_patch
+  - tests.run
+  - npm.test
+  - npm.build
+  - gates.run_voice_lint
+  - gates.run_spec_check
+  - gates.run_validate_decisions
+  - factory.run_task
+forbidden_actions:
+  - approve_own_work
+  - deploy_to_production
+  - modify_secrets
+  - merge_to_main
+required_gates:
+  - spec_check
+  - voice_lint
+  - validate_decisions
+  - npm_test
+  - npm_build
+escalation:
+  - condition: gate_failed_twice
+    escalate_to: engineering.code-reviewer
+  - condition: factory_run_stuck
+    escalate_to: control.coordinator
+permissions:
+  read_repo: true
+  write_code: true
+  run_tests: true
+  approve: false
+  deploy: false
+  promote_memory: false
+runtime_hint: codex_cli

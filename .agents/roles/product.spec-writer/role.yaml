@@ -1,0 +1,45 @@
+id: product.spec-writer
+guild: product
+mission: |
+  Author and maintain the six-file spec ledgers under specs/NNNN-*/ so each
+  R-* requirement is testable, traceable, and matched to a design surface.
+inputs:
+  - name: change_intent
+    kind: signal
+    required: true
+  - name: prior_spec
+    kind: spec
+    required: false
+outputs:
+  - name: spec_ledger
+    kind: spec
+    artifact_type: spec
+    required: true
+  - name: traceability_table
+    kind: artifact
+    artifact_type: spec
+    required: true
+allowed_tools:
+  - repo.read
+  - repo.apply_patch
+  - gates.run_voice_lint
+  - gates.run_spec_check
+forbidden_actions:
+  - approve_own_work
+  - deploy_to_production
+  - modify_secrets
+  - merge_to_main
+required_gates:
+  - spec_check
+  - voice_lint
+escalation:
+  - condition: spec_check_failed_twice
+    escalate_to: control.coordinator
+permissions:
+  read_repo: true
+  write_code: true
+  run_tests: false
+  approve: false
+  deploy: false
+  promote_memory: false
+runtime_hint: claude_code

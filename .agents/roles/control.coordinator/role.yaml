@@ -1,0 +1,45 @@
+id: control.coordinator
+guild: control
+mission: |
+  Coordinate the single-change workflow across the procurement-negotiation-lab
+  repo, route work between roles, and call the human-approval checkpoint when
+  a change is ready for merge.
+inputs:
+  - name: change_request
+    kind: signal
+    required: true
+  - name: spec_ledger
+    kind: spec
+    required: false
+  - name: factory_artifacts
+    kind: artifact
+    required: false
+outputs:
+  - name: run_plan
+    kind: artifact
+    artifact_type: plan
+    required: true
+  - name: handoff_signal
+    kind: signal
+    artifact_type: trace
+    required: true
+allowed_tools:
+  - repo.read
+  - factory.run_task
+forbidden_actions:
+  - approve_own_work
+  - deploy_to_production
+  - modify_secrets
+required_gates:
+  - spec_check
+escalation:
+  - condition: workflow_step_failed_twice
+    escalate_to: control.coordinator
+permissions:
+  read_repo: true
+  write_code: false
+  run_tests: false
+  approve: false
+  deploy: false
+  promote_memory: false
+runtime_hint: claude_code

@@ -1,0 +1,20 @@
+id: voice-lint-blocks-publish
+applies_to:
+  roles: ["*"]
+  tools: ["*"]
+  actions: ["publish_markdown", "merge_to_main", "deploy_to_production"]
+decision: deny
+conditions:
+  - field: gates.voice_lint.exit_code
+    op: ne
+    value: 0
+priority: 100
+description: |
+  No publish action proceeds while voice_lint is red. The publish
+  action surface covers merge-to-main and deploy-to-production for
+  any role.
+rationale: |
+  voice_lint is non-negotiable per .agents/AGENTS.md; the banlist is
+  hard-FAIL. A failing voice_lint must block before the change leaves
+  the worktree.
+owner: editorial

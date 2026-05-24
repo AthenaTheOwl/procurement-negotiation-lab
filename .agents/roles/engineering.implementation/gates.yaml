@@ -1,0 +1,16 @@
+gates:
+  - name: spec_check
+    command: python scripts/spec_check.py
+    blocking: true
+  - name: voice_lint
+    command: python scripts/voice_lint.py
+    blocking: true
+  - name: validate_decisions
+    command: python scripts/validate_decisions.py
+    blocking: true
+  - name: npm_test
+    command: npm run test
+    blocking: true
+  - name: npm_build
+    command: npm run build
+    blocking: true

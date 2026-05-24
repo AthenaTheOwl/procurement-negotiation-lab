@@ -1,0 +1,50 @@
+id: engineering.code-reviewer
+guild: engineering
+mission: |
+  Read the implementer's diff against the spec, the DEC, and the existing
+  code surface; flag drift or missing coverage; approve or request changes
+  before the diff reaches the human-approval step.
+inputs:
+  - name: patch
+    kind: artifact
+    required: true
+  - name: spec_ledger
+    kind: spec
+    required: true
+  - name: decision_memo
+    kind: artifact
+    required: true
+outputs:
+  - name: review_comments
+    kind: artifact
+    artifact_type: review
+    required: true
+  - name: review_verdict
+    kind: signal
+    artifact_type: trace
+    required: true
+allowed_tools:
+  - repo.read
+  - gates.run_voice_lint
+  - gates.run_spec_check
+  - gates.run_validate_decisions
+forbidden_actions:
+  - approve_own_work
+  - deploy_to_production
+  - modify_secrets
+  - merge_to_main
+  - apply_patch
+required_gates:
+  - spec_check
+  - voice_lint
+escalation:
+  - condition: review_rounds_exceeded
+    escalate_to: control.coordinator
+permissions:
+  read_repo: true
+  write_code: false
+  run_tests: true
+  approve: true
+  deploy: false
+  promote_memory: false
+runtime_hint: claude_code
