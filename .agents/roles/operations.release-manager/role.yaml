@@ -1,0 +1,52 @@
+id: operations.release-manager
+guild: operations
+mission: |
+  Own the path from merge to production: stage release candidates, run the
+  mobile-release workflow against EAS profiles, gate canary promotion, and
+  append release ledger entries with proof refs.
+inputs:
+  - name: release_candidate
+    kind: signal
+    required: true
+  - name: release_ledger
+    kind: artifact
+    required: true
+  - name: mobile_e2e_report
+    kind: artifact
+    required: false
+outputs:
+  - name: release_note
+    kind: artifact
+    artifact_type: release_note
+    required: true
+  - name: release_ledger_entry
+    kind: artifact
+    artifact_type: log
+    required: true
+allowed_tools:
+  - repo.read
+  - repo.apply_patch
+  - gates.run_spec_check
+  - gates.run_voice_lint
+  - mobile.maestro_run
+forbidden_actions:
+  - approve_own_work
+  - modify_secrets
+  - merge_to_main
+  - rewrite_release_history
+required_gates:
+  - spec_check
+  - voice_lint
+escalation:
+  - condition: canary_failed
+    escalate_to: control.coordinator
+  - condition: release_proof_missing
+    escalate_to: science.proof-gate-runner
+permissions:
+  read_repo: true
+  write_code: true
+  run_tests: true
+  approve: false
+  deploy: true
+  promote_memory: false
+runtime_hint: claude_code

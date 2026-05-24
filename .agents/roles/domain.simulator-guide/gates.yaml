@@ -1,0 +1,7 @@
+gates:
+  - name: voice_lint
+    command: python scripts/voice_lint.py
+    blocking: true
+  - name: spec_check
+    command: python scripts/spec_check.py
+    blocking: true
