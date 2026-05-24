@@ -2,13 +2,13 @@
 
 | Requirement | Tasks | Acceptance checks | Status |
 |---|---|---|---|
-| **R-HARDEN-001** schema-first validation | A1, A2, A3, A4 | Pass A: type inferred from zod; all paths go through `parse()`; built-in fixtures parse; field-path errors | done (scenarioSchema.ts) |
-| **R-HARDEN-002** test data factories | B1, B2, B3, B4 | Pass B: 3 factories; defaults valid; overrides merge; inline fixtures migrated | done (factories.ts) |
-| **R-HARDEN-003** decision event log | C1, C2, C3, C4, C5 | Pass C: typed union; events emit; bounded; included in report; canonical sequence asserted | done (decisionEvent.ts) |
-| **R-HARDEN-004** Playwright smoke | D1, D2, D3, D4 | Pass D: smoke.spec.ts; targets deployed URL; weekly + dispatch; failure opens issue | done (playwright.config.ts + web/e2e/smoke.spec.ts + .github/workflows/smoke.yml) |
-| **R-HARDEN-005** spec_check enforcement | E1, E2, E3, E4, E5 | Pass E: enumerates R-*; asserts coverage; surfaces missing IDs; runs on PR; current specs pass after backfill | done (scripts/spec_check.py extended to specs 0005-0008) |
-| **R-HARDEN-006** integration tests | F1, F2, F3, F4 | Pass F: 3 tests under `integration/`; cover scenario-to-ledger, formula-authoring, report-roundtrip | done (web/src/integration/scenario-to-report.test.ts: scenario→ledger→report, CSV→report, provenance round-trip) |
-| **R-SPEC-007** discipline | S1, S2, S3 | Spec entry; this file; run-ledger | in progress |
+| **R-HARDEN-001** schema-first validation (owner_role: engineering.implementation) | A1, A2, A3, A4 | Pass A: type inferred from zod; all paths go through `parse()`; built-in fixtures parse; field-path errors | done (scenarioSchema.ts) |
+| **R-HARDEN-002** test data factories (owner_role: engineering.implementation) | B1, B2, B3, B4 | Pass B: 3 factories; defaults valid; overrides merge; inline fixtures migrated | done (factories.ts) |
+| **R-HARDEN-003** decision event log (owner_role: engineering.implementation; owner_role_pending_graduation: engineering.observability-builder) | C1, C2, C3, C4, C5 | Pass C: typed union; events emit; bounded; included in report; canonical sequence asserted | done (decisionEvent.ts) |
+| **R-HARDEN-004** Playwright smoke (owner_role: science.proof-gate-runner) | D1, D2, D3, D4 | Pass D: smoke.spec.ts; targets deployed URL; weekly + dispatch; failure opens issue | done (playwright.config.ts + web/e2e/smoke.spec.ts + .github/workflows/smoke.yml) |
+| **R-HARDEN-005** spec_check enforcement (owner_role: science.proof-gate-runner) | E1, E2, E3, E4, E5 | Pass E: enumerates R-*; asserts coverage; surfaces missing IDs; runs on PR; current specs pass after backfill | done (scripts/spec_check.py extended to specs 0005-0008) |
+| **R-HARDEN-006** integration tests (owner_role: engineering.code-reviewer) | F1, F2, F3, F4 | Pass F: 3 tests under `integration/`; cover scenario-to-ledger, formula-authoring, report-roundtrip | done (web/src/integration/scenario-to-report.test.ts: scenario→ledger→report, CSV→report, provenance round-trip) |
+| **R-SPEC-007** discipline (owner_role: product.spec-writer) | S1, S2, S3 | Spec entry; this file; run-ledger | in progress |
 
 ## Update protocol
 

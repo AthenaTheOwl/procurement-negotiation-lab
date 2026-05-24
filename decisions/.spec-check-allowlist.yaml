@@ -196,3 +196,46 @@ deferred:
   # R-AIBRIEF-* — spec 0012 named the ai-field-brief sibling repo split.
   - id: R-AIBRIEF-001
     note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
+
+# Roles-deferred allowlist: R-* IDs whose traceability.md row carries an
+# `owner_role:` token mapped to the closest installed role plus an
+# `owner_role_pending_graduation:` marker that names a CATALOG role this
+# repo has not yet graduated. Entries here drain when the named CATALOG
+# role lands under `.agents/roles/` with a DEC recording the rationale.
+#
+# Every R-* in this list MUST also carry a clean install-role mapping
+# in its traceability.md row so no requirement is left without an owner.
+
+roles_deferred:
+  - id: R-LAB-006
+    note: owner_role mapped to domain.simulator-guide pending domain.scenario-curator graduation
+  - id: R-LAB-007
+    note: owner_role mapped to domain.simulator-guide pending domain.strategy-author graduation
+  - id: R-OPS-004
+    note: owner_role mapped to engineering.implementation pending security.threat-modeler graduation
+  - id: R-PORTAL-003
+    note: owner_role mapped to engineering.implementation pending security.threat-modeler graduation
+  - id: R-PORTAL-004
+    note: owner_role mapped to engineering.implementation pending domain.strategy-author graduation
+  - id: R-REPORT-002
+    note: owner_role mapped to engineering.implementation pending documentation.changelog-author graduation
+  - id: R-REPORT-005
+    note: owner_role mapped to engineering.implementation pending design.flow-illustrator graduation
+  - id: R-HARDEN-003
+    note: owner_role mapped to engineering.implementation pending engineering.observability-builder graduation
+  - id: R-BRIDGE-001
+    note: owner_role mapped to engineering.implementation pending domain.bridge-author graduation
+  - id: R-BRIDGE-002
+    note: owner_role mapped to engineering.implementation pending design.flow-illustrator graduation
+  - id: R-BRIDGE-003
+    note: owner_role mapped to engineering.implementation pending domain.bridge-author graduation
+  - id: R-BRIDGE-004
+    note: owner_role mapped to engineering.implementation pending domain.bridge-author graduation
+  - id: R-BRIDGE-005
+    note: owner_role mapped to engineering.implementation pending security.threat-modeler graduation
+  - id: R-LEARN-003
+    note: owner_role mapped to domain.simulator-guide pending design.flow-illustrator graduation
+  - id: R-LEARN-005
+    note: owner_role mapped to domain.simulator-guide pending design.flow-illustrator graduation
+  - id: R-SDLC-003
+    note: owner_role mapped to control.coordinator pending documentation.readme-keeper graduation
