@@ -1,0 +1,7 @@
+# Role-scoped tool subset for control.coordinator.
+# Full tool registry lives at .agents/tools.yaml; this file declares
+# the subset this role is permitted to invoke.
+
+tools:
+  - repo.read
+  - factory.run_task

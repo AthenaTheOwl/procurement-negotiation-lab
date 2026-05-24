@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "control.coordinator output",
+  "description": "Shape the coordinator writes when handing off to the next role.",
+  "type": "object",
+  "required": ["run_id", "next_role", "artifact_ref", "rationale"],
+  "additionalProperties": false,
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Stable id for the change run. Often a factory task id or a uuid hex."
+    },
+    "next_role": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*\\.[a-z][a-z0-9_-]*$",
+      "description": "Role id taking over the run."
+    },
+    "artifact_ref": {
+      "type": "string",
+      "description": "Path or URL pointing at the artifact the next role consumes."
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One- or two-sentence reason for the handoff routing."
+    }
+  }
+}

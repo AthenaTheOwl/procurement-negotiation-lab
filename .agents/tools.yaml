@@ -1,0 +1,207 @@
+# Central tool registry for procurement-negotiation-lab.
+#
+# Each entry matches the cross-repo tool.schema.json from athena-site
+# (cached at ops/schemas-cache/tool.schema.json). The scripts/validate_tools.py
+# validator reads this file and validates each entry.
+#
+# Roles draw their permitted subset from this registry; the role-scoped
+# .agents/roles/<role>/tools.yaml file lists the subset by id.
+
+tools:
+  - id: repo.read
+    description: Read files from the repository working tree.
+    risk_level: low
+    allowed_roles:
+      - control.coordinator
+      - product.spec-writer
+      - engineering.implementation
+      - engineering.code-reviewer
+      - science.proof-gate-runner
+      - learning.dream-orchestrator
+    requires_approval: false
+    forbidden_paths:
+      - "**/.env"
+      - "**/.env.*"
+      - "**/secrets/**"
+    emits_events:
+      - tool.repo.read
+    output_schema: https://athena.dev/ops/schemas/artifact.schema.json
+    category: repo
+    network_required: false
+
+  - id: repo.apply_patch
+    description: Apply a unified diff to the repository working tree.
+    risk_level: medium
+    allowed_roles:
+      - product.spec-writer
+      - engineering.implementation
+    requires_approval: false
+    forbidden_paths:
+      - "**/.env"
+      - "**/.env.*"
+      - "ops/factory.db"
+      - "ops/factory-artifacts/**"
+      - "ops/qa-evidence/**"
+      - "ops/releases/**"
+    emits_events:
+      - tool.repo.apply_patch
+    output_schema: https://athena.dev/ops/schemas/artifact.schema.json
+    category: repo
+    network_required: false
+
+  - id: tests.run
+    description: Run the python test suite (pytest with the repo's coverage config).
+    risk_level: low
+    allowed_roles:
+      - engineering.implementation
+      - engineering.code-reviewer
+      - science.proof-gate-runner
+    requires_approval: false
+    forbidden_paths: []
+    emits_events:
+      - tool.tests.run
+    output_schema: https://athena.dev/ops/schemas/artifact.schema.json
+    category: shell
+    network_required: false
+
+  - id: npm.test
+    description: Run the npm workspace test suite (vitest across packages and apps).
+    risk_level: low
+    allowed_roles:
+      - engineering.implementation
+      - science.proof-gate-runner
+    requires_approval: false
+    forbidden_paths: []
+    emits_events:
+      - tool.npm.test
+    output_schema: https://athena.dev/ops/schemas/artifact.schema.json
+    category: shell
+    network_required: false
+
+  - id: npm.build
+    description: Run the npm workspace build (vite build for the web app).
+    risk_level: low
+    allowed_roles:
+      - engineering.implementation
+      - science.proof-gate-runner
+    requires_approval: false
+    forbidden_paths: []
+    emits_events:
+      - tool.npm.build
+    output_schema: https://athena.dev/ops/schemas/artifact.schema.json
+    category: shell
+    network_required: false
+
+  - id: gates.run_voice_lint
+    description: Run scripts/voice_lint.py against the documented globs.
+    risk_level: low
+    allowed_roles:
+      - product.spec-writer
+      - engineering.implementation
+      - engineering.code-reviewer
+      - science.proof-gate-runner
+      - learning.dream-orchestrator
+    requires_approval: false
+    forbidden_paths: []
+    emits_events:
+      - tool.gates.voice_lint
+    output_schema: https://athena.dev/ops/schemas/artifact.schema.json
+    category: eval
+    network_required: false
+
+  - id: gates.run_spec_check
+    description: Run scripts/spec_check.py against the spec ledger set.
+    risk_level: low
+    allowed_roles:
+      - control.coordinator
+      - product.spec-writer
+      - engineering.implementation
+      - engineering.code-reviewer
+      - science.proof-gate-runner
+    requires_approval: false
+    forbidden_paths: []
+    emits_events:
+      - tool.gates.spec_check
+    output_schema: https://athena.dev/ops/schemas/artifact.schema.json
+    category: eval
+    network_required: false
+
+  - id: gates.run_validate_decisions
+    description: Run scripts/validate_decisions.py against the decisions ledger.
+    risk_level: low
+    allowed_roles:
+      - engineering.implementation
+      - engineering.code-reviewer
+      - science.proof-gate-runner
+    requires_approval: false
+    forbidden_paths: []
+    emits_events:
+      - tool.gates.validate_decisions
+    output_schema: https://athena.dev/ops/schemas/artifact.schema.json
+    category: eval
+    network_required: true
+
+  - id: dream.read_recent_commits
+    description: Read recent git commits, factory runs, and release ledger entries for the dream job.
+    risk_level: low
+    allowed_roles:
+      - learning.dream-orchestrator
+    requires_approval: false
+    forbidden_paths:
+      - "**/.env"
+      - "**/.env.*"
+      - "**/secrets/**"
+    emits_events:
+      - tool.dream.read_recent_commits
+    output_schema: https://athena.dev/ops/schemas/artifact.schema.json
+    category: repo
+    network_required: false
+
+  - id: dream.write_candidate
+    description: Append a typed promotion candidate to a dream output.json file.
+    risk_level: low
+    allowed_roles:
+      - learning.dream-orchestrator
+    requires_approval: false
+    forbidden_paths:
+      - "decisions/**"
+      - ".agents/skills/**"
+      - "scripts/**"
+    emits_events:
+      - tool.dream.write_candidate
+    output_schema: https://athena.dev/ops/schemas/artifact.schema.json
+    category: memory
+    network_required: false
+
+  - id: factory.run_task
+    description: Invoke the scripts/factory orchestrator with a task YAML; emits factory-artifact events per checkpoint.
+    risk_level: medium
+    allowed_roles:
+      - engineering.implementation
+    requires_approval: false
+    forbidden_paths:
+      - "ops/factory.db"
+      - "ops/qa-evidence/**"
+      - "ops/releases/**"
+    emits_events:
+      - tool.factory.run_task
+      - tool.factory.checkpoint_paused
+      - tool.factory.task_done
+    output_schema: https://athena.dev/ops/schemas/artifact.schema.json
+    category: shell
+    network_required: false
+
+  - id: mobile.maestro_run
+    description: Run a Maestro flow against an active Android emulator; requires apps/mobile/.maestro/<flow>.yaml.
+    risk_level: medium
+    allowed_roles:
+      - science.proof-gate-runner
+    requires_approval: false
+    forbidden_paths:
+      - "**/.env"
+      - "**/.env.*"
+    emits_events:
+      - tool.mobile.maestro_run
+    output_schema: https://athena.dev/ops/schemas/artifact.schema.json
+    category: eval
+    network_required: false

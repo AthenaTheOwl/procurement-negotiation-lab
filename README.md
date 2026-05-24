@@ -104,3 +104,41 @@ The active specs live under `specs/`.
 This repository uses deterministic synthetic data. It does not contain real
 purchase orders, internal supplier records, internal Amazon terminology,
 private FloPro roadmap information, or production recommendations.
+
+## governance
+
+The Cognitive Delivery Control Plane (CDCP) scaffold landed in spec 0013.
+It records what we build, why we build it, what we reuse, and what we
+learn, with executable gates that fail builds when any record drifts.
+
+- `specs/` — what we build. Spec ledgers under
+  `specs/NNNN-<slug>/` with the six-file pattern (requirements, design,
+  tasks, acceptance, research, traceability).
+- `decisions/` — why we built it. One `DEC-*.md` per architectural or
+  product decision, matching the cross-repo `decision.schema.json`.
+- `dreams/` — what we learned. Weekly offline-cognition outputs under
+  `dreams/YYYY-WNN/` matching the cross-repo `dream-output.schema.json`.
+- `.agents/AGENTS.md` — the single contract a coding agent reads first.
+- `.agents/roles/<role-id>/` — six baseline role contracts plus the
+  `tools.yaml`, `policies/`, `state-machines/`, `workflows/`, and
+  `CATALOG.md` files that make up the operating-model layer.
+- `.agents/skills/<id>/SKILL.md` — packaged recurring patterns. The
+  first graduated skill is `run-factory-task`.
+- `ops/RELEASE_LEDGER.md` — one entry per released commit.
+- `ops/RESET_LEDGER.md` — one entry per force-push, history rewrite,
+  or rollback.
+- `ops/run-ledger.md` — the factory subsystem's per-task pipeline
+  ledger (separate from the release ledger).
+- The cross-repo CDCP charter lives at
+  `https://github.com/AthenaTheOwl/athena-site` under `ops/control-plane.md`.
+
+Gates that run on every push:
+
+```powershell
+python scripts/spec_check.py
+python scripts/voice_lint.py
+python scripts/validate_decisions.py
+python scripts/validate_roles.py
+python scripts/validate_tools.py
+python scripts/validate_policies.py
+```

@@ -1,0 +1,18 @@
+id: agent-tool-permissions-default-deny
+applies_to:
+  roles: ["*"]
+  tools: ["*"]
+  actions: ["*"]
+decision: deny
+conditions: []
+priority: 0
+description: |
+  Default-deny baseline. Every tool call from every role is denied
+  unless a higher-priority policy explicitly allows it. The role's
+  allowed_tools list, combined with the per-tool allowed_roles list,
+  is the source of truth for permits.
+rationale: |
+  OPA-style data policy: deny at priority 0, explicit allow rules sit
+  above. Avoids the failure mode where a new tool ships and roles
+  silently gain access to it.
+owner: platform

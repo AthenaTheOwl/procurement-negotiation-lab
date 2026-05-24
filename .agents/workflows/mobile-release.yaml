@@ -1,0 +1,74 @@
+# .agents/workflows/mobile-release.yaml
+#
+# The mobile release path. Procurement-lab-specific. Composes EAS
+# build profiles, Maestro flows, a canary internal-channel release,
+# and a release-ledger entry.
+#
+# Spec 0012 shipped the underlying infrastructure (EAS profiles,
+# first Maestro flow, .github/workflows/mobile-e2e.yml). This
+# workflow names the orchestration that ties them together.
+
+id: mobile-release
+version: 0.1.0
+owner_guild: operations
+description: |
+  Mobile release workflow. Triggers Maestro flows, runs the EAS build
+  profile per channel, ships a canary to the internal channel, and
+  records the release.
+
+triggers:
+  - signal: candidate commit on main targeting apps/mobile/
+  - manual: operator-initiated mobile release pass
+
+steps:
+  - id: pre-flight-gates
+    role: science.proof-gate-runner
+    description: |
+      Run the standard JS workspace gates plus the mobile-specific
+      gates: npm run test --workspace=@lab/mobile -- --runInBand and
+      npm run typecheck --workspace=@lab/mobile. The factory subsystem
+      may invoke this step via science.proof-gate-runner.
+
+  - id: maestro-flow
+    role: science.proof-gate-runner
+    description: |
+      Run the Maestro flow set under apps/mobile/.maestro/ against the
+      Android emulator. The .github/workflows/mobile-e2e.yml workflow
+      runs the flow on PR; this step runs the same flow locally or in
+      a dispatched workflow when the operator triggers a release pass.
+      The mobile.maestro_run tool requires emulator-healthy per the
+      mobile-e2e-requires-emulator policy.
+
+  - id: eas-build
+    role: engineering.implementation
+    description: |
+      Run the EAS build profile per channel (preview, production).
+      The eas.json file under apps/mobile/ holds the profile
+      definitions. The build produces an APK (Android) or IPA (iOS)
+      artifact the canary step consumes.
+
+  - id: canary
+    role: control.coordinator
+    description: |
+      Ship the build to the internal channel via EAS. Soak for the
+      agreed window (default: 48 hours) and watch for canary failure
+      events. A canary failure routes back to incident-response.
+
+  - id: promote
+    role: control.coordinator
+    description: |
+      Promote the build from internal channel to production channel.
+      The promotion step requires human approval; the role's approve
+      flag is true, but the workflow holds it behind a checkpoint.
+
+  - id: release-ledger
+    role: control.coordinator
+    description: |
+      Append the release entry to ops/RELEASE_LEDGER.md with date,
+      SHA, build identifier, scope, and proof refs. The entry names
+      which Maestro flows passed and which EAS profile shipped.
+
+outputs:
+  - EAS build artifact per channel
+  - ops/RELEASE_LEDGER.md entry for the release
+  - ops/event-log/YYYY-MM-DD.jsonl (mobile.canary, mobile.promoted events)

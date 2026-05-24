@@ -1,0 +1,5 @@
+# Role-scoped tool subset for learning.dream-orchestrator.
+tools:
+  - repo.read
+  - dream.read_recent_commits
+  - dream.write_candidate

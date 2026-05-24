@@ -196,6 +196,16 @@ TARGETS = [
     "apps/mobile/src/**/*.tsx",
     "apps/mobile/src/**/*.ts",
     "README.md",
+    # CDCP governance markdown (added by spec 0013)
+    ".agents/AGENTS.md",
+    ".agents/CATALOG.md",
+    ".agents/skills/**/*.md",
+    ".agents/roles/**/*.md",
+    "decisions/*.md",
+    "dreams/**/*.md",
+    "ops/RELEASE_LEDGER.md",
+    "ops/RESET_LEDGER.md",
+    "specs/0013-*/*.md",
 ]
 
 SKIP_DIRS = {"node_modules", "dist", ".astro", ".git", "_legacy"}

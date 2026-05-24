@@ -1,0 +1,237 @@
+# spec-check allowlist for deferred decision backfills.
+#
+# Every R-* requirement defined in specs/NNNN-*/requirements.md must
+# carry at least one decisions/DEC-*.md file whose front-matter
+# `requirement:` field names that ID. The R-* IDs listed below are
+# deferred backfills: the requirements shipped before the CDCP
+# scaffold landed in spec 0013; the matching DEC files land in later
+# passes, one cluster at a time.
+#
+# Format: a YAML list of R-* IDs under the `deferred` key.
+# Each entry carries a short note for context.
+#
+# Removing an entry from this list requires landing the matching DEC
+# in the same commit.
+
+deferred:
+  # R-PLAY-* — spec 0001 polished simulator pedagogy.
+  - id: R-PLAY-001
+    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
+  - id: R-PLAY-002
+    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
+  - id: R-PLAY-003
+    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
+  - id: R-PLAY-004
+    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
+
+  # R-LAB-* — spec 0001 + spec 0002 lab authoring workbench.
+  - id: R-LAB-001
+    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
+  - id: R-LAB-002
+    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
+  - id: R-LAB-003
+    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
+  - id: R-LAB-004
+    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
+  - id: R-LAB-005
+    note: phase pre-CDCP requirement (spec 0002 lab authoring workbench); backfill pending
+  - id: R-LAB-006
+    note: phase pre-CDCP requirement (spec 0002 lab authoring workbench); backfill pending
+  - id: R-LAB-007
+    note: phase pre-CDCP requirement (spec 0002 lab authoring workbench); backfill pending
+  - id: R-LAB-008
+    note: phase pre-CDCP requirement (spec 0002 lab authoring workbench); backfill pending
+  - id: R-LAB-009
+    note: phase pre-CDCP requirement (spec 0002 lab authoring workbench); backfill pending
+
+  # R-STUDY-* — spec 0001 tutorial surface.
+  - id: R-STUDY-001
+    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
+
+  # R-SPEC-* — spec discipline requirements across specs 0001-0011.
+  - id: R-SPEC-001
+    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
+  - id: R-SPEC-002
+    note: phase pre-CDCP requirement (spec 0002 lab authoring workbench); backfill pending
+  - id: R-SPEC-003
+    note: phase pre-CDCP requirement (spec 0003 bergemann arc); backfill pending
+  - id: R-SPEC-004
+    note: phase pre-CDCP requirement (spec 0004 operational mechanism refinements); backfill pending
+  - id: R-SPEC-005
+    note: phase pre-CDCP requirement (spec 0005 multi-party portal); backfill pending
+  - id: R-SPEC-006
+    note: phase pre-CDCP requirement (spec 0006 run reports replay); backfill pending
+  - id: R-SPEC-007
+    note: phase pre-CDCP requirement (spec 0007 production hardening); backfill pending
+  - id: R-SPEC-008
+    note: phase pre-CDCP requirement (spec 0008 data bridges); backfill pending
+  - id: R-SPEC-009
+    note: phase pre-CDCP requirement (spec 0009 factory dev control plane); backfill pending
+  - id: R-SPEC-010
+    note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending
+  - id: R-SPEC-011
+    note: phase pre-CDCP requirement (spec 0011 coordination sandbox governance); backfill pending
+
+  # R-ARC-* — spec 0003 bergemann arc.
+  - id: R-ARC-001
+    note: phase pre-CDCP requirement (spec 0003 bergemann arc); backfill pending
+  - id: R-ARC-002
+    note: phase pre-CDCP requirement (spec 0003 bergemann arc); backfill pending
+  - id: R-ARC-003
+    note: phase pre-CDCP requirement (spec 0003 bergemann arc); backfill pending
+  - id: R-ARC-004
+    note: phase pre-CDCP requirement (spec 0003 bergemann arc); backfill pending
+  - id: R-ARC-005
+    note: phase pre-CDCP requirement (spec 0003 bergemann arc); backfill pending
+  - id: R-ARC-006
+    note: phase pre-CDCP requirement (spec 0003 bergemann arc); backfill pending
+  - id: R-ARC-007
+    note: phase pre-CDCP requirement (spec 0003 bergemann arc); backfill pending
+
+  # R-OPS-* — spec 0004 operational mechanism refinements.
+  - id: R-OPS-001
+    note: phase pre-CDCP requirement (spec 0004 operational mechanism refinements); backfill pending
+  - id: R-OPS-002
+    note: phase pre-CDCP requirement (spec 0004 operational mechanism refinements); backfill pending
+  - id: R-OPS-003
+    note: phase pre-CDCP requirement (spec 0004 operational mechanism refinements); backfill pending
+  - id: R-OPS-004
+    note: phase pre-CDCP requirement (spec 0004 operational mechanism refinements); backfill pending
+
+  # R-PORTAL-* — spec 0005 multi-party portal.
+  - id: R-PORTAL-001
+    note: phase pre-CDCP requirement (spec 0005 multi-party portal); backfill pending
+  - id: R-PORTAL-002
+    note: phase pre-CDCP requirement (spec 0005 multi-party portal); backfill pending
+  - id: R-PORTAL-003
+    note: phase pre-CDCP requirement (spec 0005 multi-party portal); backfill pending
+  - id: R-PORTAL-004
+    note: phase pre-CDCP requirement (spec 0005 multi-party portal); backfill pending
+  - id: R-PORTAL-005
+    note: phase pre-CDCP requirement (spec 0005 multi-party portal); backfill pending
+  - id: R-PORTAL-006
+    note: phase pre-CDCP requirement (spec 0005 multi-party portal); backfill pending
+
+  # R-REPORT-* — spec 0006 run reports + replay.
+  - id: R-REPORT-001
+    note: phase pre-CDCP requirement (spec 0006 run reports replay); backfill pending
+  - id: R-REPORT-002
+    note: phase pre-CDCP requirement (spec 0006 run reports replay); backfill pending
+  - id: R-REPORT-003
+    note: phase pre-CDCP requirement (spec 0006 run reports replay); backfill pending
+  - id: R-REPORT-004
+    note: phase pre-CDCP requirement (spec 0006 run reports replay); backfill pending
+  - id: R-REPORT-005
+    note: phase pre-CDCP requirement (spec 0006 run reports replay); backfill pending
+
+  # R-HARDEN-* — spec 0007 production hardening.
+  - id: R-HARDEN-001
+    note: phase pre-CDCP requirement (spec 0007 production hardening); backfill pending
+  - id: R-HARDEN-002
+    note: phase pre-CDCP requirement (spec 0007 production hardening); backfill pending
+  - id: R-HARDEN-003
+    note: phase pre-CDCP requirement (spec 0007 production hardening); backfill pending
+  - id: R-HARDEN-004
+    note: phase pre-CDCP requirement (spec 0007 production hardening); backfill pending
+  - id: R-HARDEN-005
+    note: phase pre-CDCP requirement (spec 0007 production hardening); backfill pending
+  - id: R-HARDEN-006
+    note: phase pre-CDCP requirement (spec 0007 production hardening); backfill pending
+
+  # R-BRIDGE-* — spec 0008 data bridges.
+  - id: R-BRIDGE-001
+    note: phase pre-CDCP requirement (spec 0008 data bridges); backfill pending
+  - id: R-BRIDGE-002
+    note: phase pre-CDCP requirement (spec 0008 data bridges); backfill pending
+  - id: R-BRIDGE-003
+    note: phase pre-CDCP requirement (spec 0008 data bridges); backfill pending
+  - id: R-BRIDGE-004
+    note: phase pre-CDCP requirement (spec 0008 data bridges); backfill pending
+  - id: R-BRIDGE-005
+    note: phase pre-CDCP requirement (spec 0008 data bridges); backfill pending
+
+  # R-FACTORY-* — spec 0009 factory dev control plane.
+  - id: R-FACTORY-001
+    note: phase pre-CDCP requirement (spec 0009 factory dev control plane); backfill pending
+  - id: R-FACTORY-002
+    note: phase pre-CDCP requirement (spec 0009 factory dev control plane); backfill pending
+  - id: R-FACTORY-003
+    note: phase pre-CDCP requirement (spec 0009 factory dev control plane); backfill pending
+  - id: R-FACTORY-004
+    note: phase pre-CDCP requirement (spec 0009 factory dev control plane); backfill pending
+  - id: R-FACTORY-005
+    note: phase pre-CDCP requirement (spec 0009 factory dev control plane); backfill pending
+
+  # R-LEARN-* — spec 0010 pedagogical redesign.
+  - id: R-LEARN-001
+    note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending
+  - id: R-LEARN-002
+    note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending
+  - id: R-LEARN-003
+    note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending
+  - id: R-LEARN-004
+    note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending
+  - id: R-LEARN-005
+    note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending
+  - id: R-LEARN-006
+    note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending
+  - id: R-LEARN-007
+    note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending
+
+  # R-MOBILE-* — spec 0010 pedagogical redesign mobile coverage.
+  - id: R-MOBILE-001
+    note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending
+  - id: R-MOBILE-002
+    note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending
+  - id: R-MOBILE-003
+    note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending
+
+  # R-MONO-* — spec 0010 monorepo restructure.
+  - id: R-MONO-001
+    note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending
+
+  # R-SANDBOX-* — spec 0011 coordination sandbox governance.
+  - id: R-SANDBOX-001
+    note: phase pre-CDCP requirement (spec 0011 coordination sandbox governance); backfill pending
+  - id: R-SANDBOX-002
+    note: phase pre-CDCP requirement (spec 0011 coordination sandbox governance); backfill pending
+  - id: R-SANDBOX-003
+    note: phase pre-CDCP requirement (spec 0011 coordination sandbox governance); backfill pending
+  - id: R-SANDBOX-004
+    note: phase pre-CDCP requirement (spec 0011 coordination sandbox governance); backfill pending
+  - id: R-SANDBOX-005
+    note: phase pre-CDCP requirement (spec 0011 coordination sandbox governance); backfill pending
+
+  # R-GUARD-* — spec 0011 coordination sandbox governance.
+  - id: R-GUARD-001
+    note: phase pre-CDCP requirement (spec 0011 coordination sandbox governance); backfill pending
+  - id: R-GUARD-002
+    note: phase pre-CDCP requirement (spec 0011 coordination sandbox governance); backfill pending
+  - id: R-GUARD-003
+    note: phase pre-CDCP requirement (spec 0011 coordination sandbox governance); backfill pending
+  - id: R-GUARD-004
+    note: phase pre-CDCP requirement (spec 0011 coordination sandbox governance); backfill pending
+
+  # R-MOBREL-* — spec 0012 mobile release + agentic SDLC.
+  - id: R-MOBREL-001
+    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
+  - id: R-MOBREL-002
+    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
+  - id: R-MOBREL-003
+    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
+  - id: R-MOBREL-004
+    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
+  - id: R-MOBREL-005
+    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
+
+  # R-SDLC-* — spec 0012 agentic SDLC discipline.
+  - id: R-SDLC-001
+    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
+  - id: R-SDLC-002
+    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
+  - id: R-SDLC-003
+    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
+
+  # R-AIBRIEF-* — spec 0012 named the ai-field-brief sibling repo split.
+  - id: R-AIBRIEF-001
+    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending

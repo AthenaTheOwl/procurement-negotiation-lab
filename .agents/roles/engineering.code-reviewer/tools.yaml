@@ -1,0 +1,6 @@
+# Role-scoped tool subset for engineering.code-reviewer.
+tools:
+  - repo.read
+  - gates.run_voice_lint
+  - gates.run_spec_check
+  - gates.run_validate_decisions

@@ -1,0 +1,24 @@
+id: factory-run-emits-events
+applies_to:
+  roles:
+    - engineering.implementation
+  tools:
+    - factory.run_task
+  actions: ["start_run", "resume_run"]
+decision: require_approval
+conditions:
+  - field: factory.event_log_appended
+    op: eq
+    value: false
+priority: 90
+description: |
+  A factory run that does not append a JSON event line to
+  ops/event-log/YYYY-MM-DD.jsonl requires approval before continuing.
+  The factory subsystem already writes SQLite events; this policy
+  extends the discipline to the JSONL stream the dream orchestrator
+  reads.
+rationale: |
+  The dream-orchestrator role consumes ops/event-log/*.jsonl as its
+  primary trace source. A factory run that skips the JSONL write
+  drops out of the dream pass and degrades the weekly review.
+owner: platform

@@ -3,17 +3,31 @@
 The check is intentionally repo-specific. It prevents the failure mode where a
 feature ships with nice code and green tests, but the requirements, traceability,
 and proof gates are stale or missing.
+
+CDCP rule (added by spec 0013):
+  Every R-* requirement defined in any requirements.md must be resolved
+  by at least one decisions/DEC-*.md file whose front-matter
+  `requirement:` field names that ID, OR be listed under `deferred` in
+  `decisions/.spec-check-allowlist.yaml`, OR carry an R-CDCP-* prefix
+  (covered collectively by DEC-CDCP-001-install-cdcp-governance.md).
 """
 
 from __future__ import annotations
 
 import json
 import re
+import sys
 from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SPECS_ROOT = ROOT / "specs"
+DECISIONS_ROOT = ROOT / "decisions"
+ALLOWLIST_PATH = DECISIONS_ROOT / ".spec-check-allowlist.yaml"
+
+# R-* requirements with this prefix do not need a per-ID DEC; they are
+# resolved collectively by DEC-CDCP-001-install-cdcp-governance.md.
+DEC_BOOTSTRAP_PREFIXES = {"CDCP"}
 
 REQUIRED_FILE_NAMES = [
     "requirements.md",
@@ -26,6 +40,7 @@ REQUIRED_FILE_NAMES = [
 
 REQUIREMENT_RE = re.compile(r"^###\s+(R-[A-Z0-9-]+):", re.MULTILINE)
 TRACEABILITY_ID_RE = re.compile(r"\b(R-[A-Z0-9-]+)\b")
+ID_PREFIX_RE = re.compile(r"^R-([A-Z][A-Z0-9]*)-\d+$")
 
 REQUIRED_ACCEPTANCE_GATES = [
     "python -m uv run pytest",
@@ -37,6 +52,10 @@ REQUIRED_WORKFLOW_PROOFS = {
     ".github/workflows/tests.yml": [
         "scripts/spec_check.py",
         "scripts/voice_lint.py",
+        "scripts/validate_decisions.py",
+        "scripts/validate_roles.py",
+        "scripts/validate_tools.py",
+        "scripts/validate_policies.py",
         "uv run pytest",
         "uv run ruff check .",
         "uv run mypy src",
@@ -184,6 +203,110 @@ def check_local_protocol() -> None:
         )
 
 
+def parse_dec_requirement(text: str) -> str | None:
+    """Pull the `requirement:` value from a DEC file's YAML front-matter."""
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+    for line in lines[1:]:
+        stripped = line.strip()
+        if stripped == "---":
+            break
+        if stripped.startswith("requirement:"):
+            value = stripped.split(":", 1)[1].strip()
+            value = value.strip("\"'")
+            return value or None
+    return None
+
+
+def collect_dec_requirements() -> set[str]:
+    """Return the set of R-* IDs that at least one DEC file resolves."""
+    resolved: set[str] = set()
+    if not DECISIONS_ROOT.is_dir():
+        return resolved
+    for path in DECISIONS_ROOT.glob("DEC-*.md"):
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        rid = parse_dec_requirement(text)
+        if rid:
+            resolved.add(rid)
+    return resolved
+
+
+def collect_allowlisted() -> set[str]:
+    """Return the set of R-* IDs deferred via the allowlist file."""
+    if not ALLOWLIST_PATH.is_file():
+        return set()
+    try:
+        import yaml  # type: ignore[import-not-found]
+    except ImportError:
+        print(
+            f"spec_check: PyYAML not installed; "
+            f"cannot read {ALLOWLIST_PATH.relative_to(ROOT).as_posix()}",
+            file=sys.stderr,
+        )
+        return set()
+    try:
+        data = yaml.safe_load(ALLOWLIST_PATH.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        print(
+            f"spec_check: failed to parse "
+            f"{ALLOWLIST_PATH.relative_to(ROOT).as_posix()}: {exc}",
+            file=sys.stderr,
+        )
+        return set()
+    if not isinstance(data, dict):
+        return set()
+    deferred = data.get("deferred")
+    if not isinstance(deferred, list):
+        return set()
+    ids: set[str] = set()
+    for entry in deferred:
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str):
+            ids.add(entry["id"])
+        elif isinstance(entry, str):
+            ids.add(entry)
+    return ids
+
+
+def check_dec_coverage(specs: list[Path]) -> None:
+    """CDCP rule: every R-* requires a DEC, an allowlist entry, or a
+    bootstrap-exempt prefix."""
+    all_ids: set[str] = set()
+    for spec in specs:
+        req_path = spec / "requirements.md"
+        if not req_path.is_file():
+            continue
+        ids = REQUIREMENT_RE.findall(read(req_path))
+        all_ids.update(ids)
+
+    dec_resolved = collect_dec_requirements()
+    allowlisted = collect_allowlisted()
+    missing: list[str] = []
+    for rid in sorted(all_ids):
+        match = ID_PREFIX_RE.match(rid)
+        prefix = match.group(1) if match else ""
+        if prefix in DEC_BOOTSTRAP_PREFIXES:
+            continue
+        if rid in dec_resolved:
+            continue
+        if rid in allowlisted:
+            continue
+        missing.append(rid)
+    if missing:
+        names = "\n".join(missing)
+        raise SystemExit(
+            "decisions/: no DEC-* file resolves the following requirement(s) "
+            "(add a decisions/DEC-*.md with `requirement: <id>` in front-matter, "
+            "or list the id under `deferred` in "
+            "decisions/.spec-check-allowlist.yaml):\n" + names
+        )
+
+
 def main() -> None:
     specs = active_specs()
     if not specs:
@@ -194,6 +317,7 @@ def main() -> None:
     check_acceptance_gates(specs)
     check_workflow_proofs()
     check_local_protocol()
+    check_dec_coverage(specs)
     print(f"spec_check OK ({len(specs)} active specs)")
 
 

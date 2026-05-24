@@ -1,0 +1,9 @@
+# Gates the control.coordinator run must pass before the run is done.
+gates:
+  - name: spec_check
+    command: python scripts/spec_check.py
+    blocking: true
+  - name: workflow_step_complete
+    command: |
+      grep -q '"run_done":true' "ops/event-log/$(date -u +%Y-%m-%d).jsonl"
+    blocking: true

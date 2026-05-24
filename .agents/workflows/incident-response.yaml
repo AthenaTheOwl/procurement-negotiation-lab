@@ -1,0 +1,68 @@
+# .agents/workflows/incident-response.yaml
+#
+# The path a production incident takes: detect, mitigate, record, and
+# follow up with a postmortem plus a backlog item.
+
+id: incident-response
+version: 0.1.0
+owner_guild: operations
+description: |
+  Production incident path. Covers the hosted Vercel web app and the
+  mobile release channels. Every incident lands an entry in
+  ops/RESET_LEDGER.md when a rollback is involved.
+
+triggers:
+  - signal: smoke workflow failure (.github/workflows/smoke.yml)
+  - signal: mobile-e2e workflow failure (.github/workflows/mobile-e2e.yml)
+  - signal: human-reported incident
+
+steps:
+  - id: detect
+    role: science.proof-gate-runner
+    description: |
+      The smoke workflow against procurement-negotiation-lab.vercel.app
+      runs weekly. A scheduled failure opens an issue; an on-demand
+      failure surfaces in the workflow log. The mobile-e2e workflow
+      surfaces Android emulator failures on PRs that touch
+      apps/mobile/.
+
+  - id: triage
+    role: control.coordinator
+    description: |
+      Decide severity, scope, and whether a rollback is required. A
+      rollback routes to step rollback; otherwise the path goes to
+      step mitigate.
+
+  - id: mitigate
+    role: engineering.implementation
+    description: |
+      Land the smallest patch that restores production. The patch
+      ships through the single-change workflow with the proof-gate
+      runner producing a green sign-off before merge.
+
+  - id: rollback
+    role: control.coordinator
+    description: |
+      Revert the offending commit. The push that performs the
+      rollback writes an entry to ops/RESET_LEDGER.md in the same
+      push. Silent rewrites are forbidden per .agents/AGENTS.md.
+
+  - id: postmortem
+    role: product.spec-writer
+    description: |
+      Within 72 hours, the spec-writer drafts a postmortem note
+      under specs/ if the incident reveals a spec gap, or under
+      ops/qa-evidence/ if the incident reveals a coverage gap. The
+      postmortem names the root cause and the prevention path.
+
+  - id: backlog
+    role: control.coordinator
+    description: |
+      File a backlog item for the prevention work. The item enters
+      the single-change workflow on the next pass. Dream candidates
+      from the same week may consolidate related items.
+
+outputs:
+  - ops/RESET_LEDGER.md (when rollback happens)
+  - postmortem note under specs/ or ops/qa-evidence/
+  - backlog item for the prevention work
