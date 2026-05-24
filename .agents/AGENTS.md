@@ -116,6 +116,49 @@ rules layered on top.
 | see the workflow steps | `.agents/workflows/*.yaml` |
 | see deferred roles | `.agents/CATALOG.md` |
 
+## Lessons promoted from weekly dreams
+
+### Hosted Android emulator plus Gradle native build is brittle · promoted from 2026-W21 dream
+
+The hosted Tier 2 path (`reactivecircus/android-emulator-runner@v2` plus
+`expo prebuild` plus `./gradlew assembleDebug`) failed back-to-back in W21:
+once on missing prebuild assets, once on `expo-module-gradle-plugin`
+resolution. The `apps/mobile/eas.json` profile set is stable; the Gradle
+side is the fragile surface. Any change touching `apps/mobile/` should
+budget time for a Gradle-side surprise and check `ops/releases/` for the
+latest failure mode before assuming Tier 2 runs end-to-end.
+
+- do: read the latest `ops/releases/` entry before touching mobile native code.
+- don't: assume a green local Maestro run predicts a green hosted run.
+- [dreams/2026-W21/candidates/memory-001-hosted-mobile-gradle-brittleness.md](../dreams/2026-W21/candidates/memory-001-hosted-mobile-gradle-brittleness.md)
+
+### Use per-task git worktrees for multi-step agent runs · promoted from 2026-W21 dream
+
+Multi-step agent runs that touch shared files (decisions, specs, the
+event log) should use the factory's per-task git worktree pattern: one
+branch per task at `<repo>/../<repo>-task-<id>/`, created via
+`scripts/factory/worktree.py`. This isolates concurrent work and stops
+two agents from racing on the same file. Short single-commit edits may
+skip the worktree; anything multi-step or multi-file should opt in.
+
+- do: route multi-step factory tasks through `scripts/factory/worktree.py`.
+- don't: run two parallel agents against the same checkout on shared files.
+- [dreams/2026-W21/candidates/memory-002-factory-worktree-isolation-as-convention.md](../dreams/2026-W21/candidates/memory-002-factory-worktree-isolation-as-convention.md)
+
+### CDCP-style installs need stash-and-restore · promoted from 2026-W21 dream
+
+An agent-install workflow (CDCP install, role install, skill install)
+requires a clean working tree on entry. If uncommitted work is present,
+the workflow should `git stash` first, install on the clean tree, then
+`git stash pop`. Refuse to run on a dirty tree without the stash step
+instead of riding WIP in on the install commit. The W21 CDCP install
+(commit `3cd9314`) landed on a clean tree by luck; the next install
+should make the precondition explicit.
+
+- do: stash uncommitted work before any agent-install workflow.
+- don't: bundle in-flight WIP into an install commit by accident.
+- [dreams/2026-W21/candidates/memory-003-cdcp-install-needs-stash-restore.md](../dreams/2026-W21/candidates/memory-003-cdcp-install-needs-stash-restore.md)
+
 ## Failure modes the agent watches for
 
 - A new R-* requirement without a DEC: `spec_check` fails. Fix by

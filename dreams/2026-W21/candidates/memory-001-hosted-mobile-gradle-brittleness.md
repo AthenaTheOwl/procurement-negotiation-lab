@@ -5,6 +5,8 @@ target_path: .agents/AGENTS.md
 week: 2026-W21
 mode: memory_consolidation
 human_review_required: true
+status: promoted
+promotion_date: 2026-05-24
 evidence:
   - kind: commit
     ref: 93d5190
