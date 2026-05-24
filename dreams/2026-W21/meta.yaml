@@ -1,0 +1,60 @@
+# dream-job meta record, audit trail for the 2026-W21 weekly pass.
+# Pairs with report.md (narrative) and candidates/ (typed proposals).
+
+week: 2026-W21
+generated_at: 2026-05-24T03:00:00Z
+generated_by: learning.dream-orchestrator
+lookback_days: 7
+window_start: 2026-05-18
+window_end: 2026-05-24
+
+scope_sources:
+  - kind: git
+    ref: "git log --since=2026-05-18 --pretty='%h %s' (30 commits)"
+  - kind: doc
+    ref: ops/RELEASE_LEDGER.md
+  - kind: doc
+    ref: ops/releases/001-2026-05-22-spec-0012-tier2-bootstrap.md
+  - kind: doc
+    ref: ops/run-ledger.md
+  - kind: doc
+    ref: ops/factory-tasks/
+  - kind: doc
+    ref: ops/factory-artifacts/
+  - kind: doc
+    ref: decisions/
+  - kind: doc
+    ref: ops/event-log/2026-05-24.jsonl
+
+modes_run:
+  - memory_consolidation
+  - skill_extraction
+  - eval_generation
+
+modes_skipped:
+  - id: failure_clustering
+    reopen_when: at least two hosted-CI failure runs exist with distinct root causes
+  - id: adversarial_simulation
+    reopen_when: a known-fragile path has a green-tests-but-real-defect run
+  - id: counterfactual
+    reopen_when: a past factory run has a non-stub plan/review pair worth replaying
+  - id: architecture_drift_detection
+    reopen_when: spec_check.py flags a folder promised but not present (or vice versa)
+  - id: prompt_patch_generation
+    reopen_when: a factory worker prompt has produced a drifted output in a real run
+
+candidate_tally:
+  memory_consolidation: 3
+  skill_extraction: 0
+  eval_generation: 2
+  total: 5
+
+candidate_files:
+  - candidates/memory-001-hosted-mobile-gradle-brittleness.md
+  - candidates/memory-002-factory-worktree-isolation-as-convention.md
+  - candidates/memory-003-cdcp-install-needs-stash-restore.md
+  - candidates/eval-001-eas-three-profile-shape-pin.md
+  - candidates/eval-002-factory-checkpoint-interrupt-pin.md
+
+human_review_required: true
+auto_promoted: false
