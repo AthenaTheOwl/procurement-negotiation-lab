@@ -140,6 +140,28 @@ export function HomeSurface({
     cursor: "pointer",
     textDecoration: "underline",
   };
+  const learnBox: CSSProperties = {
+    marginTop: "var(--space-4, 16px)",
+    padding: "var(--space-4, 16px) var(--space-5, 24px)",
+    background: "var(--neutral-bg-2, #ffffff)",
+    border: "1px solid var(--neutral-line, #e3e3df)",
+    borderRadius: "var(--radius-3, 12px)",
+    maxWidth: "560px",
+    textAlign: "left",
+  };
+  const learnTitle: CSSProperties = {
+    fontSize: "var(--type-2, 1rem)",
+    fontWeight: 600,
+    margin: "0 0 var(--space-2, 8px) 0",
+    color: "var(--neutral-fg, #1c1c1f)",
+  };
+  const learnList: CSSProperties = {
+    margin: 0,
+    paddingLeft: "var(--space-5, 24px)",
+    color: "var(--neutral-fg-soft, #5b5b62)",
+    fontSize: "var(--type-2, 1rem)",
+    lineHeight: 1.5,
+  };
 
   return (
     <div style={shell} data-testid="home-surface">
@@ -173,6 +195,16 @@ export function HomeSurface({
           Walk through ten short levels and end up with the intuition to
           build your own utility formulas in the Sandbox.
         </p>
+
+        <div style={learnBox} data-testid="home-learn-box">
+          <p style={learnTitle}>What you'll learn</p>
+          <ul style={learnList}>
+            <li>Why two locally rational agents can choose a globally bad plan.</li>
+            <li>How big the coordination gap is versus a centralized oracle.</li>
+            <li>When CPP/ADMM helps and when a simpler mechanism wins.</li>
+            <li>How more shared information changes joint utility.</li>
+          </ul>
+        </div>
 
         {hasProgress && (
           <ProgressDots
