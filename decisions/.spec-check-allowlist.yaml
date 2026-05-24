@@ -212,17 +212,7 @@ deferred:
   - id: R-GUARD-004
     note: phase pre-CDCP requirement (spec 0011 coordination sandbox governance); backfill pending
 
-  # R-MOBREL-* — spec 0012 mobile release + agentic SDLC.
-  - id: R-MOBREL-001
-    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
-  - id: R-MOBREL-002
-    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
-  - id: R-MOBREL-003
-    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
-  - id: R-MOBREL-004
-    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
-  - id: R-MOBREL-005
-    note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
+  # R-MOBREL-* — spec 0012 mobile release backfilled in DEC-MOBREL-001..005.
 
   # R-SDLC-* — spec 0012 agentic SDLC discipline.
   - id: R-SDLC-001

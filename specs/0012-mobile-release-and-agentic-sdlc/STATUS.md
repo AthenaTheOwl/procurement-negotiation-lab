@@ -6,13 +6,13 @@ every acceptance bullet ships.
 
 ## R-MOBREL-* coverage
 
-| ID | State | What landed | What's still open |
-|---|---|---|---|
-| R-MOBREL-001 | COVERED | `apps/mobile/eas.json` defines development, preview, and production profiles with named channels and Android/iOS build types. | Pair profile names with a written JS-only vs native-runtime trigger matrix. |
-| R-MOBREL-002 | PARTIAL | Tier 0/1 gates exist, Tier 2 Maestro flow set exists, and `ops/releases/` records tier status. | Add a CI step that asserts the recorded proof tier matches the change set. |
-| R-MOBREL-003 | COVERED | Maestro flows cover Home plus Levels 1, 3, 6, 8, 9, 10, and 11 with intro-card checks and control interactions. | Hosted `mobile-e2e.yml` has not reached Maestro yet; current failure is Gradle native build setup. |
-| R-MOBREL-004 | COVERED | `ops/releases/README.md`, `TEMPLATE.md`, and entry `001-2026-05-22-spec-0012-tier2-bootstrap.md` record release evidence. | Keep future build/update promotions in this ledger. |
-| R-MOBREL-005 | PARTIAL | `frontend.yml` runs the fast PR gate. `mobile-e2e.yml` runs on PR path/workflow dispatch with concurrency cancellation and failure artifacts; run failures are logged in `ops/releases/`. | Fix hosted Gradle resolution, add scheduled nightly Tier 2 cadence, and add iOS simulator/device lane. |
+| ID | State | Decision | What landed | What's still open |
+|---|---|---|---|---|
+| R-MOBREL-001 | COVERED | [DEC-MOBREL-001](../../decisions/DEC-MOBREL-001-eas-three-profile-strategy.md) | `apps/mobile/eas.json` defines development, preview, and production profiles with named channels and Android/iOS build types. | Pair profile names with a written JS-only vs native-runtime trigger matrix. |
+| R-MOBREL-002 | PARTIAL | [DEC-MOBREL-003](../../decisions/DEC-MOBREL-003-tier-0-3-proof-ladder.md) | Tier 0/1 gates exist, Tier 2 Maestro flow set exists, and `ops/releases/` records tier status. | Add a CI step that asserts the recorded proof tier matches the change set. |
+| R-MOBREL-003 | COVERED | [DEC-MOBREL-002](../../decisions/DEC-MOBREL-002-maestro-over-detox-or-appium.md) | Maestro flows cover Home plus Levels 1, 3, 6, 8, 9, 10, and 11 with intro-card checks and control interactions. | Hosted `mobile-e2e.yml` has not reached Maestro yet; current failure is Gradle native build setup. |
+| R-MOBREL-004 | COVERED | [DEC-MOBREL-004](../../decisions/DEC-MOBREL-004-release-ledger-as-durable-evidence.md) | `ops/releases/README.md`, `TEMPLATE.md`, and entry `001-2026-05-22-spec-0012-tier2-bootstrap.md` record release evidence. | Keep future build/update promotions in this ledger. |
+| R-MOBREL-005 | PARTIAL | [DEC-MOBREL-005](../../decisions/DEC-MOBREL-005-mobile-e2e-on-hosted-android-emulator.md) | `frontend.yml` runs the fast PR gate. `mobile-e2e.yml` runs on PR path/workflow dispatch with concurrency cancellation and failure artifacts; run failures are logged in `ops/releases/`. | Fix hosted Gradle resolution, add scheduled nightly Tier 2 cadence, and add iOS simulator/device lane. |
 
 ## R-SDLC-* coverage
 
