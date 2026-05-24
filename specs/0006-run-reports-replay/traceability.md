@@ -2,12 +2,12 @@
 
 | Requirement | Tasks | Acceptance checks | Status |
 |---|---|---|---|
-| **R-REPORT-001** one-click JSON export | A1, A2, A4, B1, B2, B3, B4 | Pass A: schema-valid; Pass B: button + clipboard + toast | done |
-| **R-REPORT-002** one-click markdown export | C1, C2, C3, C4 | Pass C: valid markdown; <80 lines; templates fire; idempotent | done |
-| **R-REPORT-003** replay from JSON | A3, D3, D7 | Pass A: parseRunReport; Pass D: textarea + load + round-trip | done |
-| **R-REPORT-004** run ledger in localStorage | D1, D2, D4, D5, D6 | Pass D: save/list/load/delete; cap at 20; auto-save | done |
-| **R-REPORT-005** screenshot-safe summary | A2, E1, E2, E3, E4, E5 | Pass E: /report?id route; 1200×800 fits; read-only | done (ReportSurface; `?report=<id>` and `?json=<encoded>`; read-only) |
-| **R-SPEC-006** discipline | S1, S2, S3 | Spec entry; this file; run-ledger | in progress |
+| **R-REPORT-001** one-click JSON export (owner_role: engineering.implementation) | A1, A2, A4, B1, B2, B3, B4 | Pass A: schema-valid; Pass B: button + clipboard + toast | done |
+| **R-REPORT-002** one-click markdown export (owner_role: engineering.implementation; owner_role_pending_graduation: documentation.changelog-author) | C1, C2, C3, C4 | Pass C: valid markdown; <80 lines; templates fire; idempotent | done |
+| **R-REPORT-003** replay from JSON (owner_role: engineering.implementation) | A3, D3, D7 | Pass A: parseRunReport; Pass D: textarea + load + round-trip | done |
+| **R-REPORT-004** run ledger in localStorage (owner_role: engineering.implementation) | D1, D2, D4, D5, D6 | Pass D: save/list/load/delete; cap at 20; auto-save | done |
+| **R-REPORT-005** screenshot-safe summary (owner_role: engineering.implementation; owner_role_pending_graduation: design.flow-illustrator) | A2, E1, E2, E3, E4, E5 | Pass E: /report?id route; 1200×800 fits; read-only | done (ReportSurface; `?report=<id>` and `?json=<encoded>`; read-only) |
+| **R-SPEC-006** discipline (owner_role: product.spec-writer) | S1, S2, S3 | Spec entry; this file; run-ledger | in progress |
 
 ## Update protocol
 
