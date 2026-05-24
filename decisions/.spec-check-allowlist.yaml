@@ -14,15 +14,7 @@
 # in the same commit.
 
 deferred:
-  # R-PLAY-* — spec 0001 polished simulator pedagogy.
-  - id: R-PLAY-001
-    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
-  - id: R-PLAY-002
-    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
-  - id: R-PLAY-003
-    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
-  - id: R-PLAY-004
-    note: phase pre-CDCP requirement (spec 0001 polished simulator); backfill pending
+  # R-PLAY-* — spec 0001 polished simulator pedagogy backfilled in DEC-PLAY-001..004.
 
   # R-LAB-* — spec 0001 + spec 0002 lab authoring workbench.
   - id: R-LAB-001
