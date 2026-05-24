@@ -161,3 +161,20 @@ The next weekly pass (2026-W22) should:
   a baseline shape to follow.
 - Run `failure_clustering` once Tier 2 produces a second hosted-CI
   failure run with a different root cause.
+
+## Promotion record
+
+All five W21 candidates were promoted on 2026-05-24.
+
+| Candidate | Mode | Landed at |
+|---|---|---|
+| `candidates/memory-001-hosted-mobile-gradle-brittleness.md` | memory_consolidation | `.agents/AGENTS.md` (Lessons promoted from weekly dreams) |
+| `candidates/memory-002-factory-worktree-isolation-as-convention.md` | memory_consolidation | `.agents/AGENTS.md` (Lessons promoted from weekly dreams) |
+| `candidates/memory-003-cdcp-install-needs-stash-restore.md` | memory_consolidation | `.agents/AGENTS.md` (Lessons promoted from weekly dreams) |
+| `candidates/eval-001-eas-three-profile-shape-pin.md` | eval_generation | `apps/mobile/test/eas-profiles.shape.test.ts` |
+| `candidates/eval-002-factory-checkpoint-interrupt-pin.md` | eval_generation | `tests/factory/test_checkpoint_interrupts.py` |
+
+Each candidate file's front-matter carries `status: promoted` and
+`promotion_date: 2026-05-24`. The two eval tests pass on first run
+against the W21 codebase. The three memory entries live under a new
+`## Lessons promoted from weekly dreams` section in `.agents/AGENTS.md`.

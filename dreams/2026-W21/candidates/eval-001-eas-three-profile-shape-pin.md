@@ -1,10 +1,12 @@
 ---
 id: eval-001-eas-three-profile-shape-pin
 target_kind: test_generation
-target_path: apps/mobile/__tests__/eas-profile.test.ts
+target_path: apps/mobile/test/eas-profiles.shape.test.ts
 week: 2026-W21
 mode: eval_generation
 human_review_required: true
+status: promoted
+promotion_date: 2026-05-24
 evidence:
   - kind: decision
     ref: decisions/DEC-MOBREL-001-eas-three-profile-strategy.md

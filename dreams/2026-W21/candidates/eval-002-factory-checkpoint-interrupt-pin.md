@@ -5,6 +5,8 @@ target_path: tests/factory/test_checkpoint_interrupts.py
 week: 2026-W21
 mode: eval_generation
 human_review_required: true
+status: promoted
+promotion_date: 2026-05-24
 evidence:
   - kind: decision
     ref: decisions/DEC-FACTORY-002-spec-tasks-expanded-into-review-gated-yaml.md
