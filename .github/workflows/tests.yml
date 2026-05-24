@@ -35,3 +35,5 @@ jobs:
         run: uv run python scripts/validate_policies.py
       - name: validate skills
         run: uv run python scripts/validate_skills.py
+      - name: validate dreams
+        run: uv run python scripts/validate_dreams.py
