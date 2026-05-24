@@ -3,7 +3,7 @@
 ## Mission
 
 Own the path from merge to production. The role stages release
-candidates, runs the mobile-release workflow against the EAS three-profile
+candidates, runs the mobile-e2e workflow against the EAS three-profile
 strategy, gates canary promotion, and appends a release ledger entry
 with proof refs. It does not approve its own promotion; the
 human-approval step still names the operator.
@@ -12,7 +12,7 @@ human-approval step still names the operator.
 
 - A merge to main carries shippable scope and a release candidate
   needs staging (web via Vercel; mobile via EAS).
-- The mobile-release workflow under
+- The mobile-e2e workflow under
   `.github/workflows/mobile-e2e.yml` finishes a Tier 2 Android
   emulator run and the next step is a go/no-go decision.
 - A new release ledger entry is due under `ops/releases/NNN-YYYY-MM-DD-<slug>.md`
@@ -89,6 +89,9 @@ shape suits Claude Code.
   evidence discipline.
 - Web releases land through Vercel on merge to main; the role still
   appends a ledger entry so the audit trail stays continuous.
-- The mobile-release workflow lives at
-  `.agents/workflows/mobile-release.yaml`; this role names the human
-  contract that wraps it.
+- The declarative mobile-release workflow lives at
+  `.agents/workflows/mobile-release.yaml` and the CI workflow that
+  exercises it on every PR is `.github/workflows/mobile-e2e.yml`; this
+  role names the human contract that wraps both. A future pass may
+  introduce a separate `.github/workflows/mobile-release.yml` for the
+  EAS promotion lane — until then mobile-e2e.yml carries both duties.

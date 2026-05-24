@@ -63,9 +63,9 @@ candidates promoted. The throughline is the
 ## How it's organized
 
 The repo runs the [Cognitive Delivery Control Plane](https://github.com/AthenaTheOwl/athena-site/blob/main/ops/control-plane.md)
-operating model: 13 specs with R-PREFIX requirements, 20 architectural
+operating model: 13 specs with R-PREFIX requirements, 21 architectural
 decisions captured in `decisions/`, weekly dream-job retrospectives,
-six roles, twelve tools, six policies, four executable gate scripts.
+eight roles, twelve tools, six policies, seven executable gate scripts.
 
 ## App surfaces
 

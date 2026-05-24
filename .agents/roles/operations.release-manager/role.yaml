@@ -2,7 +2,7 @@ id: operations.release-manager
 guild: operations
 mission: |
   Own the path from merge to production: stage release candidates, run the
-  mobile-release workflow against EAS profiles, gate canary promotion, and
+  mobile-e2e workflow against EAS profiles, gate canary promotion, and
   append release ledger entries with proof refs.
 inputs:
   - name: release_candidate
