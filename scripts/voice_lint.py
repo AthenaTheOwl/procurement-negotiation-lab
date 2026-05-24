@@ -206,6 +206,9 @@ TARGETS = [
     "ops/RELEASE_LEDGER.md",
     "ops/RESET_LEDGER.md",
     "specs/0013-*/*.md",
+    # product docs (algorithms, architecture, factory, etc.)
+    "docs/*.md",
+    "docs/**/*.md",
 ]
 
 SKIP_DIRS = {"node_modules", "dist", ".astro", ".git", "_legacy"}

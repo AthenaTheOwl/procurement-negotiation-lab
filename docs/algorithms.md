@@ -8,9 +8,9 @@ The lab compares five paths:
 - price-only dual update: a price signal moves supply and demand together
 - consensus averaging: simple averaging toward local ideals
 
-The point is not to prove ADMM is always best. The point is to show when it
-converges quickly, when simpler methods are enough, and when extra structure is
-not buying much.
+The comparison shows when ADMM converges quickly, when simpler methods
+are enough, and when extra structure does not buy much. It does not
+claim ADMM always wins.
 
 Every algorithm returns the same trace schema: iterations, residual, runtime,
 quantity, feasibility, local utilities, global utility, transfer, and utility
