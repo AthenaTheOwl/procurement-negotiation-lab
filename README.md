@@ -37,7 +37,7 @@ discipline named in DEC-PLAY-003.
 
 **Domain expert.** This is an independent public demo against the
 open-source [amzn/FloPro](https://github.com/amzn/FloPro) ADMM
-implementation. The 13 specs under `specs/` document where the design
+implementation. The 14 specs under `specs/` document where the design
 follows the published literature (Bergemann + Morris information
 design in spec 0003; canonical ADMM in
 [`docs/algorithms.md`](docs/algorithms.md)) and where it departs:
@@ -53,7 +53,7 @@ synthetic fallback, and an optional LangGraph router with a threadpool
 fallback. [`docs/factory.md`](docs/factory.md) is the adopt-in-your-repo
 guide.
 
-**Project reader.** 13 specs, 20 architectural decisions captured in
+**Project reader.** 14 specs, 24 architectural decisions captured in
 `decisions/`, mobile plus web parity (spec 0012 + tier 0-3 proof
 ladder), the factory subsystem as orchestration runtime (spec 0009),
 the first weekly dream retrospective at `dreams/2026-W21/` with five
@@ -63,7 +63,7 @@ candidates promoted. The throughline is the
 ## How it's organized
 
 The repo runs the [Cognitive Delivery Control Plane](https://github.com/AthenaTheOwl/athena-site/blob/main/ops/control-plane.md)
-operating model: 13 specs with R-PREFIX requirements, 21 architectural
+operating model: 14 specs with R-PREFIX requirements, 24 architectural
 decisions captured in `decisions/`, weekly dream-job retrospectives,
 eight roles, twelve tools, six policies, seven executable gate scripts.
 
@@ -146,6 +146,29 @@ The hosted path does not require FICO Xpress or FloPro.
 
 `app.py` is a small compatibility entrypoint. The polished public demo
 is the React/TypeScript app.
+
+## Mechanism SDK
+
+The reusable mechanism logic is importable as `procurement_mechanism_sdk`.
+It wraps the deterministic Python engine instead of moving the deployed
+React/TypeScript simulator.
+
+```python
+from procurement_mechanism_sdk import compare_mechanisms, sample_scenario
+
+scenario = sample_scenario("base")
+comparison = compare_mechanisms(scenario, mechanisms=("centralized_oracle", "admm"))
+print(comparison.by_mechanism["admm"].utility_gap_vs_oracle)
+```
+
+Run the standalone demo without the web app:
+
+```powershell
+python -m procurement_mechanism_sdk.demo
+```
+
+See [`docs/mechanism-sdk.md`](docs/mechanism-sdk.md) for the exported API and
+boundary.
 
 ## Mobile
 
