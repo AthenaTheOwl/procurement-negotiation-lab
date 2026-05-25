@@ -1,4 +1,4 @@
-﻿# run ledger
+# run ledger
 
 Append one row per spec pass. Use `pending` for the SHA before the commit is
 created, then amend the row with the final SHA.
