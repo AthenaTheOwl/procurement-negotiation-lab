@@ -28,6 +28,16 @@
   *(R-FACTORY-005)*
 - [x] **D4**: Add fallback routing tests. *(R-FACTORY-005)*
 
+## Pass E - factory console
+
+- [x] **E1**: Add a web Factory console route reachable from home.
+  *(R-FACTORY-006)*
+- [x] **E2**: Add static replay fixture data for task state, artifacts,
+  checkpoint interrupts, and SDK run-report summary. *(R-FACTORY-006)*
+- [x] **E3**: Add normalization tests for factory console data.
+  *(R-FACTORY-006)*
+- [x] **E4**: Add UI rendering tests for the console. *(R-FACTORY-006)*
+
 ## Spec discipline
 
 - [x] **S1**: Register the spec in `specs/README.md`. *(R-SPEC-009)*

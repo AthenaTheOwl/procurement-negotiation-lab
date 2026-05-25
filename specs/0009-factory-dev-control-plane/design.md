@@ -11,6 +11,10 @@ scripts/factory/
   spec_tasks.py      specs/<id>/tasks.md -> ops/factory-tasks/*.yaml
   router.py          optional LangGraph fan-out, ThreadPool fallback
   mcp_server.py      narrow MCP-compatible stdio JSON-RPC server
+
+apps/web/src/surfaces/factory/
+  factoryConsoleData.ts  static replay fixture + normalization
+  FactoryConsole.tsx     read-only console view at #/factory
 ```
 
 ## Design choices
@@ -25,6 +29,9 @@ scripts/factory/
   route.
 - CLI metadata parsing is best-effort and conservative. Real IDs win, then
   tagged synthetic IDs keep trace tables non-null.
+- The Factory console is a static replay surface. It reads a checked-in fixture
+  and SDK `RunReport` data in the browser, rather than wiring a live
+  orchestration backend into the hosted app.
 
 ## Data flow
 
@@ -36,3 +43,6 @@ scripts/factory/
 4. The pipeline emits per-run `trace_id`, worker `thread_id`, worker `run_id`,
    artifacts, and review events.
 5. MCP clients can inspect the same state through `mcp_server.py`.
+6. The web Factory console normalizes a small replay fixture into task rows,
+   checkpoint interrupts, artifact refs, event counts, and an SDK run-report
+   summary. The fixture has no browser-side write path and starts no workers.

@@ -33,6 +33,17 @@ describe("HomeSurface", () => {
     expect(screen.getByTestId("home-sandbox-cta")).toBeTruthy();
   });
 
+  it("renders the Factory console link when supplied", () => {
+    render(
+      <HomeSurface
+        onStartPlaying={() => {}}
+        onOpenSandbox={() => {}}
+        onOpenFactory={() => {}}
+      />,
+    );
+    expect(screen.getByTestId("home-factory-link")).toBeTruthy();
+  });
+
   it("calls onStartPlaying(1) for a fresh visitor", () => {
     const onStartPlaying = vi.fn();
     render(
@@ -97,6 +108,19 @@ describe("HomeSurface", () => {
     fireEvent.click(screen.getByTestId("home-sandbox-link"));
     fireEvent.click(screen.getByTestId("home-sandbox-cta"));
     expect(onOpenSandbox).toHaveBeenCalledTimes(2);
+  });
+
+  it("calls onOpenFactory from the nav link", () => {
+    const onOpenFactory = vi.fn();
+    render(
+      <HomeSurface
+        onStartPlaying={() => {}}
+        onOpenSandbox={() => {}}
+        onOpenFactory={onOpenFactory}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("home-factory-link"));
+    expect(onOpenFactory).toHaveBeenCalledTimes(1);
   });
 
   it("mounts a 1-day streak badge on first visit", () => {

@@ -22,12 +22,14 @@ export interface HomeSurfaceProps {
   onStartPlaying: (level: number) => void;
   onOpenSandbox: () => void;
   onOpenNegotiate?: () => void;
+  onOpenFactory?: () => void;
 }
 
 export function HomeSurface({
   onStartPlaying,
   onOpenSandbox,
   onOpenNegotiate,
+  onOpenFactory,
 }: HomeSurfaceProps) {
   const [progress, setProgress] = useState<LearnProgress>(() => loadProgress());
   const [streak, setStreak] = useState<Streak>(() => loadStreak());
@@ -76,6 +78,12 @@ export function HomeSurface({
     cursor: "pointer",
     padding: "var(--space-2, 8px) var(--space-4, 16px)",
     borderRadius: "var(--radius-pill, 999px)",
+  };
+  const navActions: CSSProperties = {
+    display: "flex",
+    gap: "var(--space-2, 8px)",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
   };
   const main: CSSProperties = {
     flex: 1,
@@ -167,14 +175,26 @@ export function HomeSurface({
     <div style={shell} data-testid="home-surface">
       <nav style={nav}>
         <span style={navLogo}>procurement-negotiation-lab</span>
-        <button
-          type="button"
-          style={navLink}
-          onClick={onOpenSandbox}
-          data-testid="home-sandbox-link"
-        >
-          Sandbox →
-        </button>
+        <div style={navActions}>
+          {onOpenFactory && (
+            <button
+              type="button"
+              style={navLink}
+              onClick={onOpenFactory}
+              data-testid="home-factory-link"
+            >
+              Factory console
+            </button>
+          )}
+          <button
+            type="button"
+            style={navLink}
+            onClick={onOpenSandbox}
+            data-testid="home-sandbox-link"
+          >
+            Sandbox →
+          </button>
+        </div>
       </nav>
 
       <main style={main}>
