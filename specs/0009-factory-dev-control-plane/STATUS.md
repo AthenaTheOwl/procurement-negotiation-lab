@@ -13,6 +13,7 @@ every acceptance bullet ships.
 | R-FACTORY-003 | COVERED | [DEC-FACTORY-003](../../decisions/DEC-FACTORY-003-bounded-dual-review-conservative-aggregation.md) | `scripts/factory/pipeline.py` runs each reviewer in `review.reviewers` and aggregates conservatively (any reject rejects, any needs-patch patches, all-clean proceeds). One `review.done` event per reviewer. | None for the in-scope behavior. |
 | R-FACTORY-004 | COVERED | [DEC-FACTORY-004](../../decisions/DEC-FACTORY-004-real-cli-ids-win-tagged-synthetic-fallback.md) | `scripts/factory/workers.py` parses thread, session, run, conversation, and model IDs from JSON, JSONL, and stderr. Real IDs win; synthetic IDs carry a `tagged:` prefix on fallback. | None for the in-scope behavior. |
 | R-FACTORY-005 | COVERED | [DEC-FACTORY-005](../../decisions/DEC-FACTORY-005-optional-langgraph-router-threadpool-fallback.md) | `scripts/factory/router.py` exposes `route_tasks` with a LangGraph fan-out when the `factory` extra is installed and a ThreadPoolExecutor fallback otherwise. The CLI carries `--run-many`. | None for the in-scope behavior. |
+| R-FACTORY-006 | COVERED | [DEC-FACTORY-006](../../decisions/DEC-FACTORY-006-static-replay-console-evidence.md) | `apps/web/src/surfaces/factory/` renders `#/factory` from static replay evidence with task state, artifact refs, checkpoint interrupts, event counts, and SDK `RunReport` summary. | Live orchestration backend, auth, and browser-side SQLite reads stay out of scope. |
 | R-SPEC-009 | COVERED | (allowlisted, backfill pending) | Spec registered in `specs/README.md`, listed in `scripts/spec_check.py`, traceability + run ledger updated. | Promote to a DEC-SPEC-009 once the cross-spec discipline cluster is backfilled. |
 
 ## What landed
@@ -22,6 +23,7 @@ every acceptance bullet ships.
 - [DEC-FACTORY-003](../../decisions/DEC-FACTORY-003-bounded-dual-review-conservative-aggregation.md): bounded dual review with conservative aggregation and one `review.done` event per reviewer.
 - [DEC-FACTORY-004](../../decisions/DEC-FACTORY-004-real-cli-ids-win-tagged-synthetic-fallback.md): real CLI metadata IDs win over tagged synthetic fallbacks.
 - [DEC-FACTORY-005](../../decisions/DEC-FACTORY-005-optional-langgraph-router-threadpool-fallback.md): optional LangGraph router with a ThreadPool fallback that keeps the default install dependency-free.
+- [DEC-FACTORY-006](../../decisions/DEC-FACTORY-006-static-replay-console-evidence.md): web Factory console reads static replay evidence instead of wiring live orchestration into the hosted app.
 
 ## What's open
 
@@ -52,7 +54,7 @@ ledger.
 
 1. Promote R-SPEC-009 to a real DEC-SPEC-009 once the cross-spec
    discipline backfill cluster lands.
-2. Add R-FACTORY-006 for hosted MCP exposure when a hosted runtime is
+2. Add R-FACTORY-007 for hosted MCP exposure when a hosted runtime is
    chosen.
 3. Add an R-FACTORY-* row for the factory event-log schema once the
    event shapes stabilize across roles.
@@ -64,4 +66,5 @@ ledger.
 - R-FACTORY-003 -> `scripts/factory/pipeline.py`, `tests/factory/test_pipeline.py`, `tests/factory/test_checkpoint_interrupts.py`.
 - R-FACTORY-004 -> `scripts/factory/workers.py`, `tests/factory/test_workers.py`, `tests/factory/test_cli_metadata.py`.
 - R-FACTORY-005 -> `scripts/factory/router.py`, `tests/factory/test_router.py`.
+- R-FACTORY-006 -> `apps/web/src/surfaces/factory/`, `apps/web/src/App.tsx`.
 - R-SPEC-009 -> `specs/0009-factory-dev-control-plane/`, `scripts/spec_check.py`, `ops/run-ledger.md`.

@@ -71,6 +71,20 @@ Acceptance:
 - The optional `factory` extra declares LangGraph and MCP SDK dependencies.
 - Tests cover fallback routing.
 
+### R-FACTORY-006: static factory console
+
+WHEN a user opens the web app's Factory console, THE SYSTEM SHALL render a
+read-only replay of factory task evidence without starting agents, reading the
+local SQLite store, or calling a backend.
+
+Acceptance:
+- A web route or tab named "Factory console" is reachable from the app.
+- The console shows task state, artifact refs, checkpoint/interrupt state, and
+  a run-report summary.
+- The console uses static sample evidence and the SDK `RunReport` type for
+  report data.
+- Tests cover data normalization and UI rendering.
+
 ### R-SPEC-009: spec discipline
 
 Standard.

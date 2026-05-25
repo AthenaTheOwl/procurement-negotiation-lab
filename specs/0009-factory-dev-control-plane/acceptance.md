@@ -34,6 +34,15 @@
 - Fallback routing works without LangGraph installed.
 - Optional `factory` extra documents the LangGraph/MCP dependency path.
 
+## R-FACTORY-006
+
+- `#/factory` opens a Factory console route from the web app.
+- The console shows task state, artifact refs, checkpoint/interrupt state,
+  event counts, and a run-report summary.
+- The console uses static replay data and the SDK `RunReport` type; the browser
+  starts no agent worker and calls no backend.
+- Vitest covers normalization and UI rendering.
+
 ## Standard gates
 
 - `python -m uv run pytest tests/factory/`

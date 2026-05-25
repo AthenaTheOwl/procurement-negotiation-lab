@@ -26,12 +26,16 @@ const SandboxShell = lazy(() =>
 const ReportSurface = lazy(() =>
   import("./surfaces/report/ReportSurface").then((m) => ({ default: m.ReportSurface })),
 );
+const FactoryConsole = lazy(() =>
+  import("./surfaces/factory/FactoryConsole").then((m) => ({ default: m.FactoryConsole })),
+);
 
 type Route =
   | { kind: "home" }
   | { kind: "learn"; level: LevelId }
   | { kind: "sandbox" }
   | { kind: "negotiate" }
+  | { kind: "factory" }
   | { kind: "report" };
 
 function parseRoute(): Route {
@@ -44,6 +48,7 @@ function parseRoute(): Route {
   if (hash === "" || hash === "home") return { kind: "home" };
   if (hash === "sandbox") return { kind: "sandbox" };
   if (hash === "negotiate") return { kind: "negotiate" };
+  if (hash === "factory") return { kind: "factory" };
   const learnMatch = hash.match(/^learn\/(\d+)$/);
   if (learnMatch) {
     const level = Number(learnMatch[1]);
@@ -92,6 +97,10 @@ export default function App() {
     setHash("#/negotiate");
     setRoute({ kind: "negotiate" });
   }, []);
+  const goFactory = useCallback(() => {
+    setHash("#/factory");
+    setRoute({ kind: "factory" });
+  }, []);
   const goLearn = useCallback((level: number) => {
     const safeLevel = (Math.max(1, Math.min(TOTAL_LEVELS, level)) as LevelId);
     setHash(`#/learn/${safeLevel}`);
@@ -116,6 +125,7 @@ export default function App() {
         onStartPlaying={(level) => goLearn(level)}
         onOpenSandbox={goSandbox}
         onOpenNegotiate={goNegotiate}
+        onOpenFactory={goFactory}
       />
     );
   }
@@ -133,6 +143,14 @@ export default function App() {
 
   if (route.kind === "negotiate") {
     return <NegotiateSurface onOpenHome={goHome} />;
+  }
+
+  if (route.kind === "factory") {
+    return (
+      <Suspense fallback={<div data-testid="factory-loading">Loading factory console...</div>}>
+        <FactoryConsole onOpenHome={goHome} />
+      </Suspense>
+    );
   }
 
   // sandbox
