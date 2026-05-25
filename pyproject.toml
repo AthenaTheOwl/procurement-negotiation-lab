@@ -49,6 +49,14 @@ procurement-mechanism-sdk-demo = "procurement_mechanism_sdk.demo:main"
 [tool.uv]
 package = true
 
+# Override the transitive starlette pull from streamlit + sse-starlette to
+# pin the security-patched version (PYSEC-2026-161 was fixed in 1.0.1).
+# Streamlit 1.57.x still accepts starlette<2 transitively, so the override
+# lands the security fix within current compatibility.
+override-dependencies = [
+    "starlette>=1.0.1",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
