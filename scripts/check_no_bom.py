@@ -3,8 +3,14 @@ import pathlib
 import sys
 
 BOM = b"\xef\xbb\xbf"
-SCANNED_EXTS = {".md", ".yaml", ".yml", ".json", ".astro", ".tsx", ".ts", ".js", ".mjs", ".py"}
-SKIP_DIRS = {".git", "node_modules", ".next", "dist", "build", ".turbo", "ops/schemas-cache", ".astro"}
+SCANNED_EXTS = {
+    ".md", ".yaml", ".yml", ".json",
+    ".astro", ".tsx", ".ts", ".js", ".mjs", ".py",
+}
+SKIP_DIRS = {
+    ".git", "node_modules", ".next", "dist",
+    "build", ".turbo", "ops/schemas-cache", ".astro",
+}
 
 def main() -> int:
     root = pathlib.Path(".").resolve()
@@ -26,7 +32,7 @@ def main() -> int:
         for f in affected:
             print(f"  - {f}")
         return 1
-    print(f"check_no_bom OK (0 files affected)")
+    print("check_no_bom OK (0 files affected)")
     return 0
 
 if __name__ == "__main__":

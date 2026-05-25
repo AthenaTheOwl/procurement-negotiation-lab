@@ -34,8 +34,8 @@ def load_json(path: Path) -> Any:
 
 def load_remote(name: str) -> Any:
     url = f"{RAW_BASE_URL}/{name}"
-    req = urllib.request.Request(
-        url, headers={"User-Agent": "cdcp/check_schema_cache_freshness"}
+    req = urllib.request.Request(  # noqa: S310
+        url, headers={"User-Agent": "cdcp/check_schema_cache_freshness"},
     )
     with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_SECONDS) as resp:  # noqa: S310
         return json.loads(resp.read().decode("utf-8"))
