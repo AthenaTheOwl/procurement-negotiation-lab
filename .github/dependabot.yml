@@ -4,7 +4,109 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    # Major-version bumps on the scientific Python stack + pydantic + streamlit
+    # require coordinated migrations. Minor + patch still flow through; major
+    # bumps land via a deliberate spec, not a surprise Dependabot PR.
+    ignore:
+      - dependency-name: "numpy"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pandas"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pydantic"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "streamlit"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "plotly"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "altair"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pyyaml"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pytest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pytest-cov"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "mypy"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "ruff"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    # Major-version bumps on React + Vite + Vitest + Expo/React Native families
+    # require coordinated migrations across peer dependents. Expo SDK bumps in
+    # particular pin react-native and a long list of expo-* packages, so they
+    # must land as a deliberate migration. Minor + patch still flow through.
+    ignore:
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/plugin-react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/coverage-v8"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "cytoscape"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/cytoscape"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "expo"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "expo-router"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "expo-status-bar"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "jest-expo"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint-config-expo"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@react-native-async-storage/async-storage"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native-gesture-handler"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native-reanimated"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native-safe-area-context"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native-screens"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native-svg"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native-web"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@playwright/test"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "jest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    labels:
+      - dependencies
+      - github-actions
