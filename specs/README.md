@@ -92,6 +92,13 @@ Current active specs:
 - `0013-cognitive-delivery-control-plane/research.md`
 - `0013-cognitive-delivery-control-plane/traceability.md`
 
+- `0014-mechanism-design-sdk/requirements.md`
+- `0014-mechanism-design-sdk/design.md`
+- `0014-mechanism-design-sdk/tasks.md`
+- `0014-mechanism-design-sdk/acceptance.md`
+- `0014-mechanism-design-sdk/research.md`
+- `0014-mechanism-design-sdk/traceability.md`
+
 The development loop is:
 
 1. Write or update requirements in testable language.
