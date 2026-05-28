@@ -60,6 +60,28 @@
   test that exercises the pipeline and asserts on the produced
   ledger and Run record. *(R-FACTORY-RUN-EVIDENCE-001..005)*
 
+## Pass G - run-evidence cross-checks (DEC-FACTORY-008)
+
+- [x] **G1**: Fix the emitter so `tool.call.started` /
+  `tool.call.completed` carry `tool_name` (the worker name) and
+  `pipeline.done` carries `status` plus a `gate_results_summary`
+  cloned from the run aggregate.
+  *(R-FACTORY-RUN-EVIDENCE-001, R-FACTORY-RUN-EVIDENCE-010)*
+- [x] **G2**: Extend `scripts/validate_run_evidence.py` with the
+  required-for-done field check plus the four cross-checks
+  (pipeline.start hash matches, fields_populated set equality,
+  gate_results_summary scan).
+  *(R-FACTORY-RUN-EVIDENCE-007, R-FACTORY-RUN-EVIDENCE-008,
+  R-FACTORY-RUN-EVIDENCE-009, R-FACTORY-RUN-EVIDENCE-010)*
+- [x] **G3**: Regenerate the sample Run record + ledger so the
+  validator exits 0 against the committed evidence.
+  *(R-FACTORY-RUN-EVIDENCE-007..010)*
+- [x] **G4**: Add negative tests in
+  `tests/factory/test_validate_run_evidence.py` for each of the
+  required-for-done fields plus each of the four cross-checks, and
+  a positive test against a well-formed baseline.
+  *(R-FACTORY-RUN-EVIDENCE-007..010)*
+
 ## Spec discipline
 
 - [x] **S1**: Register the spec in `specs/README.md`. *(R-SPEC-009)*

@@ -94,6 +94,44 @@
 - The validator runs in `.github/workflows/tests.yml` on every push
   to main and every PR.
 
+## R-FACTORY-RUN-EVIDENCE-007
+
+- A done Run that omits `prompt_snapshot_hash`,
+  `tool_schemas_snapshot_hash`, `sandbox_image_ref`, or
+  `gate_results_summary` fails validation with a message naming
+  the run-id and the missing field.
+- The validator does not apply the required-for-done check to a
+  Run whose status is anything other than `done`.
+
+## R-FACTORY-RUN-EVIDENCE-008
+
+- A done Run whose ledger carries no `gate.run.evidence_recorded`
+  event fails validation.
+- A done Run whose ledger carries at least one
+  `gate.run.evidence_recorded` event passes the terminal-event
+  check.
+
+## R-FACTORY-RUN-EVIDENCE-009
+
+- A `prompt_snapshot_hash` mismatch between the Run record and the
+  `pipeline.start` event fails validation.
+- A `tool_schemas_snapshot_hash` mismatch between the Run record
+  and the `pipeline.start` event fails validation.
+- A `fields_populated` set on `gate.run.evidence_recorded` that
+  drops or adds a field relative to the Run record fails
+  validation.
+
+## R-FACTORY-RUN-EVIDENCE-010
+
+- A Run record whose `gate_results_summary.gates_passed` does not
+  match the sorted list of `gate.check.passed` gate names from
+  the ledger fails validation.
+- A Run record whose `gate_results_summary.gates_failed` does not
+  match the sorted list of `gate.check.failed` gate names from
+  the ledger fails validation.
+- A Run record whose `gate_results_summary.all_passed` disagrees
+  with the ledger outcomes fails validation.
+
 ## Standard gates
 
 - `python -m uv run pytest tests/factory/`

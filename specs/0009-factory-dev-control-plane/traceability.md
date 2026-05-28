@@ -14,16 +14,21 @@
 | **R-FACTORY-RUN-EVIDENCE-004** worktree-pinned sandbox ref (owner_role: control.coordinator) | F2, F5 | `derive_sandbox_image_ref`, `sandbox_image_ref` set when worktree exists | [DEC-FACTORY-007](../../decisions/DEC-FACTORY-007-factory-emits-conformant-run-evidence.md) | done |
 | **R-FACTORY-RUN-EVIDENCE-005** aggregated gate results (owner_role: control.coordinator) | F2, F5 | `aggregate_gate_results`, `gate_results_summary` reflects ledger gate events | [DEC-FACTORY-007](../../decisions/DEC-FACTORY-007-factory-emits-conformant-run-evidence.md) | done |
 | **R-FACTORY-RUN-EVIDENCE-006** validator gate on every push (owner_role: control.coordinator) | F3 | `scripts/validate_run_evidence.py`, wired into `.github/workflows/tests.yml` and `spec_check.py` | [DEC-FACTORY-007](../../decisions/DEC-FACTORY-007-factory-emits-conformant-run-evidence.md) | done |
+| **R-FACTORY-RUN-EVIDENCE-007** required-for-done Run fields (owner_role: control.coordinator) | G2, G3, G4 | `cross_check_done_runs` REQUIRED_DONE_FIELDS branch, negative tests | [DEC-FACTORY-008](../../decisions/DEC-FACTORY-008-factory-run-evidence-cross-checks.md) | done |
+| **R-FACTORY-RUN-EVIDENCE-008** terminal evidence event for done Runs (owner_role: control.coordinator) | G2, G3, G4 | `cross_check_done_runs` terminal-event branch, `test_validator_rejects_done_run_missing_terminal_event` | [DEC-FACTORY-008](../../decisions/DEC-FACTORY-008-factory-run-evidence-cross-checks.md) | done |
+| **R-FACTORY-RUN-EVIDENCE-009** pipeline.start hash + populated-fields cross-checks (owner_role: control.coordinator) | G1, G2, G3, G4 | `cross_check_done_runs` hash + fields_populated branches, `test_validator_rejects_prompt_hash_mismatch`, `test_validator_rejects_tool_schemas_hash_mismatch`, `test_validator_rejects_fields_populated_mismatch` | [DEC-FACTORY-008](../../decisions/DEC-FACTORY-008-factory-run-evidence-cross-checks.md) | done |
+| **R-FACTORY-RUN-EVIDENCE-010** gate-results-summary scan cross-check (owner_role: control.coordinator) | G1, G2, G3, G4 | `_aggregate_gate_results_from_events`, `test_validator_rejects_gate_summary_mismatch` | [DEC-FACTORY-008](../../decisions/DEC-FACTORY-008-factory-run-evidence-cross-checks.md) | done |
 | **R-SPEC-009** spec discipline (owner_role: product.spec-writer) | S1, S2, S3 | registered spec, spec_check, run ledger | (allowlisted) | done |
 
 ## Status snapshot
 
 ```
-Pass A - MCP surface          done
-Pass B - spec expansion       done
-Pass C - dual review/metadata done
-Pass D - routing              done
-Pass E - factory console      done
-Pass F - run-evidence         done
-Spec discipline               done
+Pass A - MCP surface           done
+Pass B - spec expansion        done
+Pass C - dual review/metadata  done
+Pass D - routing               done
+Pass E - factory console       done
+Pass F - run-evidence emission done
+Pass G - run-evidence cross-checks done
+Spec discipline                done
 ```

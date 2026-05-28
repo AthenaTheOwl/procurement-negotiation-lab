@@ -164,6 +164,70 @@ Acceptance:
 - `scripts/spec_check.py` lists the validator in
   `REQUIRED_WORKFLOW_PROOFS` for the tests workflow.
 
+### R-FACTORY-RUN-EVIDENCE-007: required-for-done Run-level fields
+
+WHEN a Run record carries `status == "done"`, THE SYSTEM SHALL
+require that `prompt_snapshot_hash`, `tool_schemas_snapshot_hash`,
+`sandbox_image_ref`, and `gate_results_summary` are all present and
+non-empty. The validator at `scripts/validate_run_evidence.py`
+exits non-zero on any missing or empty field.
+
+Acceptance:
+- A done Run that omits any of the four fields fails validation
+  with a message naming the run-id and the specific field.
+- A non-done Run (failed, cancelled, running, needs_review) is not
+  subject to the required-for-done check.
+
+### R-FACTORY-RUN-EVIDENCE-008: terminal evidence event for done Runs
+
+WHEN a Run record carries `status == "done"`, THE SYSTEM SHALL
+require at least one `gate.run.evidence_recorded` event in the
+matching per-run ledger. The validator fails when no such event is
+present.
+
+Acceptance:
+- A done Run without a `gate.run.evidence_recorded` event in its
+  ledger fails validation with a message naming the run-id.
+- A done Run whose ledger carries at least one such event passes
+  the terminal-event check.
+
+### R-FACTORY-RUN-EVIDENCE-009: pipeline.start hash + populated-fields cross-checks
+
+WHEN a Run record carries `status == "done"`, THE SYSTEM SHALL
+verify three cross-checks against the matching ledger:
+
+1. `Run.prompt_snapshot_hash` equals the `pipeline.start` event's
+   `payload.prompt_snapshot_hash`.
+2. `Run.tool_schemas_snapshot_hash` equals the `pipeline.start`
+   event's `payload.tool_schemas_snapshot_hash`.
+3. The `gate.run.evidence_recorded` event's
+   `payload.fields_populated`, treated as a sorted set, equals the
+   set of replay-equivalence fields the Run record carries.
+
+Acceptance:
+- A hash mismatch between Run and pipeline.start fails validation.
+- A `fields_populated` set that drops or adds a field relative to
+  the Run record fails validation.
+
+### R-FACTORY-RUN-EVIDENCE-010: gate-results-summary scan cross-check
+
+WHEN a Run record carries `status == "done"`, THE SYSTEM SHALL
+verify that `Run.gate_results_summary` matches the scan of
+`gate.check.passed` and `gate.check.failed` events in the matching
+ledger:
+
+- `gates_passed` equals the sorted list of `gate_name` values from
+  `gate.check.passed` events for the run.
+- `gates_failed` equals the sorted list of `gate_name` values from
+  `gate.check.failed` events for the run.
+- `all_passed` is `True` iff `gates_failed` is empty.
+
+Acceptance:
+- A Run record that claims a gate the ledger did not record fails
+  validation.
+- A Run record whose `all_passed` disagrees with the ledger
+  outcomes fails validation.
+
 ### R-SPEC-009: spec discipline
 
 Standard.
