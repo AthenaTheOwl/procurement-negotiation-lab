@@ -269,9 +269,12 @@ def _finalize_run_record(
     run_status = status_map.get(status, "needs_review")
     finished_at = now_iso()
 
-    prompt_text = "\n\n".join(
-        part for part in [task.goal, plan_text] if part
-    )
+    # Use task.goal alone (NOT goal + plan_text) so the final Run record's
+    # prompt_snapshot_hash matches the hash emitted on pipeline.start. The
+    # DEC-FACTORY-008 cross-check requires the two to be byte-equal. The
+    # plan text is a derived artifact already recorded in the artifact
+    # store, so omitting it here does not lose evidence.
+    prompt_text = task.goal
     workers = list(KNOWN_WORKERS)
     gate_names = [g.display_name() for g in task.gates]
     evidence_fields = build_run_evidence_fields(
