@@ -133,6 +133,20 @@ deferred:
 
   # R-FACTORY-* — spec 0009 factory dev control plane backfilled in DEC-FACTORY-001..005.
 
+  # R-FACTORY-RUN-EVIDENCE-001 is resolved by DEC-FACTORY-007 directly.
+  # R-FACTORY-RUN-EVIDENCE-002..006 are resolved collectively by the same
+  # DEC-FACTORY-007; the DEC's `## coverage` section enumerates them.
+  - id: R-FACTORY-RUN-EVIDENCE-002
+    note: covered collectively by DEC-FACTORY-007-factory-emits-conformant-run-evidence
+  - id: R-FACTORY-RUN-EVIDENCE-003
+    note: covered collectively by DEC-FACTORY-007-factory-emits-conformant-run-evidence
+  - id: R-FACTORY-RUN-EVIDENCE-004
+    note: covered collectively by DEC-FACTORY-007-factory-emits-conformant-run-evidence
+  - id: R-FACTORY-RUN-EVIDENCE-005
+    note: covered collectively by DEC-FACTORY-007-factory-emits-conformant-run-evidence
+  - id: R-FACTORY-RUN-EVIDENCE-006
+    note: covered collectively by DEC-FACTORY-007-factory-emits-conformant-run-evidence
+
   # R-LEARN-* — spec 0010 pedagogical redesign.
   - id: R-LEARN-001
     note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending

@@ -38,6 +38,28 @@
   *(R-FACTORY-006)*
 - [x] **E4**: Add UI rendering tests for the console. *(R-FACTORY-006)*
 
+## Pass F - run-evidence emission
+
+- [x] **F1**: Add `src/procurement_lab/run_evidence.py` emitter with
+  canonicalization, hashing, and Event/Run writers.
+  *(R-FACTORY-RUN-EVIDENCE-001, R-FACTORY-RUN-EVIDENCE-002,
+  R-FACTORY-RUN-EVIDENCE-003)*
+- [x] **F2**: Wire `_RunEvidence` into `scripts/factory/pipeline.py` so
+  every state-machine boundary emits a conformant Event record and
+  every terminal state writes a Run record.
+  *(R-FACTORY-RUN-EVIDENCE-001, R-FACTORY-RUN-EVIDENCE-002,
+  R-FACTORY-RUN-EVIDENCE-004, R-FACTORY-RUN-EVIDENCE-005)*
+- [x] **F3**: Add `scripts/validate_run_evidence.py` validator gate and
+  wire it into `.github/workflows/tests.yml` and
+  `scripts/spec_check.py`. *(R-FACTORY-RUN-EVIDENCE-006)*
+- [x] **F4**: Cache `event.schema.json` under `ops/schemas-cache/`
+  alongside the amended `run.schema.json`.
+  *(R-FACTORY-RUN-EVIDENCE-001, R-FACTORY-RUN-EVIDENCE-002)*
+- [x] **F5**: Add unit tests for the emitter helpers (hashing
+  stability, schema rejection, gate aggregation) plus an integration
+  test that exercises the pipeline and asserts on the produced
+  ledger and Run record. *(R-FACTORY-RUN-EVIDENCE-001..005)*
+
 ## Spec discipline
 
 - [x] **S1**: Register the spec in `specs/README.md`. *(R-SPEC-009)*

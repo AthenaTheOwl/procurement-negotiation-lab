@@ -12,6 +12,16 @@ scripts/factory/
   router.py          optional LangGraph fan-out, ThreadPool fallback
   mcp_server.py      narrow MCP-compatible stdio JSON-RPC server
 
+src/procurement_lab/
+  run_evidence.py    emitter for the cross-repo Event + Run schemas
+
+scripts/
+  validate_run_evidence.py  walks ops/event-ledger + ops/run-records
+
+ops/
+  event-ledger/      append-only JSONL ledger per run-id
+  run-records/       final Run record per run-id
+
 apps/web/src/surfaces/factory/
   factoryConsoleData.ts  static replay fixture + normalization
   FactoryConsole.tsx     read-only console view at #/factory
@@ -32,6 +42,12 @@ apps/web/src/surfaces/factory/
 - The Factory console is a static replay surface. It reads a checked-in fixture
   and SDK `RunReport` data in the browser, rather than wiring a live
   orchestration backend into the hosted app.
+- Run-evidence emission is additive to the existing SQLite event store.
+  The pipeline writes the cross-repo Event + Run records to
+  `ops/event-ledger/` and `ops/run-records/` on every run; the schema is
+  the source of truth for what gets recorded, the local SQLite store
+  stays the source of truth for resume. Schema-conformance is enforced
+  by `scripts/validate_run_evidence.py` on every push.
 
 ## Data flow
 
