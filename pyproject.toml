@@ -69,6 +69,7 @@ ignore = ["S101"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S603", "S607"]
 "scripts/factory/worktree.py" = ["S607"]
+"scripts/replay_run.py" = ["S607"]
 "src/procurement_lab/run_evidence.py" = ["S607"]
 
 [tool.mypy]
