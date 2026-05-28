@@ -85,6 +85,85 @@ Acceptance:
   report data.
 - Tests cover data normalization and UI rendering.
 
+### R-FACTORY-RUN-EVIDENCE-001: append-only Event ledger per run
+
+WHEN the factory pipeline starts a run, THE SYSTEM SHALL open
+`ops/event-ledger/<run-id>.jsonl` and emit Event records conforming to
+the cached `event.schema.json` for every state-machine boundary
+(pipeline start, tool calls, gate checks, checkpoints, pipeline end).
+
+Acceptance:
+- Each line is a JSON object conforming to `event.schema.json`.
+- Event types use dotted namespace form (for example
+  `tool.call.started`, `gate.check.passed`, `checkpoint.paused`,
+  `gate.run.evidence_recorded`).
+- The validator gate confirms conformance on every push to main.
+
+### R-FACTORY-RUN-EVIDENCE-002: Run record per completed run
+
+WHEN the factory pipeline reaches any terminal state (done, failed,
+blocked, rejected, awaiting_approval), THE SYSTEM SHALL write a Run
+record to `ops/run-records/<run-id>.json` conforming to the amended
+`run.schema.json` that carries the six replay-equivalence fields.
+
+Acceptance:
+- The file validates against `ops/schemas-cache/run.schema.json`.
+- The file's `status` field is set from the terminal pipeline state.
+- A final `gate.run.evidence_recorded` event lands on the ledger
+  naming which of the six replay fields the record populated.
+
+### R-FACTORY-RUN-EVIDENCE-003: always-populated prompt and tool hashes
+
+WHEN the factory emits a Run record, THE SYSTEM SHALL populate
+`prompt_snapshot_hash` and `tool_schemas_snapshot_hash` with
+lowercase hex SHA-256 digests of the canonicalized prompt content
+and the canonicalized list of available workers plus gates.
+
+Acceptance:
+- Both fields match `^[a-f0-9]{64}$`.
+- Two runs with identical prompt and tool-surface inputs produce
+  byte-identical hashes (stability across calls is unit-tested).
+
+### R-FACTORY-RUN-EVIDENCE-004: worktree-pinned sandbox ref
+
+WHEN the factory operates inside a git worktree, THE SYSTEM SHALL
+populate `sandbox_image_ref` as `<worktree-path>@<head-sha>` so a
+reviewer can reconstruct the exact tree the run executed against.
+When no worktree exists, the field is omitted (the schema treats
+absence as "not derivable").
+
+Acceptance:
+- For runs against a tmp git repo the field carries a 40-char SHA
+  suffix.
+- For runs without a derivable worktree the field is absent from the
+  Run record (not present with an empty value).
+
+### R-FACTORY-RUN-EVIDENCE-005: aggregated gate-results summary
+
+WHEN the factory emits a Run record, THE SYSTEM SHALL compute
+`gate_results_summary` by scanning the ledger's `gate.check.passed`
+and `gate.check.failed` events and split gate names into
+`gates_passed` / `gates_failed` with `all_passed` true iff
+`gates_failed` is empty.
+
+Acceptance:
+- For a run that emitted one pass and one fail, the summary lists
+  both names in their respective arrays and `all_passed` is false.
+- For a run with no gate-check events, the field is omitted entirely.
+
+### R-FACTORY-RUN-EVIDENCE-006: validator gate on every push to main
+
+WHEN code lands on `main` or in a pull request, THE SYSTEM SHALL
+exit non-zero if any Event ledger line or Run record on disk fails
+schema validation, or if a ledger carries a terminal event with no
+matching Run record on disk.
+
+Acceptance:
+- `scripts/validate_run_evidence.py` is wired into
+  `.github/workflows/tests.yml`.
+- `scripts/spec_check.py` lists the validator in
+  `REQUIRED_WORKFLOW_PROOFS` for the tests workflow.
+
 ### R-SPEC-009: spec discipline
 
 Standard.
