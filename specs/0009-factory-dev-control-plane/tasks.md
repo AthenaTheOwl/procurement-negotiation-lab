@@ -82,6 +82,28 @@
   a positive test against a well-formed baseline.
   *(R-FACTORY-RUN-EVIDENCE-007..010)*
 
+## Pass H - factory replay command (DEC-FACTORY-009)
+
+- [x] **H1**: Add `scripts/replay_run.py` with the documented CLI:
+  loads the recorded Run + ledger, verifies HEAD matches the recorded
+  sandbox SHA, re-runs the factory entry under `--dry-run` into a tmp
+  scratch dir, and compares three replay-equivalence fields.
+  *(R-FACTORY-RUN-EVIDENCE-011, R-FACTORY-RUN-EVIDENCE-012)*
+- [x] **H2**: Emit a `run.evidence.replayed` event into a per-replay
+  ledger at `ops/event-ledger/replay-<run-id>-<ISO-timestamp>.jsonl`
+  with `replay_method == "equivalence"`.
+  *(R-FACTORY-RUN-EVIDENCE-013)*
+- [x] **H3**: Write a detailed comparison report at
+  `ops/replay-records/<run-id>/<replay-event-id>.json` covering the
+  three replay-equivalence fields. *(R-FACTORY-RUN-EVIDENCE-014)*
+- [x] **H4**: Run the script against the committed sample
+  `run-16a7bf515611` and commit the resulting replay ledger + report
+  so the first replay artifact is part of the audit trail.
+  *(R-FACTORY-RUN-EVIDENCE-011..014)*
+- [x] **H5**: Add `tests/factory/test_replay_run.py` with one positive
+  case plus four negatives (HEAD mismatch, missing Run record, missing
+  ledger, synthetic divergence). *(R-FACTORY-RUN-EVIDENCE-011..014)*
+
 ## Spec discipline
 
 - [x] **S1**: Register the spec in `specs/README.md`. *(R-SPEC-009)*
