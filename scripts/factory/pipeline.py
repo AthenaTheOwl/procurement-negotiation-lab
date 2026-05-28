@@ -14,6 +14,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+from procurement_lab.run_evidence import (
+    build_run_evidence_fields,
+    emit_event,
+    emit_run,
+    make_event,
+    now_iso,
+)
+
 from .artifacts import ArtifactStore
 from .state import Store
 from .task import Task
@@ -32,6 +40,24 @@ from .worktree import (
     diff_stat,
     push_branch,
 )
+
+# ------------------------------------------------------------------ run evidence
+
+# Where the run-evidence emitter writes its append-only ledger and final
+# Run record. These mirror the directories walked by
+# scripts/validate_run_evidence.py.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+EVENT_LEDGER_DIR = REPO_ROOT / "ops" / "event-ledger"
+RUN_RECORDS_DIR = REPO_ROOT / "ops" / "run-records"
+
+# Known factory workers form the canonical tool surface for hashing.
+KNOWN_WORKERS = ("claude_code", "codex", "stub")
+
+# Default actor for emitted events. The factory itself is a system actor;
+# downstream consumers dispatch on event.type.
+FACTORY_ACTOR_KIND = "system"
+FACTORY_ACTOR_ID = "procurement-lab-factory"
+
 
 # ------------------------------------------------------------------ prompts
 
@@ -103,6 +129,182 @@ class PipelineResult:
     summary: str
     awaiting_checkpoint: str | None = None
     trace_id: str | None = None
+
+
+# ------------------------------------------------------------------ run-evidence ledger
+
+
+@dataclass
+class _RunEvidence:
+    """Holds the run-id, ledger path, and the events emitted so far.
+
+    The pipeline writes to two surfaces: the in-process SQLite store
+    (existing, used for resume) and the run-evidence ledger files
+    (cross-repo Event/Run schemas). This helper owns the second surface so
+    the call sites stay tidy and gate aggregation can read back its own
+    events without re-parsing the JSONL file.
+    """
+
+    run_id: str
+    spec_id: str
+    workspace_id: str
+    started_at: str
+    ledger_path: Path
+    record_path: Path
+    worktree_path: Path | None
+    events: list[dict[str, Any]]
+
+    def emit(
+        self,
+        event_type: str,
+        payload: dict[str, Any],
+        *,
+        parent_event_id: str | None = None,
+        artifact_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Build and persist one Event record. Returns the event for chaining."""
+        event = make_event(
+            event_type=event_type,
+            actor_kind=FACTORY_ACTOR_KIND,
+            actor_id=FACTORY_ACTOR_ID,
+            payload=payload,
+            run_id=self.run_id,
+            spec_id=self.spec_id,
+            artifact_id=artifact_id,
+            parent_event_id=parent_event_id,
+        )
+        emit_event(event, self.ledger_path)
+        self.events.append(event)
+        return event
+
+
+def _new_run_evidence(
+    task: Task,
+    worktree: WorktreeInfo | None,
+    spec_path: str | None,
+    *,
+    ledger_dir: Path = EVENT_LEDGER_DIR,
+    records_dir: Path = RUN_RECORDS_DIR,
+) -> _RunEvidence:
+    """Allocate a run_id and the ledger/record file paths for one pipeline run."""
+    run_id = f"run-{uuid.uuid4().hex[:12]}"
+    spec_id = spec_path or task.id
+    workspace_id = str(worktree.path) if worktree is not None else task.target_repo
+    return _RunEvidence(
+        run_id=run_id,
+        spec_id=spec_id,
+        workspace_id=workspace_id,
+        started_at=now_iso(),
+        ledger_path=ledger_dir / f"{run_id}.jsonl",
+        record_path=records_dir / f"{run_id}.json",
+        worktree_path=worktree.path if worktree is not None else None,
+        events=[],
+    )
+
+
+def _gate_check_event_type(outcome: GateOutcome) -> str:
+    return "gate.check.passed" if outcome.ok else "gate.check.failed"
+
+
+def _persist_run_evidence(
+    evidence: _RunEvidence,
+    *,
+    task: Task,
+    spec_path: str | None,
+    final_status: str,
+    plan_text: str,
+) -> None:
+    """Build the Run record, write it, and emit gate.run.evidence_recorded.
+
+    This is the single terminal point for run-evidence emission. Every
+    pipeline return path that has reached the point where ``evidence``
+    exists calls this so the ledger and Run record stay in lockstep.
+    """
+    run = _finalize_run_record(
+        evidence=evidence,
+        task=task,
+        spec_path=spec_path,
+        final_status=final_status,
+        plan_text=plan_text,
+    )
+    emit_run(run, evidence.record_path)
+    populated = [
+        name
+        for name in (
+            "prompt_snapshot_hash",
+            "tool_schemas_snapshot_hash",
+            "determinism",
+            "checkpoint_ref",
+            "sandbox_image_ref",
+            "gate_results_summary",
+        )
+        if name in run
+    ]
+    evidence.emit(
+        "gate.run.evidence_recorded",
+        {"run_id": evidence.run_id, "fields_populated": populated},
+    )
+
+
+def _finalize_run_record(
+    *,
+    evidence: _RunEvidence,
+    task: Task,
+    spec_path: str | None,
+    final_status: str,
+    plan_text: str,
+) -> dict[str, Any]:
+    """Assemble the final Run record dict, populate replay-equivalence fields."""
+    status: str = final_status
+    # Map pipeline statuses into Run.status enum values.
+    status_map = {
+        "done": "done",
+        "blocked": "needs_review",
+        "awaiting_approval": "needs_review",
+        "rejected": "cancelled",
+        "failed": "failed",
+        "running": "running",
+    }
+    run_status = status_map.get(status, "needs_review")
+    finished_at = now_iso()
+
+    prompt_text = "\n\n".join(
+        part for part in [task.goal, plan_text] if part
+    )
+    workers = list(KNOWN_WORKERS)
+    gate_names = [g.display_name() for g in task.gates]
+    evidence_fields = build_run_evidence_fields(
+        prompt_text=prompt_text,
+        system_prompt=None,
+        workers=workers,
+        gates=gate_names,
+        worktree_path=evidence.worktree_path,
+        gate_events=evidence.events,
+    )
+
+    inputs: list[dict[str, str]] = []
+    if spec_path is not None:
+        inputs.append({"kind": "task", "ref": spec_path})
+
+    run: dict[str, Any] = {
+        "id": evidence.run_id,
+        "spec_id": evidence.spec_id,
+        "agent_id": f"procurement-lab-factory@{task.implementer}",
+        "runtime": "procurement-lab-factory",
+        "workspace_id": evidence.workspace_id,
+        "started_at": evidence.started_at,
+        "finished_at": finished_at,
+        "status": run_status,
+        "inputs": inputs,
+        # Full event timeline lives in the JSONL ledger keyed by
+        # ops/event-ledger/<run_id>.jsonl. We leave Run.events empty by
+        # design so the source-of-truth ledger remains the single place to
+        # query the event stream.
+        "events": [],
+        "outputs": [],
+    }
+    run.update(evidence_fields.fields)
+    return run
 
 
 # ------------------------------------------------------------------ helpers
@@ -262,6 +464,8 @@ def run_pipeline(
     resume_comment: str | None = None,
     artifact_store: ArtifactStore | None = None,
     spec_path: str | None = None,
+    event_ledger_dir: Path | None = None,
+    run_records_dir: Path | None = None,
 ) -> PipelineResult:
     """Run a single task pipeline.
 
@@ -269,6 +473,11 @@ def run_pipeline(
     checkpoint, the task row is left in `awaiting_approval` status with
     `awaiting_checkpoint` set. A later call with `resume_from` = the
     checkpoint name picks up at the next step.
+
+    The run-evidence ledger writes to ``event_ledger_dir`` and
+    ``run_records_dir``; both default to the repo-relative directories
+    walked by ``scripts/validate_run_evidence.py``. Tests pass tmp paths to
+    keep fixture runs out of committed history.
     """
     trace_id = uuid.uuid4().hex
     artifacts = artifact_store or ArtifactStore()
@@ -307,6 +516,42 @@ def run_pipeline(
         awaiting_checkpoint=None,
     )
 
+    # --- run-evidence ledger init ---
+    # Allocate a run_id, open the per-run JSONL ledger, and emit the
+    # opening pipeline.start event with the canonical prompt + tool-surface
+    # hashes embedded in the payload. The full Run record lands at pipeline
+    # end; the ledger captures the timeline along the way.
+    evidence = _new_run_evidence(
+        task,
+        worktree,
+        spec_path,
+        ledger_dir=event_ledger_dir or EVENT_LEDGER_DIR,
+        records_dir=run_records_dir or RUN_RECORDS_DIR,
+    )
+    initial_fields = build_run_evidence_fields(
+        prompt_text=task.goal,
+        system_prompt=None,
+        workers=list(KNOWN_WORKERS),
+        gates=[g.display_name() for g in task.gates],
+        worktree_path=evidence.worktree_path,
+        gate_events=[],
+    )
+    evidence.emit(
+        "pipeline.start",
+        {
+            "task_id": task.id,
+            "trace_id": trace_id,
+            "dry_run": dry_run,
+            "risk": task.risk,
+            "prompt_snapshot_hash": initial_fields.fields[
+                "prompt_snapshot_hash"
+            ],
+            "tool_schemas_snapshot_hash": initial_fields.fields[
+                "tool_schemas_snapshot_hash"
+            ],
+        },
+    )
+
     # --- plan ---
     if resume_from in (None, "plan_review"):
         if resume_from == "plan_review":
@@ -342,6 +587,14 @@ def run_pipeline(
                 base_branch=worktree.base_branch,
                 risk=task.risk,
             )
+            started_event = evidence.emit(
+                "tool.call.started",
+                {
+                    "tool_id": f"factory.plan@{planner.name}",
+                    "arguments_digest": "sha256:plan-prompt",
+                    "step": "plan",
+                },
+            )
             plan_result = (
                 _run_worker(planner, plan_prompt, worktree.path)
                 if not dry_run
@@ -356,6 +609,16 @@ def run_pipeline(
                     },
                 )
             )
+            evidence.emit(
+                "tool.call.completed",
+                {
+                    "tool_id": f"factory.plan@{planner.name}",
+                    "status": "ok" if plan_result.ok else "error",
+                    "duration_ms": int(plan_result.metadata.get("duration_ms") or 0),
+                    "step": "plan",
+                },
+                parent_event_id=started_event["event_id"],
+            )
             if not plan_result.ok:
                 store.update_task(
                     task.id, status="failed", failure_reason=plan_result.stderr
@@ -365,6 +628,13 @@ def run_pipeline(
                     "plan.failed",
                     {"stderr": plan_result.stderr[:500]},
                     trace_id=trace_id,
+                )
+                _persist_run_evidence(
+                    evidence,
+                    task=task,
+                    spec_path=spec_path,
+                    final_status="failed",
+                    plan_text="",
                 )
                 return PipelineResult(
                     ok=False,
@@ -402,6 +672,17 @@ def run_pipeline(
                     },
                     trace_id=trace_id,
                 )
+                evidence.emit(
+                    "checkpoint.paused",
+                    {"checkpoint": "plan_review"},
+                )
+                _persist_run_evidence(
+                    evidence,
+                    task=task,
+                    spec_path=spec_path,
+                    final_status="awaiting_approval",
+                    plan_text=plan_text,
+                )
                 return PipelineResult(
                     ok=True,
                     final_status="awaiting_approval",
@@ -429,8 +710,16 @@ def run_pipeline(
             artifacts=artifacts,
             trace_id=trace_id,
             dry_run=dry_run,
+            evidence=evidence,
         )
         if last_review == "__rejected__":
+            _persist_run_evidence(
+                evidence,
+                task=task,
+                spec_path=spec_path,
+                final_status="rejected",
+                plan_text=plan_text,
+            )
             return PipelineResult(
                 ok=False,
                 final_status="rejected",
@@ -438,6 +727,13 @@ def run_pipeline(
                 trace_id=trace_id,
             )
         if last_review == "__blocked__":
+            _persist_run_evidence(
+                evidence,
+                task=task,
+                spec_path=spec_path,
+                final_status="blocked",
+                plan_text=plan_text,
+            )
             return PipelineResult(
                 ok=False,
                 final_status="blocked",
@@ -459,6 +755,17 @@ def run_pipeline(
                 "checkpoint.paused",
                 {"checkpoint": "diff_review", "artifact": last_ref},
                 trace_id=trace_id,
+            )
+            evidence.emit(
+                "checkpoint.paused",
+                {"checkpoint": "diff_review"},
+            )
+            _persist_run_evidence(
+                evidence,
+                task=task,
+                spec_path=spec_path,
+                final_status="awaiting_approval",
+                plan_text=plan_text,
             )
             return PipelineResult(
                 ok=True,
@@ -504,6 +811,17 @@ def run_pipeline(
         store.append_event(
             task.id, "checkpoint.paused", {"checkpoint": "pre_pr"}, trace_id=trace_id
         )
+        evidence.emit(
+            "checkpoint.paused",
+            {"checkpoint": "pre_pr"},
+        )
+        _persist_run_evidence(
+            evidence,
+            task=task,
+            spec_path=spec_path,
+            final_status="awaiting_approval",
+            plan_text=plan_text,
+        )
         return PipelineResult(
             ok=True,
             final_status="awaiting_approval",
@@ -537,6 +855,14 @@ def run_pipeline(
     store.append_event(
         task.id, "pipeline.done", {"pr_url": pr_url}, trace_id=trace_id
     )
+    evidence.emit("pipeline.done", {"pr_url": pr_url})
+    _persist_run_evidence(
+        evidence,
+        task=task,
+        spec_path=spec_path,
+        final_status="done",
+        plan_text=plan_text,
+    )
     summary = f"done: branch {worktree.branch}" + (
         f"; PR {pr_url}" if pr_url else ""
     )
@@ -557,6 +883,7 @@ def _run_implement_loop(
     artifacts: ArtifactStore,
     trace_id: str,
     dry_run: bool,
+    evidence: _RunEvidence | None = None,
 ) -> tuple[str, list[GateOutcome]]:
     """Implement -> gates -> review, up to max_patch_rounds.
 
@@ -625,7 +952,22 @@ def _run_implement_loop(
 
         store.update_task(task.id, current_step=f"gate (round {round_idx})")
         if dry_run:
-            gates_ok, outcomes = True, []
+            # Dry-run keeps the test surface deterministic and offline. We
+            # still synthesize per-gate outcomes so the run-evidence ledger
+            # carries gate.check.* events; downstream packet generators rely
+            # on those to populate gate_results_summary.
+            gates_ok = True
+            outcomes = [
+                GateOutcome(
+                    name=g.display_name(),
+                    cmd=g.cmd,
+                    ok=True,
+                    must_pass=g.must_pass,
+                    stdout="[dry-run gate stub]",
+                    stderr="",
+                )
+                for g in task.gates
+            ]
         else:
             gates_ok, outcomes = gate_runner.run_gates(task.gates, cwd=worktree.path)
         for outcome in outcomes:
@@ -648,6 +990,17 @@ def _run_implement_loop(
             },
             trace_id=trace_id,
         )
+        if evidence is not None:
+            for outcome in outcomes:
+                evidence.emit(
+                    _gate_check_event_type(outcome),
+                    {
+                        "gate_name": outcome.name,
+                        "cmd": outcome.cmd,
+                        "round": round_idx,
+                        "must_pass": outcome.must_pass,
+                    },
+                )
         last_outcomes = outcomes
 
         if not gates_ok:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -10,6 +12,8 @@ import pytest
 from scripts.factory.pipeline import run_pipeline
 from scripts.factory.state import Store
 from scripts.factory.task import GateSpec, PRSpec, ReviewSpec, Task
+
+from .conftest import LedgerDirs
 
 
 def _init_repo(path: Path) -> None:
@@ -125,3 +129,64 @@ def test_pipeline_fails_gracefully_when_base_branch_missing(
         assert row is not None and row.status == "failed"
     finally:
         store.close()
+
+
+def test_pipeline_dry_run_emits_run_evidence_files(
+    tmp_repo: Path,
+    tmp_path: Path,
+    _redirect_run_evidence_dirs: LedgerDirs,
+) -> None:
+    """The dry-run pipeline must write one JSONL ledger and one Run record.
+
+    The ledger must contain at least one gate.check.* event and a final
+    gate.run.evidence_recorded event; the Run record must carry the two
+    always-populated replay-equivalence hashes.
+    """
+    task = Task(
+        id="evidence-1",
+        title="evidence smoke",
+        target_repo=str(tmp_repo),
+        goal="exercise the run-evidence emitter",
+        base_branch="main",
+        gates=[GateSpec(cmd='python -c "exit(0)"', name="noop-gate")],
+        review=ReviewSpec(reviewer="stub", max_patch_rounds=1),
+        pr=PRSpec(open=False),
+        planner="stub",
+        implementer="stub",
+    )
+    store = Store(tmp_path / "factory.db")
+    try:
+        result = run_pipeline(
+            task, store=store, dry_run=True, spec_path="specs/0009-factory/"
+        )
+    finally:
+        store.close()
+    assert result.ok is True
+    assert result.final_status == "done"
+
+    ledgers = list(_redirect_run_evidence_dirs.events.glob("run-*.jsonl"))
+    records = list(_redirect_run_evidence_dirs.records.glob("run-*.json"))
+    assert len(ledgers) == 1, ledgers
+    assert len(records) == 1, records
+
+    events = [
+        json.loads(line)
+        for line in ledgers[0].read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    event_types = [event["type"] for event in events]
+    assert "pipeline.start" in event_types
+    assert any(t.startswith("gate.check.") for t in event_types)
+    assert "gate.run.evidence_recorded" in event_types
+    assert event_types[-1] == "gate.run.evidence_recorded"
+
+    run = json.loads(records[0].read_text(encoding="utf-8"))
+    assert run["status"] == "done"
+    assert re.match(r"^[a-f0-9]{64}$", run["prompt_snapshot_hash"])
+    assert re.match(r"^[a-f0-9]{64}$", run["tool_schemas_snapshot_hash"])
+    summary = run["gate_results_summary"]
+    assert summary["all_passed"] is True
+    assert summary["gates_passed"] == ["noop-gate"]
+    assert summary["gates_failed"] == []
+    assert run["spec_id"] == "specs/0009-factory/"
+    assert run["inputs"] == [{"kind": "task", "ref": "specs/0009-factory/"}]
