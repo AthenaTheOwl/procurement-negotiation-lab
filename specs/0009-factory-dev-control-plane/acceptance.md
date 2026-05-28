@@ -132,6 +132,47 @@
 - A Run record whose `gate_results_summary.all_passed` disagrees
   with the ledger outcomes fails validation.
 
+## R-FACTORY-RUN-EVIDENCE-011
+
+- `python scripts/replay_run.py --run-id run-<id>` accepts the
+  `--run-id` argument and loads
+  `ops/run-records/<run-id>.json` + `ops/event-ledger/<run-id>.jsonl`.
+- A missing Run record or missing ledger exits 1 with a message naming
+  the missing file.
+- The factory re-run lands in a tmp scratch directory; no Run record
+  or ledger lands in the committed `ops/run-records/` /
+  `ops/event-ledger/` directories during a normal replay.
+
+## R-FACTORY-RUN-EVIDENCE-012
+
+- HEAD equal to the SHA suffix of `Run.sandbox_image_ref` passes the
+  HEAD-strict gate.
+- HEAD different from that SHA exits 1 with both SHAs and a
+  `git checkout <sha>` instruction.
+- A `Run.sandbox_image_ref` with no `@` separator or an empty SHA
+  suffix exits 1.
+
+## R-FACTORY-RUN-EVIDENCE-013
+
+- A replay emits exactly one `run.evidence.replayed` event to
+  `ops/event-ledger/replay-<run-id>-<ISO-timestamp>.jsonl`.
+- The event payload validates against the typed schema in
+  `event.schema.json` (`run_id`, `packet_ref`, `replay_equivalent`
+  required; `replay_method` populated as `"equivalence"`).
+- `packet_ref` is the relative path of the matching report under
+  `ops/replay-records/<run-id>/`.
+
+## R-FACTORY-RUN-EVIDENCE-014
+
+- A replay writes exactly one report at
+  `ops/replay-records/<run-id>/<replay-event-id>.json`.
+- The report's `field_comparison` carries
+  `prompt_snapshot_hash`, `tool_schemas_snapshot_hash`, and
+  `gate_results_summary`, each with `recorded`, `fresh`, and `equal`.
+- `replay_equivalent` is true iff all three `equal` flags are true.
+- Exit code 0 corresponds to `replay_equivalent: true`; exit 1 to
+  `replay_equivalent: false`.
+
 ## Standard gates
 
 - `python -m uv run pytest tests/factory/`
@@ -140,4 +181,5 @@
 - `npm.cmd test -- --run`
 - `python scripts/spec_check.py`
 - `python scripts/validate_run_evidence.py`
+- `python scripts/replay_run.py --run-id run-16a7bf515611`
 - Browser QA not applicable to this CLI-only spec.

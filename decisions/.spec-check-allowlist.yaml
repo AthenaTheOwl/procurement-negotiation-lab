@@ -157,6 +157,16 @@ deferred:
   - id: R-FACTORY-RUN-EVIDENCE-010
     note: covered collectively by DEC-FACTORY-008-factory-run-evidence-cross-checks
 
+  # R-FACTORY-RUN-EVIDENCE-011 is resolved by DEC-FACTORY-009 directly.
+  # R-FACTORY-RUN-EVIDENCE-012..014 are resolved collectively by the same
+  # DEC-FACTORY-009; the DEC's `## coverage` section enumerates them.
+  - id: R-FACTORY-RUN-EVIDENCE-012
+    note: covered collectively by DEC-FACTORY-009-factory-replay-command
+  - id: R-FACTORY-RUN-EVIDENCE-013
+    note: covered collectively by DEC-FACTORY-009-factory-replay-command
+  - id: R-FACTORY-RUN-EVIDENCE-014
+    note: covered collectively by DEC-FACTORY-009-factory-replay-command
+
   # R-LEARN-* — spec 0010 pedagogical redesign.
   - id: R-LEARN-001
     note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending

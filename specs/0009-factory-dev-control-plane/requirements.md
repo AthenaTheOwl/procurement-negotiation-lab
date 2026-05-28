@@ -228,6 +228,73 @@ Acceptance:
 - A Run record whose `all_passed` disagrees with the ledger
   outcomes fails validation.
 
+### R-FACTORY-RUN-EVIDENCE-011: factory ships an equivalence replay command
+
+WHEN a developer wants to re-execute a recorded factory run, THE SYSTEM
+SHALL expose `scripts/replay_run.py` with the CLI form
+`python scripts/replay_run.py --run-id run-<id>`. The script loads the
+recorded Run record at `ops/run-records/<run-id>.json` and its matching
+ledger at `ops/event-ledger/<run-id>.jsonl` and re-runs the factory
+entry that produced the original sample (`python -m scripts.factory.run
+--task <recorded-task-path> --dry-run`).
+
+Acceptance:
+- The script accepts `--run-id` as a required argument and exits 1 when
+  the recorded Run record file is missing or the ledger file is missing.
+- The script re-runs the factory under `--dry-run` against the task path
+  recorded in `Run.inputs[]` (entry with `kind == "task"`) and captures
+  output into a tmp scratch directory so the committed evidence dirs
+  stay untouched.
+
+### R-FACTORY-RUN-EVIDENCE-012: replay command performs strict HEAD verification
+
+WHEN the replay command runs, THE SYSTEM SHALL extract the SHA suffix
+from the recorded `Run.sandbox_image_ref` (format `<worktree>@<sha>`)
+and compare it to the current git HEAD. On mismatch the script exits 1
+with the exact `git checkout <sha>` command the caller needs to run
+first.
+
+Acceptance:
+- HEAD equal to recorded SHA passes the gate.
+- HEAD different from recorded SHA exits 1 with a message naming both
+  SHAs and the checkout instruction.
+- A `Run.sandbox_image_ref` that is missing or not in `<worktree>@<sha>`
+  form exits 1 with a clear error.
+
+### R-FACTORY-RUN-EVIDENCE-013: replay emits a typed run.evidence.replayed event
+
+WHEN the replay command finishes a comparison pass, THE SYSTEM SHALL
+append a `run.evidence.replayed` event to a NEW per-replay ledger at
+`ops/event-ledger/replay-<run-id>-<ISO-timestamp>.jsonl`. The event
+payload conforms to the typed schema added in Round 2 (required
+`run_id`, `packet_ref`, `replay_equivalent`; optional `replay_method`)
+and the script always populates `replay_method` as `"equivalence"`.
+
+Acceptance:
+- The per-replay ledger filename carries the run-id plus the replay
+  timestamp; multiple replays of the same run never collide.
+- The event's `payload.replay_method` is `"equivalence"`.
+- The event's `payload.packet_ref` is the relative path of the matching
+  replay report under `ops/replay-records/`.
+
+### R-FACTORY-RUN-EVIDENCE-014: replay writes a detailed comparison report
+
+WHEN the replay command finishes a comparison pass, THE SYSTEM SHALL
+write a detailed report at
+`ops/replay-records/<run-id>/<replay-event-id>.json` carrying the
+per-field comparison for `prompt_snapshot_hash`,
+`tool_schemas_snapshot_hash`, and `gate_results_summary`. The report
+also records both the recorded and fresh Run summaries plus the recorded
+and current head SHAs.
+
+Acceptance:
+- The report's `replay_equivalent` is `True` iff all three field
+  comparisons report `equal: True`.
+- The exit code is `0` on equivalent and `1` on any divergence.
+- The report's filename is the replay event_id, so the
+  `run.evidence.replayed` event in the per-replay ledger can be joined
+  to the report file 1:1.
+
 ### R-SPEC-009: spec discipline
 
 Standard.

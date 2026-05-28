@@ -14,6 +14,10 @@ every acceptance bullet ships.
 | R-FACTORY-004 | COVERED | [DEC-FACTORY-004](../../decisions/DEC-FACTORY-004-real-cli-ids-win-tagged-synthetic-fallback.md) | `scripts/factory/workers.py` parses thread, session, run, conversation, and model IDs from JSON, JSONL, and stderr. Real IDs win; synthetic IDs carry a `tagged:` prefix on fallback. | None for the in-scope behavior. |
 | R-FACTORY-005 | COVERED | [DEC-FACTORY-005](../../decisions/DEC-FACTORY-005-optional-langgraph-router-threadpool-fallback.md) | `scripts/factory/router.py` exposes `route_tasks` with a LangGraph fan-out when the `factory` extra is installed and a ThreadPoolExecutor fallback otherwise. The CLI carries `--run-many`. | None for the in-scope behavior. |
 | R-FACTORY-006 | COVERED | [DEC-FACTORY-006](../../decisions/DEC-FACTORY-006-static-replay-console-evidence.md) | `apps/web/src/surfaces/factory/` renders `#/factory` from static replay evidence with task state, artifact refs, checkpoint interrupts, event counts, and SDK `RunReport` summary. | Live orchestration backend, auth, and browser-side SQLite reads stay out of scope. |
+| R-FACTORY-RUN-EVIDENCE-011 | COVERED | [DEC-FACTORY-009](../../decisions/DEC-FACTORY-009-factory-replay-command.md) | `scripts/replay_run.py` ships the documented CLI with strict input loading (Run record + ledger). Tmp scratch dir keeps committed evidence untouched. | None for the in-scope behavior. |
+| R-FACTORY-RUN-EVIDENCE-012 | COVERED | [DEC-FACTORY-009](../../decisions/DEC-FACTORY-009-factory-replay-command.md) | HEAD verification compares the recorded `sandbox_image_ref` SHA against `git rev-parse HEAD` and exits 1 with a `git checkout` instruction on mismatch. | None for the in-scope behavior. |
+| R-FACTORY-RUN-EVIDENCE-013 | COVERED | [DEC-FACTORY-009](../../decisions/DEC-FACTORY-009-factory-replay-command.md) | Per-replay ledger written to `ops/event-ledger/replay-<run-id>-<ISO-timestamp>.jsonl` with one `run.evidence.replayed` event carrying `replay_method == "equivalence"`. | None for the in-scope behavior. |
+| R-FACTORY-RUN-EVIDENCE-014 | COVERED | [DEC-FACTORY-009](../../decisions/DEC-FACTORY-009-factory-replay-command.md) | Detailed comparison report at `ops/replay-records/<run-id>/<replay-event-id>.json` carries per-field comparison plus both Run summaries. Exit code matches `replay_equivalent`. | None for the in-scope behavior. |
 | R-SPEC-009 | COVERED | (allowlisted, backfill pending) | Spec registered in `specs/README.md`, listed in `scripts/spec_check.py`, traceability + run ledger updated. | Promote to a DEC-SPEC-009 once the cross-spec discipline cluster is backfilled. |
 
 ## What landed
@@ -24,6 +28,9 @@ every acceptance bullet ships.
 - [DEC-FACTORY-004](../../decisions/DEC-FACTORY-004-real-cli-ids-win-tagged-synthetic-fallback.md): real CLI metadata IDs win over tagged synthetic fallbacks.
 - [DEC-FACTORY-005](../../decisions/DEC-FACTORY-005-optional-langgraph-router-threadpool-fallback.md): optional LangGraph router with a ThreadPool fallback that keeps the default install dependency-free.
 - [DEC-FACTORY-006](../../decisions/DEC-FACTORY-006-static-replay-console-evidence.md): web Factory console reads static replay evidence instead of wiring live orchestration into the hosted app.
+- [DEC-FACTORY-007](../../decisions/DEC-FACTORY-007-factory-emits-conformant-run-evidence.md): factory emits a conformant Event ledger plus a final Run record on every pipeline run, with the six replay-equivalence fields populated where derivable.
+- [DEC-FACTORY-008](../../decisions/DEC-FACTORY-008-factory-run-evidence-cross-checks.md): validator enforces required-for-done Run fields plus four cross-checks that bind each done Run to its per-run ledger.
+- [DEC-FACTORY-009](../../decisions/DEC-FACTORY-009-factory-replay-command.md): factory ships `scripts/replay_run.py` for equivalence replay with strict HEAD verification, per-replay ledger, and detailed comparison report.
 
 ## What's open
 
