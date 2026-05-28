@@ -78,7 +78,7 @@ def test_emit_event_writes_valid_jsonl(tmp_path: Path) -> None:
         event_type="tool.call.started",
         actor_kind="role",
         actor_id="engineering.implementation",
-        payload={"tool_id": "factory.plan", "arguments_digest": "sha256:deadbeef"},
+        payload={"tool_name": "claude_code", "args": {"step": "plan"}},
         run_id="run-abc",
     )
     emit_event(event, ledger)
@@ -86,7 +86,7 @@ def test_emit_event_writes_valid_jsonl(tmp_path: Path) -> None:
     assert text.endswith("\n")
     parsed = json.loads(text.splitlines()[0])
     assert parsed["type"] == "tool.call.started"
-    assert parsed["payload"]["tool_id"] == "factory.plan"
+    assert parsed["payload"]["tool_name"] == "claude_code"
     assert parsed["run_id"] == "run-abc"
 
 
@@ -96,14 +96,14 @@ def test_emit_event_appends_a_second_line(tmp_path: Path) -> None:
         event_type="tool.call.started",
         actor_kind="role",
         actor_id="engineering.implementation",
-        payload={"tool_id": "factory.plan", "arguments_digest": "sha256:1"},
+        payload={"tool_name": "claude_code", "args": {"step": "plan"}},
         run_id="run-abc",
     )
     b = make_event(
         event_type="tool.call.completed",
         actor_kind="role",
         actor_id="engineering.implementation",
-        payload={"tool_id": "factory.plan", "status": "ok", "duration_ms": 12},
+        payload={"tool_name": "claude_code", "duration_ms": 12},
         run_id="run-abc",
         parent_event_id=a["event_id"],
     )
@@ -172,7 +172,7 @@ def test_aggregate_gate_results_returns_none_when_no_gate_events() -> None:
         event_type="tool.call.started",
         actor_kind="role",
         actor_id="engineering.implementation",
-        payload={"tool_id": "factory.plan", "arguments_digest": "sha256:1"},
+        payload={"tool_name": "claude_code", "args": {"step": "plan"}},
         run_id="run-1",
     )
     assert aggregate_gate_results([other_event]) is None
