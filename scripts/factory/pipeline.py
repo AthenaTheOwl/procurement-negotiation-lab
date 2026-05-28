@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from procurement_lab.run_evidence import (
+    aggregate_gate_results,
     build_run_evidence_fields,
     emit_event,
     emit_run,
@@ -590,9 +591,11 @@ def run_pipeline(
             started_event = evidence.emit(
                 "tool.call.started",
                 {
-                    "tool_id": f"factory.plan@{planner.name}",
-                    "arguments_digest": "sha256:plan-prompt",
-                    "step": "plan",
+                    "tool_name": planner.name,
+                    "args": {
+                        "step": "plan",
+                        "arguments_digest": "sha256:plan-prompt",
+                    },
                 },
             )
             plan_result = (
@@ -612,10 +615,12 @@ def run_pipeline(
             evidence.emit(
                 "tool.call.completed",
                 {
-                    "tool_id": f"factory.plan@{planner.name}",
-                    "status": "ok" if plan_result.ok else "error",
+                    "tool_name": planner.name,
                     "duration_ms": int(plan_result.metadata.get("duration_ms") or 0),
-                    "step": "plan",
+                    "result": {
+                        "step": "plan",
+                        "status": "ok" if plan_result.ok else "error",
+                    },
                 },
                 parent_event_id=started_event["event_id"],
             )
@@ -855,7 +860,15 @@ def run_pipeline(
     store.append_event(
         task.id, "pipeline.done", {"pr_url": pr_url}, trace_id=trace_id
     )
-    evidence.emit("pipeline.done", {"pr_url": pr_url})
+    # pipeline.done payload requires `status` (schema enum: done|failed|cancelled)
+    # and carries `gate_results_summary` cloned from the run's aggregated gate
+    # outcomes — this is the cross-check source the Round 3 validator
+    # extension enforces against the Run record.
+    done_payload: dict[str, Any] = {"status": "done", "pr_url": pr_url}
+    done_summary = aggregate_gate_results(evidence.events)
+    if done_summary is not None:
+        done_payload["gate_results_summary"] = done_summary
+    evidence.emit("pipeline.done", done_payload)
     _persist_run_evidence(
         evidence,
         task=task,
@@ -992,14 +1005,21 @@ def _run_implement_loop(
         )
         if evidence is not None:
             for outcome in outcomes:
-                evidence.emit(
-                    _gate_check_event_type(outcome),
-                    {
-                        "gate_name": outcome.name,
+                payload: dict[str, Any] = {
+                    "gate_name": outcome.name,
+                    "details": {
                         "cmd": outcome.cmd,
                         "round": round_idx,
                         "must_pass": outcome.must_pass,
                     },
+                }
+                if not outcome.ok:
+                    # gate.check.failed payload requires `reason` per schema.
+                    reason = outcome.stderr.strip().splitlines()[0] if outcome.stderr.strip() else f"gate {outcome.name} failed"
+                    payload["reason"] = reason[:280] or f"gate {outcome.name} failed"
+                evidence.emit(
+                    _gate_check_event_type(outcome),
+                    payload,
                 )
         last_outcomes = outcomes
 
