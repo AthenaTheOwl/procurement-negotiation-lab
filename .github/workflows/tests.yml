@@ -39,5 +39,7 @@ jobs:
         run: uv run python scripts/validate_skills.py
       - name: validate dreams
         run: uv run python scripts/validate_dreams.py
+      - name: validate run evidence
+        run: uv run python scripts/validate_run_evidence.py
       - name: check schema cache freshness
         run: uv run python scripts/check_schema_cache_freshness.py

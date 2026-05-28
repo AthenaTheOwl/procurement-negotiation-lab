@@ -62,6 +62,7 @@ REQUIRED_WORKFLOW_PROOFS = {
         "scripts/validate_roles.py",
         "scripts/validate_tools.py",
         "scripts/validate_policies.py",
+        "scripts/validate_run_evidence.py",
         "uv run pytest",
         "uv run ruff check .",
         "uv run mypy src",
