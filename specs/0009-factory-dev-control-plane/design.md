@@ -48,6 +48,13 @@ apps/web/src/surfaces/factory/
   the source of truth for what gets recorded, the local SQLite store
   stays the source of truth for resume. Schema-conformance is enforced
   by `scripts/validate_run_evidence.py` on every push.
+- Run-evidence discipline (DEC-FACTORY-008) extends the validator past
+  schema-only conformance. For Runs whose `status == "done"` the
+  validator enforces required-for-done fields plus four cross-checks
+  binding the Run record to the per-run event ledger
+  (pipeline.start hash equality, populated-fields set equality, and
+  gate_results_summary scan equality). The cross-checks fire only on
+  done Runs so the checkpoint-pause flow is unaffected.
 
 ## Data flow
 
