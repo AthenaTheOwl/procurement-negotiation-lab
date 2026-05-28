@@ -23,3 +23,10 @@ vite-*.err.log
 ops/factory.db
 ops/factory.db-journal
 ops/factory-artifacts/
+
+# Run-evidence artifacts from test fixtures or scratch runs.
+# Real-run artifacts (no .test- prefix) are committed as audit history.
+ops/event-ledger/.test-*
+ops/event-ledger/.scratch-*
+ops/run-records/.test-*
+ops/run-records/.scratch-*
