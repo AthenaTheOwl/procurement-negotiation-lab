@@ -103,6 +103,18 @@ flow into events and into the `last_thread_id` / `last_run_id` columns so
 you can correlate a factory event with a real Claude Code or Codex Harness
 run.
 
+## Run-evidence (cross-repo)
+
+The factory also emits a cross-repo Event ledger + Run record on every
+pipeline run, conforming to the schemas mirrored under
+`ops/schemas-cache/`. See
+[`DEC-FACTORY-007`](../../decisions/DEC-FACTORY-007-factory-emits-conformant-run-evidence.md)
+for the rationale. Ledger lines land at
+`ops/event-ledger/<run-id>.jsonl`; the final Run record lands at
+`ops/run-records/<run-id>.json`. The first end-to-end packet generated
+from one of these ledgers lives in the sibling consumer repo at
+[`examples/run_evidence/run-cb524eb06115.packet.json`](https://github.com/AthenaTheOwl/trace-to-eval-harness/blob/main/examples/run_evidence/run-cb524eb06115.packet.json).
+
 ## Run it
 
 ```bash
