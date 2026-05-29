@@ -22,6 +22,10 @@
 | **R-FACTORY-RUN-EVIDENCE-012** replay strict HEAD verification (owner_role: control.coordinator) | H1, H5 | `scripts/replay_run.py::_verify_head`, `test_replay_exits_1_on_head_mismatch` | [DEC-FACTORY-009](../../decisions/DEC-FACTORY-009-factory-replay-command.md) | done |
 | **R-FACTORY-RUN-EVIDENCE-013** replay emits typed run.evidence.replayed event (owner_role: control.coordinator) | H2, H4, H5 | `scripts/replay_run.py::_write_replay_event`, committed `ops/event-ledger/replay-run-16a7bf515611-2026-05-28T12-23-12Z.jsonl`, `test_replay_equivalent_for_committed_sample` | [DEC-FACTORY-009](../../decisions/DEC-FACTORY-009-factory-replay-command.md) | done |
 | **R-FACTORY-RUN-EVIDENCE-014** replay writes detailed comparison report (owner_role: control.coordinator) | H3, H4, H5 | `scripts/replay_run.py::_write_replay_report`, committed `ops/replay-records/run-16a7bf515611/05c783cb-b12d-427c-beb2-2a77c34cd339.json`, `test_replay_detects_divergence_when_task_mutated` | [DEC-FACTORY-009](../../decisions/DEC-FACTORY-009-factory-replay-command.md) | done |
+| **R-FACTORY-RUN-EVIDENCE-015** factory emits portable repo:// URIs (owner_role: control.coordinator) | I1, I2, I5, I6 | `build_repo_uri`, `derive_sandbox_image_ref` returns repo://, `scripts/factory/pipeline.py` workspace_id + inputs[].ref + sandbox_image_ref emission, `test_pipeline_dry_run_emits_run_evidence_files` | [DEC-FACTORY-010](../../decisions/DEC-FACTORY-010-procurement-lab-portable-repo-uri-migration.md) | done |
+| **R-FACTORY-RUN-EVIDENCE-016** validator resolves repo:// URIs (owner_role: control.coordinator) | I3, I6 | `scripts/validate_run_evidence.py::resolve_uri`, `test_resolve_uri_repo_uri_returns_local_path`, `test_resolve_uri_artifact_uri_returns_none`, `test_resolve_uri_legacy_path_returns_path_as_is`, `test_resolve_uri_malformed_uri_returns_path_as_is` | [DEC-FACTORY-010](../../decisions/DEC-FACTORY-010-procurement-lab-portable-repo-uri-migration.md) | done |
+| **R-FACTORY-RUN-EVIDENCE-017** replay resolves repo:// URIs and extracts SHA (owner_role: control.coordinator) | I3, I6 | `scripts/replay_run.py::resolve_uri`, `scripts/replay_run.py::_extract_recorded_sha`, `scripts/replay_run.py::_extract_recorded_task_path`, `test_replay_equivalent_for_committed_sample` | [DEC-FACTORY-010](../../decisions/DEC-FACTORY-010-procurement-lab-portable-repo-uri-migration.md) | done |
+| **R-FACTORY-RUN-EVIDENCE-018** sandbox_image_ref off-by-one fix (owner_role: control.coordinator) | I2, I4, I5 | `scripts/finalize_sandbox_ref.py`, `SANDBOX_PENDING_PLACEHOLDER`, pipeline PENDING write, regenerated sample `ops/run-records/run-7b662d3f68b1.json` finalized to commit SHA | [DEC-FACTORY-010](../../decisions/DEC-FACTORY-010-procurement-lab-portable-repo-uri-migration.md) | done |
 | **R-SPEC-009** spec discipline (owner_role: product.spec-writer) | S1, S2, S3 | registered spec, spec_check, run ledger | (allowlisted) | done |
 
 ## Status snapshot
@@ -35,5 +39,6 @@ Pass E - factory console       done
 Pass F - run-evidence emission done
 Pass G - run-evidence cross-checks done
 Pass H - factory replay command done
+Pass I - portable repo:// URI migration done
 Spec discipline                done
 ```

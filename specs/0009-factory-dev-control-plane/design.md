@@ -55,6 +55,21 @@ apps/web/src/surfaces/factory/
   (pipeline.start hash equality, populated-fields set equality, and
   gate_results_summary scan equality). The cross-checks fire only on
   done Runs so the checkpoint-pause flow is unaffected.
+- Portable URI scheme (DEC-FACTORY-010, amending DEC-CDCP-014) replaces
+  the per-operator `<abs-path>@<sha>` form of `sandbox_image_ref`,
+  `inputs[].ref`, and `workspace_id` with the
+  `repo://<repo>@<sha>/<path>` and `artifact://<repo>/<id>` URIs the
+  athena-site grammar defines. `workspace_id` becomes the bare repo
+  name (an identifier, not a file path). The validator and replay
+  command resolve URIs via a shared `resolve_uri` helper and accept
+  both URI and legacy forms during the migration window.
+- The sandbox_image_ref off-by-one bug (PARENT-of-sample SHA was
+  always recorded because `git rev-parse HEAD` ran before the
+  regeneration commit landed) is fixed by Option A: two-pass emit.
+  The pipeline writes `repo://procurement-negotiation-lab@PENDING/`;
+  `scripts/finalize_sandbox_ref.py` rewrites the placeholder to the
+  actual sample-containing SHA after that commit lands. The helper
+  is idempotent so re-running it on a finalized record is a noop.
 
 ## Data flow
 
