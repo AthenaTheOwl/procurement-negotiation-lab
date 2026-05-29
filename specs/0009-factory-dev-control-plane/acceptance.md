@@ -173,6 +173,53 @@
 - Exit code 0 corresponds to `replay_equivalent: true`; exit 1 to
   `replay_equivalent: false`.
 
+## R-FACTORY-RUN-EVIDENCE-015
+
+- A fresh dry-run Run record's `workspace_id` is exactly
+  `procurement-negotiation-lab`.
+- A fresh dry-run Run record's `inputs[].ref` matches
+  `^repo://procurement-negotiation-lab@[a-f0-9]{40}/.+` when a
+  worktree HEAD SHA is derivable.
+- A fresh dry-run Run record's `sandbox_image_ref` is exactly
+  `repo://procurement-negotiation-lab@PENDING/` before
+  `scripts/finalize_sandbox_ref.py` runs.
+
+## R-FACTORY-RUN-EVIDENCE-016
+
+- `resolve_uri('repo://procurement-negotiation-lab@<sha>/ops/x.yaml',
+  portfolio_root)` returns
+  `<portfolio_root>/procurement-negotiation-lab/ops/x.yaml`.
+- `resolve_uri('artifact://procurement-negotiation-lab/x')` returns
+  `None`.
+- `resolve_uri(<legacy-local-path>)` returns `Path(<legacy>)`.
+- `resolve_uri(<malformed-uri>)` returns `Path(<malformed>)`.
+- The validator still exits 0 against the committed sample after
+  the URI migration.
+
+## R-FACTORY-RUN-EVIDENCE-017
+
+- The replay command extracts a 40-char SHA from a
+  `repo://procurement-negotiation-lab@<sha>/` URI.
+- The replay command extracts a SHA from a legacy
+  `<worktree-path>@<sha>` ref.
+- The replay command exits 1 with a hint at
+  `scripts/finalize_sandbox_ref.py` when `sandbox_image_ref` is
+  the PENDING placeholder.
+- `Run.inputs[].ref` in repo:// form resolves to a local path the
+  factory subprocess can open.
+
+## R-FACTORY-RUN-EVIDENCE-018
+
+- A fresh dry-run Run record carries `sandbox_image_ref ==
+  'repo://procurement-negotiation-lab@PENDING/'`.
+- `scripts/finalize_sandbox_ref.py --run-id <id> --sha <40-char-sha>`
+  rewrites the placeholder to
+  `repo://procurement-negotiation-lab@<sha>/`.
+- Running the helper a second time on the same record exits 0
+  with a noop message and produces no diff.
+- The committed sample's `sandbox_image_ref` matches its
+  containing commit (no off-by-one).
+
 ## Standard gates
 
 - `python -m uv run pytest tests/factory/`

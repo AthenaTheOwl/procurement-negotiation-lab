@@ -295,6 +295,99 @@ Acceptance:
   `run.evidence.replayed` event in the per-replay ledger can be joined
   to the report file 1:1.
 
+### R-FACTORY-RUN-EVIDENCE-015: factory emits portable repo:// URIs
+
+WHEN the factory emits a Run record, THE SYSTEM SHALL produce
+``workspace_id``, ``inputs[].ref``, and ``sandbox_image_ref`` in the
+portable URI scheme defined in athena-site DEC-CDCP-014:
+
+- ``workspace_id`` is the bare repo name
+  (``procurement-negotiation-lab``); it is a workspace identifier,
+  not a file path.
+- Each ``inputs[].ref`` is a
+  ``repo://procurement-negotiation-lab@<sha>/<rel-path>`` URI when a
+  worktree HEAD SHA is derivable, with a fallback to the raw spec
+  path otherwise.
+- ``sandbox_image_ref`` is a
+  ``repo://procurement-negotiation-lab@<sha>/`` URI; the emitter
+  writes ``@PENDING/`` and ``scripts/finalize_sandbox_ref.py``
+  rewrites it to the sample-containing SHA after that commit lands.
+
+Acceptance:
+- A fresh Run record's ``workspace_id`` equals
+  ``procurement-negotiation-lab``.
+- A fresh Run record's ``inputs[].ref`` matches
+  ``^repo://procurement-negotiation-lab@[a-f0-9]{40}/.+`` when a
+  worktree HEAD is available.
+- A fresh Run record's ``sandbox_image_ref`` equals
+  ``repo://procurement-negotiation-lab@PENDING/`` until the finalize
+  helper runs; after finalize it matches
+  ``^repo://procurement-negotiation-lab@[a-f0-9]{40}/$``.
+
+### R-FACTORY-RUN-EVIDENCE-016: validator resolves repo:// URIs to local paths
+
+WHEN the validator processes a ref string carrying a repo:// or
+artifact:// URI, THE SYSTEM SHALL resolve it via a ``resolve_uri``
+helper. The helper maps
+``repo://<repo>@<sha>/<path>`` to
+``<portfolio_root>/<repo>/<path>``, returns ``None`` for
+``artifact://<repo>/<id>``, and returns ``Path(uri)`` for legacy
+local paths or malformed URIs (interop clause from DEC-CDCP-014).
+
+Acceptance:
+- ``resolve_uri('repo://procurement-negotiation-lab@<sha>/ops/x.yaml',
+  portfolio_root)`` returns
+  ``<portfolio_root>/procurement-negotiation-lab/ops/x.yaml``.
+- ``resolve_uri('artifact://procurement-negotiation-lab/x')``
+  returns ``None``.
+- ``resolve_uri(<legacy-local-path>)`` returns ``Path(<legacy>)``.
+- ``resolve_uri(<malformed-uri>)`` returns ``Path(<malformed>)``.
+
+### R-FACTORY-RUN-EVIDENCE-017: replay resolves repo:// URIs and extracts SHA
+
+WHEN the replay command verifies HEAD against a recorded
+``sandbox_image_ref``, THE SYSTEM SHALL extract the 40-char SHA from
+the repo:// URI's ``<sha>`` group before falling through to the
+legacy ``<path>@<sha>`` parser. WHEN the recorded
+``sandbox_image_ref`` is ``repo://procurement-negotiation-lab@PENDING/``,
+the replay command SHALL exit 1 with an actionable message naming
+``scripts/finalize_sandbox_ref.py`` so the operator knows which step
+to run next.
+
+Acceptance:
+- The replay command extracts a SHA from
+  ``repo://procurement-negotiation-lab@<sha>/`` and matches it
+  against ``git rev-parse HEAD``.
+- The replay command extracts a SHA from a legacy
+  ``<worktree-path>@<sha>`` ref and matches it against
+  ``git rev-parse HEAD``.
+- The replay command exits 1 with a ``finalize_sandbox_ref`` hint
+  when ``sandbox_image_ref`` is ``repo://...@PENDING/``.
+- ``Run.inputs[].ref`` in repo:// form resolves to a local path
+  before the factory subprocess is invoked.
+
+### R-FACTORY-RUN-EVIDENCE-018: sandbox_image_ref off-by-one fix
+
+WHEN the factory writes a Run record, THE SYSTEM SHALL set
+``sandbox_image_ref`` to
+``repo://procurement-negotiation-lab@PENDING/``. WHEN the
+sample-containing commit lands, THE SYSTEM SHALL provide
+``scripts/finalize_sandbox_ref.py --run-id <id> [--sha <sha>]`` to
+rewrite the placeholder to the final URI. The helper SHALL be
+idempotent: a record whose ``sandbox_image_ref`` is already
+finalized is left untouched.
+
+Acceptance:
+- A fresh dry-run Run record carries
+  ``sandbox_image_ref == 'repo://procurement-negotiation-lab@PENDING/'``.
+- ``scripts/finalize_sandbox_ref.py --run-id <id> --sha <40-char-sha>``
+  rewrites the placeholder to
+  ``repo://procurement-negotiation-lab@<sha>/``.
+- Running the helper a second time on the same record produces no
+  diff and exits 0.
+- The replay HEAD-strict check is satisfiable on first emit (no
+  manual SHA backfill required).
+
 ### R-SPEC-009: spec discipline
 
 Standard.

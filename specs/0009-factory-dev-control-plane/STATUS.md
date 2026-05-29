@@ -18,6 +18,10 @@ every acceptance bullet ships.
 | R-FACTORY-RUN-EVIDENCE-012 | COVERED | [DEC-FACTORY-009](../../decisions/DEC-FACTORY-009-factory-replay-command.md) | HEAD verification compares the recorded `sandbox_image_ref` SHA against `git rev-parse HEAD` and exits 1 with a `git checkout` instruction on mismatch. | None for the in-scope behavior. |
 | R-FACTORY-RUN-EVIDENCE-013 | COVERED | [DEC-FACTORY-009](../../decisions/DEC-FACTORY-009-factory-replay-command.md) | Per-replay ledger written to `ops/event-ledger/replay-<run-id>-<ISO-timestamp>.jsonl` with one `run.evidence.replayed` event carrying `replay_method == "equivalence"`. | None for the in-scope behavior. |
 | R-FACTORY-RUN-EVIDENCE-014 | COVERED | [DEC-FACTORY-009](../../decisions/DEC-FACTORY-009-factory-replay-command.md) | Detailed comparison report at `ops/replay-records/<run-id>/<replay-event-id>.json` carries per-field comparison plus both Run summaries. Exit code matches `replay_equivalent`. | None for the in-scope behavior. |
+| R-FACTORY-RUN-EVIDENCE-015 | COVERED | [DEC-FACTORY-010](../../decisions/DEC-FACTORY-010-procurement-lab-portable-repo-uri-migration.md) | Emitter produces repo:// URIs for `workspace_id` (bare repo name), `inputs[].ref` (with worktree-HEAD SHA), and `sandbox_image_ref` (PENDING placeholder). | None for the in-scope behavior. |
+| R-FACTORY-RUN-EVIDENCE-016 | COVERED | [DEC-FACTORY-010](../../decisions/DEC-FACTORY-010-procurement-lab-portable-repo-uri-migration.md) | `scripts/validate_run_evidence.py::resolve_uri` maps `repo://` to local paths, returns `None` for `artifact://`, and falls through to `Path(uri)` for legacy or malformed input. | None for the in-scope behavior. |
+| R-FACTORY-RUN-EVIDENCE-017 | COVERED | [DEC-FACTORY-010](../../decisions/DEC-FACTORY-010-procurement-lab-portable-repo-uri-migration.md) | `scripts/replay_run.py` resolves URIs via the same helper, extracts SHA from the URI's `<sha>` group with a legacy `<path>@<sha>` fallback, and raises an actionable error on the PENDING placeholder. | None for the in-scope behavior. |
+| R-FACTORY-RUN-EVIDENCE-018 | COVERED | [DEC-FACTORY-010](../../decisions/DEC-FACTORY-010-procurement-lab-portable-repo-uri-migration.md) | `scripts/finalize_sandbox_ref.py` rewrites the PENDING placeholder to the sample-containing SHA; idempotent. Sample `run-7b662d3f68b1` carries the finalized URI. | None for the in-scope behavior. |
 | R-SPEC-009 | COVERED | (allowlisted, backfill pending) | Spec registered in `specs/README.md`, listed in `scripts/spec_check.py`, traceability + run ledger updated. | Promote to a DEC-SPEC-009 once the cross-spec discipline cluster is backfilled. |
 
 ## What landed
@@ -31,6 +35,7 @@ every acceptance bullet ships.
 - [DEC-FACTORY-007](../../decisions/DEC-FACTORY-007-factory-emits-conformant-run-evidence.md): factory emits a conformant Event ledger plus a final Run record on every pipeline run, with the six replay-equivalence fields populated where derivable.
 - [DEC-FACTORY-008](../../decisions/DEC-FACTORY-008-factory-run-evidence-cross-checks.md): validator enforces required-for-done Run fields plus four cross-checks that bind each done Run to its per-run ledger.
 - [DEC-FACTORY-009](../../decisions/DEC-FACTORY-009-factory-replay-command.md): factory ships `scripts/replay_run.py` for equivalence replay with strict HEAD verification, per-replay ledger, and detailed comparison report.
+- [DEC-FACTORY-010](../../decisions/DEC-FACTORY-010-procurement-lab-portable-repo-uri-migration.md): emitter migrates onto the portable repo:// + artifact:// URIs from DEC-CDCP-014; validator and replay resolve URIs and accept both URI and legacy forms; the sandbox_image_ref off-by-one bug is fixed via the two-pass emit (PENDING + finalize).
 
 ## What's open
 

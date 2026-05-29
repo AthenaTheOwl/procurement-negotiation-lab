@@ -104,6 +104,39 @@
   case plus four negatives (HEAD mismatch, missing Run record, missing
   ledger, synthetic divergence). *(R-FACTORY-RUN-EVIDENCE-011..014)*
 
+## Pass I - portable repo:// URI migration (DEC-FACTORY-010)
+
+- [x] **I1**: Add the URI helpers to `src/procurement_lab/run_evidence.py`
+  (`build_repo_uri`, `build_artifact_uri`, `resolve_uri`,
+  `extract_repo_uri_sha`, `is_repo_uri`, `SANDBOX_PENDING_PLACEHOLDER`)
+  and switch `derive_sandbox_image_ref` to return a repo:// URI.
+  *(R-FACTORY-RUN-EVIDENCE-015)*
+- [x] **I2**: Wire the URI emission into `scripts/factory/pipeline.py`:
+  `workspace_id` becomes the repo name, `inputs[].ref` becomes a
+  repo:// URI, and `sandbox_image_ref` becomes the PENDING placeholder
+  written before the regeneration commit lands.
+  *(R-FACTORY-RUN-EVIDENCE-015, R-FACTORY-RUN-EVIDENCE-018)*
+- [x] **I3**: Add `resolve_uri` to `scripts/validate_run_evidence.py`
+  and `scripts/replay_run.py`; update `replay_run._extract_recorded_sha`
+  to parse the URI's `<sha>` group with a legacy fallback and a
+  PENDING-placeholder error path.
+  *(R-FACTORY-RUN-EVIDENCE-016, R-FACTORY-RUN-EVIDENCE-017)*
+- [x] **I4**: Add `scripts/finalize_sandbox_ref.py` to rewrite the
+  PENDING placeholder to the sample-containing SHA; idempotent.
+  *(R-FACTORY-RUN-EVIDENCE-018)*
+- [x] **I5**: Regenerate the committed sample under the new emitter
+  (sample id changes to `run-7b662d3f68b1`) and finalize its
+  sandbox_image_ref to the regeneration commit's SHA.
+  *(R-FACTORY-RUN-EVIDENCE-015, R-FACTORY-RUN-EVIDENCE-018)*
+- [x] **I6**: Add tests for the URI helpers (`resolve_uri`,
+  `build_repo_uri`, `extract_repo_uri_sha`, `is_repo_uri`) in
+  `tests/factory/test_run_evidence.py` and
+  `tests/factory/test_validate_run_evidence.py`; update
+  `tests/factory/test_pipeline.py` to assert the new emission
+  contract; update `tests/factory/test_replay_run.py` to discover
+  the committed sample by glob and handle both URI forms.
+  *(R-FACTORY-RUN-EVIDENCE-015..018)*
+
 ## Spec discipline
 
 - [x] **S1**: Register the spec in `specs/README.md`. *(R-SPEC-009)*
