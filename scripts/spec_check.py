@@ -86,6 +86,17 @@ REQUIRED_WORKFLOW_PROOFS = {
         "procurement-negotiation-lab.vercel.app",
         "playwright",
     ],
+    ".github/workflows/run-evidence-gates.yml": [
+        "pull_request",
+        "ubuntu-latest",
+        "python-version",
+        "AthenaTheOwl/trace-to-eval-harness",
+        "trace_to_eval evidence from-cdcp-events",
+        "trace_to_eval evidence validate",
+        "scripts/replay_run.py",
+        "fetch-depth: 0",
+        "run-7b662d3f68b1",
+    ],
 }
 
 REQUIRED_PACKAGE_SCRIPTS = {
