@@ -702,6 +702,65 @@ Acceptance:
 - The job carries no `continue-on-error: true` and no
   `if: ${{ failure() }}` informational shape.
 
+### R-FACTORY-RUN-EVIDENCE-032: schemas-cache mirrors athena-site DEC-CDCP-020
+
+WHEN `ops/schemas-cache/decision.schema.json`,
+`ops/schemas-cache/dream-output.schema.json`, and
+`ops/schemas-cache/run.schema.json` are read, THE SYSTEM SHALL
+match the athena-site canonical bytes per DEC-CDCP-020 so the four
+optional systems-thinking fields (`systems_map`,
+`transferable_principle`, `falsification_test`, `adoption_ladder`)
+are part of the locally enforced contract.
+
+Acceptance:
+- `python scripts/check_schema_cache_freshness.py` exits 0.
+- Each cached schema contains the four optional fields with
+  `minLength: 10` (strings) / nested-object shape (adoption_ladder).
+
+### R-FACTORY-RUN-EVIDENCE-033: AGENTS.md names the systems-thinking discipline
+
+WHEN a contributor opens `AGENTS.md`, THE SYSTEM SHALL declare the
+four-field discipline per DEC-CDCP-020 as the expectation for new
+substantive DECs, dream candidates, and Run records in this repo.
+
+Acceptance:
+- `AGENTS.md` carries a top-level "Systems-thinking discipline (per
+  DEC-CDCP-020)" section that names `systems_map`,
+  `transferable_principle`, `falsification_test`, and
+  `adoption_ladder` with their roles, and the 30-day
+  warning-to-failure ratchet.
+
+### R-FACTORY-RUN-EVIDENCE-034: validator warns on missing fields
+
+WHEN `scripts/validate_decisions.py` processes an approved DEC,
+THE SYSTEM SHALL emit a non-fatal warning to stderr for each of the
+four systems-thinking fields the DEC is missing. The validator
+SHALL still exit 0 when only warnings are present.
+
+Acceptance:
+- The warning prefix `validate_decisions: systems-thinking
+  discipline warnings (non-fatal; see DEC-CDCP-020)` appears on
+  stderr when any approved DEC is missing one of the four fields.
+- Each warning names the missing field(s) and the DEC's relative
+  path.
+- Validator exit code stays 0 when only warnings (and no schema
+  violations) are present.
+
+### R-FACTORY-RUN-EVIDENCE-035: recent DECs retrofitted
+
+WHEN a reader inspects the three most recent factory DECs
+(DEC-FACTORY-012, DEC-FACTORY-013, DEC-FACTORY-014), THE SYSTEM
+SHALL show the four systems-thinking fields populated with
+substantive content.
+
+Acceptance:
+- DEC-FACTORY-012, DEC-FACTORY-013, and DEC-FACTORY-014 each carry
+  populated `systems_map`, `transferable_principle`,
+  `falsification_test`, and `adoption_ladder` fields in their YAML
+  front-matter.
+- `python scripts/validate_decisions.py` emits no
+  systems-thinking warning for any of the three retrofitted DECs.
+
 ### R-SPEC-009: spec discipline
 
 Standard.

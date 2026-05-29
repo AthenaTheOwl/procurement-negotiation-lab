@@ -211,6 +211,16 @@ deferred:
   - id: R-FACTORY-RUN-EVIDENCE-031
     note: covered collectively by DEC-FACTORY-014-procurement-negotiation-lab-chaos-test-suite
 
+  # R-FACTORY-RUN-EVIDENCE-032 is resolved by DEC-FACTORY-015 directly.
+  # R-FACTORY-RUN-EVIDENCE-033..035 are resolved collectively by the same
+  # DEC-FACTORY-015; the DEC's `## coverage` section enumerates them.
+  - id: R-FACTORY-RUN-EVIDENCE-033
+    note: covered collectively by DEC-FACTORY-015-systems-thinking-discipline-adoption
+  - id: R-FACTORY-RUN-EVIDENCE-034
+    note: covered collectively by DEC-FACTORY-015-systems-thinking-discipline-adoption
+  - id: R-FACTORY-RUN-EVIDENCE-035
+    note: covered collectively by DEC-FACTORY-015-systems-thinking-discipline-adoption
+
   # R-LEARN-* — spec 0010 pedagogical redesign.
   - id: R-LEARN-001
     note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending
