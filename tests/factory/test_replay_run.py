@@ -47,9 +47,20 @@ def replay_module(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):  # type: ign
 
 
 def _read_committed_run() -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """Load the committed sample run + ledger from the live repo paths."""
-    run_path = REPO_ROOT / "ops" / "run-records" / "run-16a7bf515611.json"
-    ledger_path = REPO_ROOT / "ops" / "event-ledger" / "run-16a7bf515611.jsonl"
+    """Load the committed sample run + ledger from the live repo paths.
+
+    The sample id changes when DEC-FACTORY-010 regenerates the sample
+    (the URI migration + sandbox off-by-one fix produces a fresh
+    run-id). We discover the current committed sample by globbing
+    ``ops/run-records/*.json`` and reject if there is not exactly one.
+    """
+    run_records = sorted(
+        (REPO_ROOT / "ops" / "run-records").glob("run-*.json")
+    )
+    assert run_records, "no committed run record under ops/run-records/"
+    run_path = run_records[-1]
+    run_id = run_path.stem
+    ledger_path = REPO_ROOT / "ops" / "event-ledger" / f"{run_id}.jsonl"
     run = json.loads(run_path.read_text(encoding="utf-8"))
     events: list[dict[str, Any]] = []
     for line in ledger_path.read_text(encoding="utf-8").splitlines():
