@@ -148,3 +148,30 @@ jobs:
           name: replay-determinism-failbundle
           path: artifacts/failbundles/
           if-no-files-found: ignore
+
+  chaos-validation:
+    name: chaos validation (mutation classes vs validator)
+    runs-on: ubuntu-latest
+    # The chaos suite copies the canonical sample into a temp dir,
+    # applies one targeted mutation per test (M1..M7), and asserts
+    # scripts/validate_run_evidence.py exits non-zero with stderr
+    # naming the right check. Catches silently-broken validators:
+    # if Round 3's cross-checks, Round 2's typed event payloads, or
+    # the required-for-done discipline regress, the corresponding
+    # mutation test will fail. Independent job: contract gate, no
+    # continue-on-error.
+    steps:
+      - name: Check out procurement-negotiation-lab
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync project (Python 3.11)
+        run: uv sync --python 3.11
+
+      - name: Install chaos test deps
+        run: uv pip install "jsonschema>=4.21" "pyyaml>=6.0"
+
+      - name: Chaos validation suite
+        run: uv run pytest tests/factory/test_chaos_run_evidence.py -v --no-cov

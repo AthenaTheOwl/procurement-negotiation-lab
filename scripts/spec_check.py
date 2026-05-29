@@ -99,6 +99,8 @@ REQUIRED_WORKFLOW_PROOFS = {
         "replay-determinism",
         "tests/factory/test_replay_determinism.py",
         "RERUNS",
+        "chaos-validation",
+        "tests/factory/test_chaos_run_evidence.py",
     ],
 }
 
