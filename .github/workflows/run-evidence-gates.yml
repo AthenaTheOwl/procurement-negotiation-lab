@@ -1,0 +1,113 @@
+name: run-evidence-gates
+
+# Enforces the DEC-CDCP-015 CI gate chain for procurement-negotiation-lab as a
+# product repo: schema cache freshness + voice/BOM/spec/decision/run-evidence
+# validation are already covered by tests.yml; this workflow adds the
+# product-only gates that bind the canonical sample to trace-to-eval-harness:
+#
+#  - packet-generation-from-canonical-sample: convert the canonical event
+#    ledger to a run-evidence packet via trace-to-eval-harness
+#  - packet-validation: validate the generated packet against the
+#    trace-to-eval-harness v2-1 run-evidence schema
+#  - replay-smoke: extract the sandbox SHA from the canonical Run record,
+#    check that SHA out, and re-run scripts/replay_run.py to confirm
+#    replay_equivalent: true
+#
+# No continue-on-error on any contract gate (DEC-CDCP-015 forbids it).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: run-evidence-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CANONICAL_SAMPLE: run-7b662d3f68b1
+
+jobs:
+  run-evidence-gates:
+    name: run-evidence gates (product)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out procurement-negotiation-lab
+        uses: actions/checkout@v4
+        with:
+          path: procurement-negotiation-lab
+          fetch-depth: 0
+
+      - name: Check out trace-to-eval-harness (sibling for packet gates)
+        uses: actions/checkout@v4
+        with:
+          repository: AthenaTheOwl/trace-to-eval-harness
+          path: trace-to-eval-harness
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install trace-to-eval-harness (editable, with deps)
+        working-directory: trace-to-eval-harness
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Packet generation from canonical sample
+        working-directory: procurement-negotiation-lab
+        env:
+          PORTFOLIO_ROOT: ${{ github.workspace }}
+        run: |
+          python -m trace_to_eval evidence from-cdcp-events \
+            ops/event-ledger/${CANONICAL_SAMPLE}.jsonl \
+            --out /tmp/packet.json \
+            --portfolio-root "${PORTFOLIO_ROOT}"
+
+      - name: Packet validation
+        run: |
+          python -m trace_to_eval evidence validate /tmp/packet.json
+
+      - name: Save finalized Run record before checkout
+        working-directory: procurement-negotiation-lab
+        run: |
+          cp ops/run-records/${CANONICAL_SAMPLE}.json /tmp/run-record-finalized.json
+
+      - name: Extract sandbox SHA from canonical Run record
+        id: sandbox
+        working-directory: procurement-negotiation-lab
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq jq
+          SANDBOX_URI=$(jq -r .sandbox_image_ref ops/run-records/${CANONICAL_SAMPLE}.json)
+          echo "sandbox uri: ${SANDBOX_URI}"
+          SANDBOX_SHA=$(echo "${SANDBOX_URI}" | sed -E 's|^repo://[^@]+@([a-f0-9]{40})/.*|\1|')
+          if [ -z "${SANDBOX_SHA}" ] || [ "${SANDBOX_SHA}" = "${SANDBOX_URI}" ]; then
+            echo "could not extract 40-char SHA from sandbox_image_ref ${SANDBOX_URI}"
+            exit 1
+          fi
+          echo "sandbox sha: ${SANDBOX_SHA}"
+          echo "sha=${SANDBOX_SHA}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check out recorded sandbox SHA
+        working-directory: procurement-negotiation-lab
+        run: |
+          git checkout ${{ steps.sandbox.outputs.sha }}
+
+      - name: Restore finalized Run record into worktree
+        working-directory: procurement-negotiation-lab
+        # The sandbox SHA points at the commit that wrote the sample with a
+        # PENDING placeholder per DEC-FACTORY-010's two-pass emit. Replay
+        # needs the finalized Run record on disk so the recorded SHA is
+        # readable; we restore the HEAD-finalized copy saved before checkout.
+        run: |
+          cp /tmp/run-record-finalized.json ops/run-records/${CANONICAL_SAMPLE}.json
+
+      - name: Replay smoke (canonical sample)
+        working-directory: procurement-negotiation-lab
+        run: |
+          python scripts/replay_run.py --run-id ${CANONICAL_SAMPLE}
