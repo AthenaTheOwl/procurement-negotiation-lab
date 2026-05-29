@@ -202,6 +202,47 @@ rollback: |
   entries from ``tasks.md``. The DEC-FACTORY-012 chain remains
   untouched.
 owner: control.coordinator
+systems_map: |
+  Populated-keys contracts on weakly-typed metadata dicts plus
+  collision-free filename derivation in time-stamped ledger streams.
+  The dataclass signature (`metadata: dict[str, Any]`) is the contract
+  boundary; the populated-keys discipline documents which keys must
+  be present without locking the dict shape. The microsecond filename
+  is the discriminator that keeps two ledgers in the same wall-clock
+  second from aliasing.
+transferable_principle: |
+  When you cannot tighten a dict type without breaking callers, treat
+  the docstring + typed accessors as the contract and assert
+  population (not shape) in tests. Time-derived filenames in an
+  append-only ledger always need sub-second resolution or a UUID
+  suffix to avoid silent aliasing.
+falsification_test: |
+  If a downstream consumer reads `thread_id` / `run_id` / `model` /
+  `duration_ms` / `tokens_input` / `tokens_output` and finds them
+  missing on a real-CLI invocation, the populated-keys contract is
+  falsified. Separately: if two back-to-back replays inside the same
+  microsecond collide on the ledger filename, the resolution claim is
+  falsified.
+adoption_ladder:
+  minimum_viable: |
+    WorkerResult.metadata populates the six addendum-6 keys with
+    `None` / 0 fallback values; tests assert key presence; filename
+    uses microsecond resolution.
+  mid_adoption: |
+    Claude + Codex workers parse `--output-format json` for real
+    token counts and IDs; typed accessors return concrete int for
+    present-but-zero values; replay-determinism fixture exercises the
+    microsecond format under load.
+  full_adoption: |
+    Checkpoint + interrupt + `--resume` semantics layered on top of
+    the populated thread_id surface; downstream trace-to-eval packets
+    correlate runs to live CLI sessions via thread_id; ledger
+    filenames carry both microsecond + replay_event_id for full
+    collision-free correlation.
+  monitoring_signals:
+    - "populated-keys assertion failures in factory tests"
+    - "ledger filename collisions in CI run summaries"
+    - "real-CLI token-count parse success rate"
 ---
 
 ## decision

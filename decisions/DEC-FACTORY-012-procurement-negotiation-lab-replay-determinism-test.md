@@ -158,6 +158,39 @@ rollback: |
   ``tasks.md``. The DEC-FACTORY-011 chain (packet generation, packet
   validation, replay smoke) remains untouched.
 owner: control.coordinator
+systems_map: |
+  Determinism-of-derivation contract for replay pipelines — the chain
+  (canonical sample -> replay command -> canonicalized fields -> hash)
+  is the closure under which two replays of the same input must yield
+  byte-identical content hashes. The CI fixture is the empirical probe
+  that converts a claimed contract into an enforced one.
+transferable_principle: |
+  Any pipeline that claims "fresh and recorded should match" needs a
+  test that runs the pipeline N times against the same input, hashes
+  a content-derived whitelist, and asserts hash equality. The
+  whitelist + canonicalization step is the load-bearing surface; the
+  rerun loop is just the probe.
+falsification_test: |
+  If two back-to-back replays of the canonical sample produce
+  different hashes on the three replay-equivalence fields despite no
+  pipeline change, the determinism claim is falsified for whichever
+  field diverged — the failure bundle pinpoints which.
+adoption_ladder:
+  minimum_viable: |
+    Fixture exists locally; one rerun count (RERUNS=3); hash three
+    canonicalized fields; assert equality.
+  mid_adoption: |
+    Fixture runs in CI as an independent job with no
+    continue-on-error; failure uploads a determinism failure bundle
+    so the diverging field is visible in CI artifacts.
+  full_adoption: |
+    Determinism fixture extended to cover replay across sandbox-SHA
+    boundaries; the whitelist grows to mirror every content-derived
+    field added by future DECs; hash equality is a release gate.
+  monitoring_signals:
+    - "replay-determinism job pass/fail trend on main"
+    - "failure-bundle upload count over a 30-day window"
+    - "whitelist diff vs. DEC-FACTORY-009 equivalence fields"
 ---
 
 ## decision

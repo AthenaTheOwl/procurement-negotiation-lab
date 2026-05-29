@@ -171,6 +171,43 @@ rollback: |
   matching rows from ``traceability.md`` plus the task entries from
   ``tasks.md``. The DEC-FACTORY-013 chain stays untouched.
 owner: control.coordinator
+systems_map: |
+  Adversarial testing against a validator chain — the canonical
+  sample is well-formed by construction, so any branch in the
+  validator can be silently weakened without surface signal. The
+  chaos suite is the negative-test mirror: one targeted mutation per
+  validator branch turns each branch into an empirically-asserted
+  contract.
+transferable_principle: |
+  For any validator that walks a multi-step contract (cross-checks,
+  required-for-state fields, typed-payload oneOfs), ship a chaos test
+  per branch. The catalog (one mutation class per branch) is the
+  inverse of the validator's responsibility map; without it, a
+  no-op'd branch passes the happy-path test silently.
+falsification_test: |
+  If a refactor of `scripts/validate_run_evidence.py` removes or
+  weakens a check and the corresponding chaos-test mutation still
+  passes the validator (the test goes green when it should go red),
+  the chaos suite's coverage claim is falsified for that mutation
+  class.
+adoption_ladder:
+  minimum_viable: |
+    Seven mutation classes (M1..M7) wired against the canonical
+    sample; positive guard test runs first; per-test tmp_path copy so
+    canonical sample on disk is never written.
+  mid_adoption: |
+    `chaos-validation` CI job with no continue-on-error; proof tokens
+    registered in `REQUIRED_WORKFLOW_PROOFS`; renamed/deleted job
+    fails spec-check.
+  full_adoption: |
+    Mutation classes expand as new validator branches land; chaos
+    suite is the standard pattern across every product repo's
+    validate_run_evidence; mutation catalog drives a coverage report
+    that maps validator branches to chaos tests.
+  monitoring_signals:
+    - "chaos-validation job pass/fail trend on main"
+    - "new validator branches landed without a paired mutation class"
+    - "canonical-sample positive guard failure rate"
 ---
 
 ## decision
