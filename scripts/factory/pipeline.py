@@ -15,12 +15,16 @@ from pathlib import Path
 from typing import Any, Literal
 
 from procurement_lab.run_evidence import (
+    REPO_NAME,
+    SANDBOX_PENDING_PLACEHOLDER,
     aggregate_gate_results,
+    build_repo_uri,
     build_run_evidence_fields,
     emit_event,
     emit_run,
     make_event,
     now_iso,
+    to_relative_repo_path,
 )
 
 from .artifacts import ArtifactStore
@@ -190,7 +194,10 @@ def _new_run_evidence(
     """Allocate a run_id and the ledger/record file paths for one pipeline run."""
     run_id = f"run-{uuid.uuid4().hex[:12]}"
     spec_id = spec_path or task.id
-    workspace_id = str(worktree.path) if worktree is not None else task.target_repo
+    # workspace_id is a workspace identifier per DEC-FACTORY-010, not a file
+    # path. Pin it to the repo name so packet consumers can route on it
+    # without parsing an absolute Windows path that varies per checkout.
+    workspace_id = REPO_NAME
     return _RunEvidence(
         run_id=run_id,
         spec_id=spec_id,
@@ -288,7 +295,11 @@ def _finalize_run_record(
 
     inputs: list[dict[str, str]] = []
     if spec_path is not None:
-        inputs.append({"kind": "task", "ref": spec_path})
+        # Convert absolute spec paths into repo:// URIs so the run record
+        # is portable across machines. The SHA is the worktree HEAD at
+        # emit time; the finalize step rewrites it to the
+        # sample-containing commit after that commit lands.
+        inputs.append({"kind": "task", "ref": _input_ref_for(spec_path, evidence)})
 
     run: dict[str, Any] = {
         "id": evidence.run_id,
@@ -308,7 +319,51 @@ def _finalize_run_record(
         "outputs": [],
     }
     run.update(evidence_fields.fields)
+    # DEC-FACTORY-010 sandbox_image_ref off-by-one fix (Option A: two-pass
+    # emit). The build_run_evidence_fields helper computes the sandbox
+    # ref from `git rev-parse HEAD`, but that resolves to the PARENT
+    # commit of the one that will ultimately carry the sample. Replace
+    # the populated value with a PENDING placeholder; the
+    # scripts/finalize_sandbox_ref.py helper rewrites the record after
+    # the regeneration commit lands.
+    if "sandbox_image_ref" in run:
+        run["sandbox_image_ref"] = SANDBOX_PENDING_PLACEHOLDER
     return run
+
+
+def _input_ref_for(spec_path: str, evidence: _RunEvidence) -> str:
+    """Best-effort conversion of an input spec path into a repo:// URI.
+
+    Falls back to the raw spec path when no derivable SHA exists (no
+    worktree, or git lookup failed). The fallback keeps the validator
+    tolerant of legacy paths during migration; consumers that strictly
+    require URI form should use the finalize step's rewrite pass.
+    """
+    rel = to_relative_repo_path(spec_path)
+    sha = _emit_time_head_sha(evidence.worktree_path)
+    if sha is None:
+        return spec_path
+    return build_repo_uri(sha, rel)
+
+
+def _emit_time_head_sha(worktree_path: Path | None) -> str | None:
+    """Return ``git rev-parse HEAD`` for the worktree, or None on failure."""
+    if worktree_path is None:
+        return None
+    try:
+        result = subprocess.run(  # noqa: S603
+            ["git", "-C", str(worktree_path), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=10,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    head = result.stdout.strip()
+    if result.returncode != 0 or not head:
+        return None
+    return head
 
 
 # ------------------------------------------------------------------ helpers

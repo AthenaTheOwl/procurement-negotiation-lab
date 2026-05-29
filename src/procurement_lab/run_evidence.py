@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import uuid
 from collections.abc import Iterable, Mapping, Sequence
@@ -47,6 +48,69 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+# ----------------------------------------------------------------- repo:// URI grammar (DEC-CDCP-014)
+
+# Portable URI scheme for cross-repo references. The grammar lands in
+# athena-site DEC-CDCP-014; this repo's emitter switches to repo:// /
+# artifact:// per DEC-FACTORY-010 so packet consumers no longer carry
+# absolute Windows paths in run-evidence artifacts.
+REPO_NAME = "procurement-negotiation-lab"
+SANDBOX_PENDING_PLACEHOLDER = f"repo://{REPO_NAME}@PENDING/"
+
+_REPO_URI_RE = re.compile(
+    r"^repo://(?P<repo>[a-z][a-z0-9-]*)@(?P<sha>[a-f0-9]{40})/(?P<path>.*)$"
+)
+_REPO_URI_PENDING_RE = re.compile(
+    r"^repo://(?P<repo>[a-z][a-z0-9-]*)@PENDING/(?P<path>.*)$"
+)
+_ARTIFACT_URI_RE = re.compile(
+    r"^artifact://(?P<repo>[a-z][a-z0-9-]*)/(?P<id>.+)$"
+)
+
+
+def build_repo_uri(sha: str, rel_path: str, *, repo_name: str = REPO_NAME) -> str:
+    """Build a ``repo://<repo>@<sha>/<rel-path>`` URI.
+
+    ``rel_path`` is a POSIX path inside the repo (no leading slash); pass
+    an empty string for the repo root. The 40-char hex SHA is required so
+    consumers can pin the file at a specific commit.
+    """
+    if not re.match(r"^[a-f0-9]{40}$", sha):
+        raise ValueError(f"build_repo_uri: invalid 40-char SHA: {sha!r}")
+    cleaned = rel_path.replace("\\", "/").lstrip("/")
+    return f"repo://{repo_name}@{sha}/{cleaned}"
+
+
+def build_artifact_uri(artifact_id: str, *, repo_name: str = REPO_NAME) -> str:
+    """Build an ``artifact://<repo>/<id>`` URI for a logical artifact."""
+    if not artifact_id:
+        raise ValueError("build_artifact_uri: artifact_id must be non-empty")
+    return f"artifact://{repo_name}/{artifact_id}"
+
+
+def to_relative_repo_path(
+    path: str | Path, *, repo_root: Path | None = None
+) -> str:
+    """Strip ``repo_root`` from an absolute path; return POSIX-form relative path.
+
+    If ``path`` is already relative, it is returned in POSIX form. If it
+    falls outside the repo root, the absolute POSIX path is returned
+    unchanged (callers should treat that as a sentinel and not wrap it in
+    a repo:// URI).
+    """
+    p = Path(path)
+    root = (repo_root or _default_repo_root()).resolve()
+    try:
+        candidate = p.resolve() if p.is_absolute() else (root / p).resolve()
+        return candidate.relative_to(root).as_posix()
+    except (OSError, ValueError):
+        return p.as_posix()
+
+
+def _default_repo_root() -> Path:
+    """Default repo root used when callers do not pass an explicit one."""
+    return Path(__file__).resolve().parents[2]
 
 # ----------------------------------------------------------------- canonical hashing
 
@@ -100,11 +164,24 @@ def compute_sha256(canonical: str) -> str:
 # ----------------------------------------------------------------- worktree ref
 
 
-def derive_sandbox_image_ref(worktree_path: Path | None) -> str | None:
-    """Return ``<worktree-path>@<head-sha>`` for a real worktree, else None.
+def derive_sandbox_image_ref(
+    worktree_path: Path | None, *, repo_name: str = REPO_NAME
+) -> str | None:
+    """Return a ``repo://<repo>@<sha>/`` URI for a real worktree, else None.
+
+    DEC-FACTORY-010 migrates the emitter from the legacy
+    ``<worktree-path>@<sha>`` form to the portable repo:// URI defined in
+    DEC-CDCP-014. The trailing slash is required by the grammar's
+    ``repo://<repo>@<sha>/<rel-path>`` shape; the relative path component
+    is empty because ``sandbox_image_ref`` points at the repo root.
 
     A ``None`` return tells the caller to omit ``sandbox_image_ref`` from
     the Run record entirely. The schema treats absence as "not derivable".
+
+    The ``<sha>`` recorded here is the worktree HEAD AT EMIT TIME. The
+    systemic off-by-one fix in DEC-FACTORY-010 means the pipeline writes
+    ``SANDBOX_PENDING_PLACEHOLDER`` instead and a post-commit step
+    rewrites the Run record after the sample-containing commit lands.
     """
     if worktree_path is None:
         return None
@@ -124,7 +201,52 @@ def derive_sandbox_image_ref(worktree_path: Path | None) -> str | None:
     head = result.stdout.strip()
     if result.returncode != 0 or not head:
         return None
-    return f"{worktree.as_posix()}@{head}"
+    return build_repo_uri(head, "", repo_name=repo_name)
+
+
+def resolve_uri(
+    uri: str, portfolio_root: Path | None = None
+) -> Path | None:
+    """Resolve a repo:// URI to a local filesystem path.
+
+    Returns:
+        - For ``repo://<repo>@<sha>/<path>``: ``portfolio_root/<repo>/<path>``.
+          The ``<sha>`` is advisory metadata; replay's HEAD-strict check
+          verifies it separately.
+        - For ``artifact://<repo>/<id>``: ``None``. Artifact URIs are
+          logical refs, not file paths.
+        - For anything else (legacy local path, malformed URI): the input
+          parsed as a ``Path``. Backward compatibility with pre-DEC-CDCP-014
+          run-evidence records keeps the validator and replay tolerant of
+          mixed-form ledgers during the migration window.
+    """
+    if portfolio_root is None:
+        portfolio_root = Path("e:/claude_code/random-apps")
+    match = _REPO_URI_RE.match(uri)
+    if match:
+        path = match.group("path")
+        return portfolio_root / match.group("repo") / path
+    if _ARTIFACT_URI_RE.match(uri):
+        return None
+    return Path(uri)
+
+
+def extract_repo_uri_sha(uri: str) -> str | None:
+    """Return the 40-char SHA from a ``repo://<repo>@<sha>/...`` URI.
+
+    Returns ``None`` for ``PENDING`` placeholders, ``artifact://`` URIs,
+    legacy ``<path>@<sha>`` refs, or malformed input. Callers that need
+    HEAD-strict verification use this to drive the comparison.
+    """
+    match = _REPO_URI_RE.match(uri)
+    if match:
+        return match.group("sha")
+    return None
+
+
+def is_repo_uri(uri: str) -> bool:
+    """Return True if ``uri`` matches the repo:// grammar (including PENDING)."""
+    return bool(_REPO_URI_RE.match(uri) or _REPO_URI_PENDING_RE.match(uri))
 
 
 # ----------------------------------------------------------------- schema cache loader

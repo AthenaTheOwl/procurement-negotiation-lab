@@ -189,4 +189,19 @@ def test_pipeline_dry_run_emits_run_evidence_files(
     assert summary["gates_passed"] == ["noop-gate"]
     assert summary["gates_failed"] == []
     assert run["spec_id"] == "specs/0009-factory/"
-    assert run["inputs"] == [{"kind": "task", "ref": "specs/0009-factory/"}]
+    # DEC-FACTORY-010: inputs[].ref is now a repo:// URI carrying the
+    # worktree-HEAD SHA. The test pipeline runs against a real worktree
+    # so the URI form lands; only fallback callers without a derivable
+    # SHA see the raw spec path.
+    assert len(run["inputs"]) == 1
+    input_ref = run["inputs"][0]["ref"]
+    assert run["inputs"][0]["kind"] == "task"
+    assert re.match(
+        r"^repo://procurement-negotiation-lab@[a-f0-9]{40}/.+",
+        input_ref,
+    ), f"expected repo:// URI, got {input_ref!r}"
+    # DEC-FACTORY-010: workspace_id is the repo name (an identifier, not a
+    # filesystem path), and sandbox_image_ref starts as a PENDING repo://
+    # URI so the post-commit finalize step can rewrite it.
+    assert run["workspace_id"] == "procurement-negotiation-lab"
+    assert run["sandbox_image_ref"] == "repo://procurement-negotiation-lab@PENDING/"

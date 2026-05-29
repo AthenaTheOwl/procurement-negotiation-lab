@@ -14,7 +14,11 @@ from pathlib import Path
 import pytest
 
 from procurement_lab.run_evidence import (
+    REPO_NAME,
+    SANDBOX_PENDING_PLACEHOLDER,
     aggregate_gate_results,
+    build_artifact_uri,
+    build_repo_uri,
     build_run_evidence_fields,
     canonicalize_prompt,
     canonicalize_tool_surface,
@@ -22,7 +26,10 @@ from procurement_lab.run_evidence import (
     derive_sandbox_image_ref,
     emit_event,
     emit_run,
+    extract_repo_uri_sha,
+    is_repo_uri,
     make_event,
+    resolve_uri,
 )
 
 
@@ -298,5 +305,79 @@ def test_derive_sandbox_image_ref_includes_head_sha_for_real_repo(
     )
     ref = derive_sandbox_image_ref(repo)
     assert ref is not None
-    assert ref.startswith(repo.as_posix() + "@")
-    assert re.match(r".+@[0-9a-f]{40}$", ref)
+    # Post-DEC-FACTORY-010: the emitter writes a repo:// URI pinned at the
+    # repo root (empty path component, trailing slash required by grammar).
+    assert ref.startswith(f"repo://{REPO_NAME}@")
+    assert re.match(
+        r"^repo://procurement-negotiation-lab@[0-9a-f]{40}/$", ref
+    )
+
+
+# ----------------------------------------------------------------- DEC-FACTORY-010 URI scheme tests
+
+
+def test_build_repo_uri_with_path() -> None:
+    sha = "a" * 40
+    uri = build_repo_uri(sha, "ops/factory-tasks/example.yaml")
+    assert uri == (
+        "repo://procurement-negotiation-lab@" + ("a" * 40)
+        + "/ops/factory-tasks/example.yaml"
+    )
+
+
+def test_build_repo_uri_empty_path_is_repo_root() -> None:
+    sha = "b" * 40
+    uri = build_repo_uri(sha, "")
+    assert uri == "repo://procurement-negotiation-lab@" + ("b" * 40) + "/"
+
+
+def test_build_repo_uri_rejects_short_sha() -> None:
+    with pytest.raises(ValueError):
+        build_repo_uri("abc", "anything")
+
+
+def test_build_artifact_uri_round_trip() -> None:
+    uri = build_artifact_uri("watchlist-packet@run-abc")
+    assert uri == "artifact://procurement-negotiation-lab/watchlist-packet@run-abc"
+
+
+def test_resolve_uri_repo_uri_returns_local_path() -> None:
+    sha = "c" * 40
+    uri = f"repo://procurement-negotiation-lab@{sha}/ops/factory-tasks/x.yaml"
+    portfolio = Path("e:/claude_code/random-apps")
+    resolved = resolve_uri(uri, portfolio)
+    assert resolved == (
+        portfolio / "procurement-negotiation-lab" / "ops" / "factory-tasks" / "x.yaml"
+    )
+
+
+def test_resolve_uri_artifact_uri_returns_none() -> None:
+    assert resolve_uri("artifact://procurement-negotiation-lab/anything") is None
+
+
+def test_resolve_uri_legacy_local_path_returns_path_as_is() -> None:
+    legacy = "E:/some/legacy/path.yaml"
+    assert resolve_uri(legacy) == Path(legacy)
+
+
+def test_resolve_uri_malformed_uri_returns_path_as_is() -> None:
+    # An invalid 30-char SHA does not match the repo URI regex.
+    bad = "repo://procurement-negotiation-lab@" + ("a" * 30) + "/x"
+    assert resolve_uri(bad) == Path(bad)
+
+
+def test_extract_repo_uri_sha_pulls_sha_from_uri() -> None:
+    sha = "d" * 40
+    uri = f"repo://procurement-negotiation-lab@{sha}/ops/x.yaml"
+    assert extract_repo_uri_sha(uri) == sha
+
+
+def test_extract_repo_uri_sha_returns_none_for_legacy_form() -> None:
+    legacy = "C:/some/path@" + ("e" * 40)
+    assert extract_repo_uri_sha(legacy) is None
+
+
+def test_is_repo_uri_accepts_pending_placeholder() -> None:
+    assert is_repo_uri(SANDBOX_PENDING_PLACEHOLDER)
+    assert is_repo_uri(f"repo://procurement-negotiation-lab@{'f' * 40}/")
+    assert not is_repo_uri("artifact://procurement-negotiation-lab/anything")
