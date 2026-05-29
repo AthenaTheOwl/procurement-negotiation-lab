@@ -1,4 +1,9 @@
-"""Pipeline end-to-end test in dry-run mode against a throwaway git repo."""
+"""Pipeline end-to-end test in dry-run mode against a throwaway git repo.
+
+Covers: R-FACTORY-003, R-FACTORY-RUN-EVIDENCE-001,
+R-FACTORY-RUN-EVIDENCE-002, R-FACTORY-RUN-EVIDENCE-015,
+R-FACTORY-RUN-EVIDENCE-016.
+"""
 
 from __future__ import annotations
 

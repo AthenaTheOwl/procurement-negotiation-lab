@@ -3,6 +3,9 @@
 Pattern: ChatGPT pulse Agents-SDK replay determinism, translated to our
 portfolio's run-evidence framing.
 
+Covers: R-FACTORY-RUN-EVIDENCE-023, R-FACTORY-RUN-EVIDENCE-024,
+R-FACTORY-RUN-EVIDENCE-025.
+
 The fixture replays the canonical sample run RERUNS times (default 3) at
 the recorded sandbox SHA and asserts that every replay produces an
 identical canonicalized hash over the three replay-equivalence fields:

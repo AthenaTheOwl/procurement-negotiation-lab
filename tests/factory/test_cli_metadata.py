@@ -1,4 +1,7 @@
-"""CLI metadata extraction tests for real/synthetic run correlation."""
+"""CLI metadata extraction tests for real/synthetic run correlation.
+
+Covers: R-FACTORY-004, R-FACTORY-RUN-EVIDENCE-026.
+"""
 
 from __future__ import annotations
 

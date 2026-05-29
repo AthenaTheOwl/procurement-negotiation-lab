@@ -3,6 +3,10 @@
 These tests cover the emitter module in isolation. The pipeline-level
 integration test that exercises ``emit_event`` + ``emit_run`` end-to-end
 lives in ``test_pipeline.py``.
+
+Covers: R-FACTORY-RUN-EVIDENCE-001, R-FACTORY-RUN-EVIDENCE-002,
+R-FACTORY-RUN-EVIDENCE-003, R-FACTORY-RUN-EVIDENCE-004,
+R-FACTORY-RUN-EVIDENCE-005, R-FACTORY-RUN-EVIDENCE-006.
 """
 
 from __future__ import annotations
@@ -317,6 +321,10 @@ def test_derive_sandbox_image_ref_includes_head_sha_for_real_repo(
 
 
 def test_build_repo_uri_with_path() -> None:
+    """Build a repo:// URI with a SHA + relative path.
+
+    Covers: R-FACTORY-RUN-EVIDENCE-015, R-FACTORY-RUN-EVIDENCE-016.
+    """
     sha = "a" * 40
     uri = build_repo_uri(sha, "ops/factory-tasks/example.yaml")
     assert uri == (
@@ -342,6 +350,10 @@ def test_build_artifact_uri_round_trip() -> None:
 
 
 def test_resolve_uri_repo_uri_returns_local_path() -> None:
+    """Resolve a repo:// URI to its on-disk path under the portfolio root.
+
+    Covers: R-FACTORY-RUN-EVIDENCE-017, R-FACTORY-RUN-EVIDENCE-018.
+    """
     sha = "c" * 40
     uri = f"repo://procurement-negotiation-lab@{sha}/ops/factory-tasks/x.yaml"
     portfolio = Path("e:/claude_code/random-apps")
