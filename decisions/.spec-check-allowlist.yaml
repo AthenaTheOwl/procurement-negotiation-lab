@@ -177,6 +177,16 @@ deferred:
   - id: R-FACTORY-RUN-EVIDENCE-018
     note: covered collectively by DEC-FACTORY-010-procurement-lab-portable-repo-uri-migration
 
+  # R-FACTORY-RUN-EVIDENCE-019 is resolved by DEC-FACTORY-011 directly.
+  # R-FACTORY-RUN-EVIDENCE-020..022 are resolved collectively by the same
+  # DEC-FACTORY-011; the DEC's `## coverage` section enumerates them.
+  - id: R-FACTORY-RUN-EVIDENCE-020
+    note: covered collectively by DEC-FACTORY-011-procurement-negotiation-lab-ci-enforces-run-evidence-chain
+  - id: R-FACTORY-RUN-EVIDENCE-021
+    note: covered collectively by DEC-FACTORY-011-procurement-negotiation-lab-ci-enforces-run-evidence-chain
+  - id: R-FACTORY-RUN-EVIDENCE-022
+    note: covered collectively by DEC-FACTORY-011-procurement-negotiation-lab-ci-enforces-run-evidence-chain
+
   # R-LEARN-* — spec 0010 pedagogical redesign.
   - id: R-LEARN-001
     note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending

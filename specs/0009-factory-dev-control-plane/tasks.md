@@ -137,6 +137,37 @@
   the committed sample by glob and handle both URI forms.
   *(R-FACTORY-RUN-EVIDENCE-015..018)*
 
+## Pass J - CI enforcement of run-evidence chain (DEC-FACTORY-011)
+
+- [x] **J1**: Add `.github/workflows/run-evidence-gates.yml` with
+  `on: pull_request` and `on: push: branches: [main]` triggers,
+  `runs-on: ubuntu-latest`, and Python 3.11 setup.
+  *(R-FACTORY-RUN-EVIDENCE-019)*
+- [x] **J2**: Wire the product-side gates locked by DEC-CDCP-015:
+  sibling checkout of `AthenaTheOwl/trace-to-eval-harness`,
+  `pip install -e ".[dev]"` against the sibling, packet generation
+  from the canonical event ledger via
+  `python -m trace_to_eval evidence from-cdcp-events ... --portfolio-root`,
+  and packet validation via
+  `python -m trace_to_eval evidence validate /tmp/packet.json`.
+  *(R-FACTORY-RUN-EVIDENCE-020)*
+- [x] **J3**: Wire replay smoke: save the HEAD-finalized Run record
+  to a tmp path, extract the sandbox SHA via
+  `jq -r .sandbox_image_ref ... | sed -E ...`, check the recorded
+  SHA out (with `fetch-depth: 0` on the initial checkout), restore
+  the finalized Run record into the worktree, and run
+  `python scripts/replay_run.py --run-id run-7b662d3f68b1`.
+  *(R-FACTORY-RUN-EVIDENCE-021)*
+- [x] **J4**: Confirm no contract gate carries
+  `continue-on-error: true`, no `if: ${{ failure() }}` shape, no
+  `paths:`/`paths-ignore:` trigger filter, and no `--no-verify`
+  bypass anywhere in the workflow.
+  *(R-FACTORY-RUN-EVIDENCE-022)*
+- [x] **J5**: Register the new workflow in
+  `scripts/spec_check.py::REQUIRED_WORKFLOW_PROOFS` so a missing or
+  renamed workflow file fails spec-check.
+  *(R-FACTORY-RUN-EVIDENCE-019..022)*
+
 ## Spec discipline
 
 - [x] **S1**: Register the spec in `specs/README.md`. *(R-SPEC-009)*
