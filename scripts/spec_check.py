@@ -96,6 +96,9 @@ REQUIRED_WORKFLOW_PROOFS = {
         "scripts/replay_run.py",
         "fetch-depth: 0",
         "run-7b662d3f68b1",
+        "replay-determinism",
+        "tests/factory/test_replay_determinism.py",
+        "RERUNS",
     ],
 }
 

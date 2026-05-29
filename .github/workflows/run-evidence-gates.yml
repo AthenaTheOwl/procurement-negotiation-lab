@@ -111,3 +111,40 @@ jobs:
         working-directory: procurement-negotiation-lab
         run: |
           python scripts/replay_run.py --run-id ${CANONICAL_SAMPLE}
+
+  replay-determinism:
+    name: replay determinism (canonical sample)
+    runs-on: ubuntu-latest
+    # The determinism fixture replays the canonical sample RERUNS
+    # times (default 3) and asserts the three replay-equivalence
+    # fields hash to the same value on every replay. Catches drift
+    # in prompts, tool schemas, or gate sets between nominally-
+    # identical runs. Independent job: contract gate, no
+    # continue-on-error.
+    steps:
+      - name: Check out procurement-negotiation-lab
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync project (Python 3.11)
+        run: uv sync --python 3.11
+
+      - name: Install replay-determinism test deps
+        run: uv pip install "jsonschema>=4.21" "pyyaml>=6.0"
+
+      - name: Replay determinism fixture
+        env:
+          RERUNS: "3"
+        run: uv run pytest tests/factory/test_replay_determinism.py -v --no-cov
+
+      - name: Upload failure bundle on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: replay-determinism-failbundle
+          path: artifacts/failbundles/
+          if-no-files-found: ignore
