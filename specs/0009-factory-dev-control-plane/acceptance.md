@@ -181,5 +181,5 @@
 - `npm.cmd test -- --run`
 - `python scripts/spec_check.py`
 - `python scripts/validate_run_evidence.py`
-- `python scripts/replay_run.py --run-id run-16a7bf515611`
+- `python scripts/replay_run.py --run-id run-7b662d3f68b1`
 - Browser QA not applicable to this CLI-only spec.
