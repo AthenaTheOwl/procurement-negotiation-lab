@@ -557,6 +557,89 @@ Acceptance:
 - `artifacts/failbundles/` is listed in `.gitignore` so the
   bundle never ships as committed evidence.
 
+### R-FACTORY-RUN-EVIDENCE-026: WorkerResult metadata addendum-6 contract keys
+
+WHEN the factory runs any worker (real CLI, dry-run stub, or
+fallback stub), THE SYSTEM SHALL populate
+`WorkerResult.metadata` with the six addendum-6 contract keys:
+`thread_id`, `run_id`, `model`, `duration_ms`, `tokens_input`, and
+`tokens_output`. Missing IDs MUST synthesize as
+`<label>-cli-<uuid12>` and `<label>-run-<uuid12>` so downstream
+evidence emission never has to guard on a `None` ID.
+
+Acceptance:
+- `scripts/factory/workers.py::WorkerResult.metadata` carries the
+  six keys on every successful and failed invocation, including the
+  no-CLI-on-PATH branch.
+- The dataclass signature stays `metadata: dict[str, Any]` so the
+  change is a populated-keys contract, not a typed field set.
+- Typed accessors `WorkerResult.model`, `WorkerResult.duration_ms`,
+  `WorkerResult.tokens_input`, `WorkerResult.tokens_output` return
+  `None` for missing keys and a concrete value when present.
+- Tests
+  `test_stub_worker_metadata_carries_addendum6_keys`,
+  `test_worker_result_accessors_handle_missing_metadata`,
+  `test_claude_worker_missing_cli_still_populates_thread_id`,
+  `test_codex_worker_missing_cli_still_populates_thread_id`
+  cover the contract.
+
+### R-FACTORY-RUN-EVIDENCE-027: CLI workers prefer structured output
+
+WHEN `ClaudeCodeWorker` or `CodexWorker` runs, THE SYSTEM SHALL
+try `--output-format json` first so the real CLI emits a structured
+payload the factory can parse for IDs and token counts. WHEN the
+installed CLI rejects the flag (detected via stderr substring match
+on `unknown option` / `unrecognized option` / `invalid option`
+coupled with the literal `--output-format`), THE SYSTEM SHALL fall
+back to the plain `--print` / `exec` form so older CLIs keep
+working. `StubWorker` MUST accept a `seed` parameter so
+synthesized IDs are deterministic for tests.
+
+Acceptance:
+- `ClaudeCodeWorker.run` issues `claude --print --output-format
+  json "<prompt>"` first and falls back to `claude --print
+  "<prompt>"` on a detected unsupported-flag stderr.
+- `CodexWorker.run` issues `codex exec --output-format json
+  "<prompt>"` first and falls back to `codex exec "<prompt>"` on
+  the same stderr pattern.
+- The token-count extractor parses both Anthropic
+  (`input_tokens`/`output_tokens`) and OpenAI
+  (`prompt_tokens`/`completion_tokens`) flavours under a top-level
+  `usage` or nested `response.usage`/`message.usage` path.
+- `StubWorker(seed="x")` produces identical `thread_id` and
+  `run_id` across invocations.
+- Tests
+  `test_extract_json_ids_captures_anthropic_usage_block`,
+  `test_extract_json_ids_captures_openai_usage_block`,
+  `test_extract_json_ids_captures_nested_response_usage`,
+  `test_looks_like_unsupported_flag_recognizes_common_phrasings`,
+  `test_stub_worker_seeded_ids_are_deterministic` cover the
+  contract.
+
+### R-FACTORY-RUN-EVIDENCE-028: replay ledger filenames use microsecond resolution
+
+WHEN `scripts/replay_run.py` writes a per-replay ledger filename,
+THE SYSTEM SHALL use a microsecond-resolution timestamp so two
+back-to-back replays inside the same wall-clock second never
+collide on the filename. The format string MUST be
+`f"{now:%Y-%m-%dT%H-%M-%S}.{now.microsecond:06d}Z"` built from a
+single `datetime.now(UTC)` call so the seconds and microseconds
+are atomic.
+
+Acceptance:
+- `scripts/replay_run.py::_now_iso_filename` returns a string
+  matching the regex `^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{6}Z$`.
+- Existing glob patterns in
+  `tests/factory/test_replay_run.py` and
+  `tests/factory/test_replay_determinism.py` use
+  `replay-{run_id}-*.jsonl` so the format change is transparent.
+- The committed pre-fix ledger filename
+  `replay-run-16a7bf515611-2026-05-28T12-23-12Z.jsonl` remains
+  valid (the glob accepts both shapes).
+- Test `test_now_iso_filename_is_microsecond_resolution` locks the
+  format contract and verifies five back-to-back calls separated
+  by a 1 ms sleep never collide.
+
 ### R-SPEC-009: spec discipline
 
 Standard.

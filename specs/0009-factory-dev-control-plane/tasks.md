@@ -200,6 +200,54 @@
   renamed job fails spec-check.
   *(R-FACTORY-RUN-EVIDENCE-023..025)*
 
+## Pass L - addendum-6 emission slice + replay timestamp fix (DEC-FACTORY-013)
+
+- [x] **L1**: Extend `WorkerResult.metadata` in
+  `scripts/factory/workers.py` so every worker invocation (real or
+  stub) carries the six addendum-6 contract keys (`thread_id`,
+  `run_id`, `model`, `duration_ms`, `tokens_input`,
+  `tokens_output`). The dataclass signature stays
+  `metadata: dict[str, Any]`; the contract is which keys MUST be
+  populated. Synthesize missing IDs as `<label>-cli-<uuid12>` and
+  `<label>-run-<uuid12>` in `_run_cli` and the missing-CLI branches
+  of `ClaudeCodeWorker.run` / `CodexWorker.run`. Add typed
+  accessors for `model`, `duration_ms`, `tokens_input`,
+  `tokens_output` that return `None` for missing keys.
+  *(R-FACTORY-RUN-EVIDENCE-026)*
+- [x] **L2**: Update `ClaudeCodeWorker.run` and `CodexWorker.run`
+  to try `--output-format json` first and fall back to plain
+  `--print` / `exec` when the installed CLI rejects the flag
+  (detected via `_looks_like_unsupported_flag` matching common
+  stderr phrasings against the literal `--output-format`). Extend
+  `_extract_json_ids` to parse Anthropic and OpenAI usage-block
+  flavours under top-level `usage` plus nested `response.usage` /
+  `message.usage` paths. `StubWorker` pins `tokens_input` and
+  `tokens_output` to 0 so dry-run metadata carries concrete ints.
+  *(R-FACTORY-RUN-EVIDENCE-027)*
+- [x] **L3**: Switch
+  `scripts/replay_run.py::_now_iso_filename` to microsecond
+  resolution
+  (`f"{now:%Y-%m-%dT%H-%M-%S}.{now.microsecond:06d}Z"`) built from
+  a single `datetime.now(UTC)` call so two back-to-back replays
+  inside the same wall-clock second never collide on the ledger
+  filename. Existing glob patterns in
+  `tests/factory/test_replay_run.py` and
+  `tests/factory/test_replay_determinism.py` use
+  `replay-{run_id}-*.jsonl` so the format change is transparent.
+  *(R-FACTORY-RUN-EVIDENCE-028)*
+- [x] **L4**: Cover the contract with new tests:
+  `test_stub_worker_metadata_carries_addendum6_keys`,
+  `test_stub_worker_seeded_ids_are_deterministic`,
+  `test_worker_result_accessors_handle_missing_metadata`,
+  `test_claude_worker_missing_cli_still_populates_thread_id`,
+  `test_codex_worker_missing_cli_still_populates_thread_id`,
+  `test_extract_json_ids_captures_anthropic_usage_block`,
+  `test_extract_json_ids_captures_openai_usage_block`,
+  `test_extract_json_ids_captures_nested_response_usage`,
+  `test_looks_like_unsupported_flag_recognizes_common_phrasings`,
+  `test_now_iso_filename_is_microsecond_resolution`.
+  *(R-FACTORY-RUN-EVIDENCE-026..028)*
+
 ## Spec discipline
 
 - [x] **S1**: Register the spec in `specs/README.md`. *(R-SPEC-009)*
