@@ -89,17 +89,25 @@ def _retarget_sandbox_sha(run: dict[str, Any], sha: str) -> dict[str, Any]:
 
     Lets the positive test exercise the HEAD-strict gate without requiring
     the suite to be run at the exact commit the committed sample was
-    produced from.
+    produced from. Handles both the DEC-FACTORY-010 repo:// URI form and
+    the legacy ``<path>@<sha>`` form so the fixture works across the
+    migration window.
     """
     sandbox = run.get("sandbox_image_ref")
     if not isinstance(sandbox, str) or "@" not in sandbox:
         raise AssertionError(
             "fixture run record must have a sandbox_image_ref in "
-            "<worktree>@<sha> form"
+            "repo://<repo>@<sha>/ or <worktree>@<sha> form"
         )
-    prefix = sandbox.split("@", 1)[0]
     fresh = dict(run)
-    fresh["sandbox_image_ref"] = f"{prefix}@{sha}"
+    if sandbox.startswith("repo://"):
+        # repo://<repo>@<sha>/<path> -> swap <sha>, preserve <path>.
+        prefix, _, rest = sandbox.partition("@")
+        _, _, tail = rest.partition("/")
+        fresh["sandbox_image_ref"] = f"{prefix}@{sha}/{tail}"
+    else:
+        prefix = sandbox.split("@", 1)[0]
+        fresh["sandbox_image_ref"] = f"{prefix}@{sha}"
     return fresh
 
 

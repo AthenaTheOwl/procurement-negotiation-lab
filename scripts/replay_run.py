@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import uuid
@@ -55,6 +56,30 @@ ROOT = Path(__file__).resolve().parents[1]
 RUN_RECORDS_DIR = ROOT / "ops" / "run-records"
 EVENT_LEDGER_DIR = ROOT / "ops" / "event-ledger"
 REPLAY_RECORDS_DIR = ROOT / "ops" / "replay-records"
+
+# DEC-CDCP-014 + DEC-FACTORY-010 portable URI grammar. Same definitions as
+# validate_run_evidence.resolve_uri so the two consumers stay in lockstep.
+_REPO_URI_RE = re.compile(
+    r"^repo://(?P<repo>[a-z][a-z0-9-]*)@(?P<sha>[a-f0-9]{40})/(?P<path>.*)$"
+)
+_ARTIFACT_URI_RE = re.compile(
+    r"^artifact://(?P<repo>[a-z][a-z0-9-]*)/(?P<id>.+)$"
+)
+_DEFAULT_PORTFOLIO_ROOT = Path("e:/claude_code/random-apps")
+
+
+def resolve_uri(
+    uri: str, portfolio_root: Path | None = None
+) -> Path | None:
+    """Resolve a repo:// URI to a local path; see validate_run_evidence."""
+    if portfolio_root is None:
+        portfolio_root = _DEFAULT_PORTFOLIO_ROOT
+    match = _REPO_URI_RE.match(uri)
+    if match:
+        return portfolio_root / match.group("repo") / match.group("path")
+    if _ARTIFACT_URI_RE.match(uri):
+        return None
+    return Path(uri)
 
 # Replay framing per DEC-FACTORY-009: factory dry-run is deterministic with
 # stub workers, but the pipeline shape is "an LLM pipeline" so the canonical
@@ -120,19 +145,54 @@ def _load_ledger(run_id: str) -> list[dict[str, Any]]:
 
 
 def _extract_recorded_sha(run: dict[str, Any]) -> str:
-    """Pull the SHA suffix off ``sandbox_image_ref``.
+    """Pull the recorded 40-char SHA off ``sandbox_image_ref``.
 
-    The factory format is ``<worktree-path>@<sha>``; missing or malformed
-    refs are a hard error because the script cannot verify HEAD identity
-    without one.
+    Two forms are accepted during the DEC-FACTORY-010 migration window:
+
+    1. The portable URI form ``repo://<repo>@<sha>/[<path>]``. This is
+       what the post-DEC-FACTORY-010 emitter writes. The SHA is parsed
+       via the URI regex's named ``sha`` group so a missing trailing
+       slash or extra path component does not break extraction.
+    2. The legacy form ``<worktree-path>@<sha>``. Records written before
+       DEC-FACTORY-010 carry this shape; we keep the parser tolerant so
+       a `git checkout` to a historical commit can still drive replay.
+
+    A ``PENDING`` placeholder (emitted by the pipeline before
+    ``scripts/finalize_sandbox_ref.py`` runs) is a hard error because
+    the HEAD-strict check cannot proceed without a real SHA.
+
+    Missing, malformed, or PENDING refs raise SystemExit so the caller
+    sees a clear actionable message.
     """
     sandbox = run.get("sandbox_image_ref")
-    if not isinstance(sandbox, str) or "@" not in sandbox:
+    if not isinstance(sandbox, str) or not sandbox:
         raise SystemExit(
-            "replay_run: Run record has no sandbox_image_ref "
-            "in <worktree>@<sha> form; cannot verify HEAD"
+            "replay_run: Run record has no sandbox_image_ref; "
+            "cannot verify HEAD"
         )
-    sha = sandbox.rsplit("@", 1)[-1].strip()
+
+    # URI form. The regex enforces a 40-char hex SHA so a malformed URI
+    # falls through to the legacy parser.
+    uri_match = _REPO_URI_RE.match(sandbox)
+    if uri_match:
+        return uri_match.group("sha")
+
+    # PENDING placeholder — emitter wrote it, finalize step has not run.
+    if "@PENDING" in sandbox:
+        raise SystemExit(
+            "replay_run: sandbox_image_ref is still PENDING; run "
+            "scripts/finalize_sandbox_ref.py --run-id <id> after the "
+            "regeneration commit lands so the SHA can be recorded."
+        )
+
+    # Legacy ``<worktree-path>@<sha>`` form (pre-DEC-FACTORY-010).
+    if "@" not in sandbox:
+        raise SystemExit(
+            "replay_run: Run record has no sandbox_image_ref in "
+            "repo://<repo>@<sha>/ or <worktree>@<sha> form; cannot "
+            "verify HEAD"
+        )
+    sha = sandbox.rsplit("@", 1)[-1].strip().rstrip("/")
     if not sha:
         raise SystemExit(
             "replay_run: sandbox_image_ref carries an empty SHA suffix"
@@ -173,7 +233,12 @@ def _verify_head(recorded_sha: str) -> None:
 
 
 def _extract_recorded_task_path(run: dict[str, Any]) -> str:
-    """Pull the task YAML path off ``Run.inputs[]``."""
+    """Pull the task YAML path off ``Run.inputs[]``.
+
+    Accepts both repo:// URIs (post-DEC-FACTORY-010) and legacy local
+    paths. URI refs are resolved against the configured portfolio root
+    so the factory subprocess receives a filesystem path it can open.
+    """
     inputs = run.get("inputs")
     if not isinstance(inputs, list):
         raise SystemExit("replay_run: Run.inputs is missing or not a list")
@@ -181,7 +246,13 @@ def _extract_recorded_task_path(run: dict[str, Any]) -> str:
         if isinstance(entry, dict) and entry.get("kind") == "task":
             ref = entry.get("ref")
             if isinstance(ref, str) and ref:
-                return ref
+                resolved = resolve_uri(ref)
+                if resolved is None:
+                    raise SystemExit(
+                        f"replay_run: Run.inputs[].ref={ref!r} resolves to "
+                        f"None (artifact URIs are not file paths)"
+                    )
+                return str(resolved)
     raise SystemExit(
         "replay_run: Run.inputs contains no entry with kind == 'task'"
     )
