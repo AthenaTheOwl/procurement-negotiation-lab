@@ -388,6 +388,98 @@ Acceptance:
 - The replay HEAD-strict check is satisfiable on first emit (no
   manual SHA backfill required).
 
+### R-FACTORY-RUN-EVIDENCE-019: CI workflow enforces run-evidence gate chain
+
+WHEN code lands on `main` or in a pull request, THE SYSTEM SHALL run
+a CI workflow at `.github/workflows/run-evidence-gates.yml` that
+triggers on every `pull_request` event and every `push` to `main`.
+The workflow runs on `ubuntu-latest` under Python 3.11 and produces
+a red build whenever any contract gate fails.
+
+Acceptance:
+- The file `.github/workflows/run-evidence-gates.yml` exists and
+  carries `on: pull_request` and `on: push: branches: [main]`
+  triggers.
+- The workflow runs on `ubuntu-latest` and sets up Python 3.11.
+- The workflow is referenced from `scripts/spec_check.py`'s
+  `REQUIRED_WORKFLOW_PROOFS` so a missing or renamed workflow file
+  fails spec-check.
+
+### R-FACTORY-RUN-EVIDENCE-020: CI enforces the DEC-CDCP-015 product gates
+
+WHEN the `run-evidence-gates` workflow runs, THE SYSTEM SHALL execute
+the product-side gates locked by athena-site DEC-CDCP-015:
+
+1. `packet-generation-from-canonical-sample`: check out
+   `trace-to-eval-harness` as a sibling at
+   `${{ github.workspace }}/trace-to-eval-harness`, pip-install it,
+   and run `python -m trace_to_eval evidence from-cdcp-events
+   ops/event-ledger/run-7b662d3f68b1.jsonl --out /tmp/packet.json
+   --portfolio-root ${{ github.workspace }}`. Exit 0 required.
+2. `packet-validation`: `python -m trace_to_eval evidence validate
+   /tmp/packet.json`. Exit 0 required.
+3. `replay-smoke`: see R-FACTORY-RUN-EVIDENCE-021.
+
+Acceptance:
+- The workflow's step list includes a `Packet generation from
+  canonical sample` step, a `Packet validation` step, and a
+  `Replay smoke (canonical sample)` step.
+- The sibling checkout uses `actions/checkout@v4` with
+  `repository: AthenaTheOwl/trace-to-eval-harness` and
+  `path: trace-to-eval-harness`.
+- The packet generation step passes
+  `--portfolio-root "${{ github.workspace }}"` so trace-to-eval can
+  resolve sibling `repo://` URIs.
+
+### R-FACTORY-RUN-EVIDENCE-021: CI replay smoke checks out recorded sandbox SHA
+
+WHEN the `run-evidence-gates` workflow reaches the replay-smoke gate,
+THE SYSTEM SHALL:
+
+1. Save the HEAD-finalized canonical Run record at
+   `ops/run-records/run-7b662d3f68b1.json` to `/tmp/run-record-finalized.json`.
+2. Extract the 40-char sandbox SHA from the Run record's
+   `sandbox_image_ref` repo:// URI via `jq -r .sandbox_image_ref ...`
+   piped through a `sed -E 's|^repo://[^@]+@([a-f0-9]{40})/.*|\1|'`
+   regex; a missing or malformed SHA exits the gate red.
+3. Run `git checkout <sandbox-sha>` against the
+   procurement-negotiation-lab worktree (requires `fetch-depth: 0`
+   on the initial checkout).
+4. Restore the finalized Run record into the worktree by copying
+   `/tmp/run-record-finalized.json` back to
+   `ops/run-records/run-7b662d3f68b1.json` (the recorded SHA is the
+   PENDING-emit commit per the DEC-FACTORY-010 two-pass flow).
+5. Run `python scripts/replay_run.py --run-id run-7b662d3f68b1`.
+   Exit 0 (replay_equivalent: true) required.
+
+Acceptance:
+- The workflow's checkout step carries `fetch-depth: 0`.
+- The Extract sandbox SHA step exits non-zero when the extraction
+  regex does not match a 40-char hex SHA.
+- The Restore finalized Run record step runs after the recorded-SHA
+  checkout and before the replay step.
+- The replay step's success criterion is `replay_equivalent: true`
+  (exit 0 from `scripts/replay_run.py`).
+
+### R-FACTORY-RUN-EVIDENCE-022: no continue-on-error on contract gates
+
+WHEN any step in `.github/workflows/run-evidence-gates.yml`
+implements a contract gate locked by DEC-CDCP-015, THE SYSTEM SHALL
+require that step to be blocking: no `continue-on-error: true`,
+no `if: ${{ failure() }}` informational-only shape, no path filter
+that hides a real failure, and no `--no-verify` bypass anywhere in
+the workflow.
+
+Acceptance:
+- The workflow file does not carry the literal
+  `continue-on-error: true` on any step.
+- The workflow file does not carry `if: ${{ failure() }}` on any
+  contract gate step.
+- The workflow file does not carry a `paths:` or `paths-ignore:`
+  filter on its triggers (the gates run on every pull_request and
+  every push to main without exception).
+- No step invokes `git commit --no-verify` or any equivalent bypass.
+
 ### R-SPEC-009: spec discipline
 
 Standard.
