@@ -30,3 +30,6 @@ ops/event-ledger/.test-*
 ops/event-ledger/.scratch-*
 ops/run-records/.test-*
 ops/run-records/.scratch-*
+
+# Replay-determinism failure bundles (written only when the test fails).
+artifacts/failbundles/
