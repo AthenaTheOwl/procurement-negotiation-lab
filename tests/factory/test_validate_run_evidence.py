@@ -10,6 +10,9 @@ The DEC-FACTORY-008 cross-check pass is exercised by a family of
 negative tests: each one starts from the well-formed baseline produced
 by ``_baseline_done_run_with_ledger`` and mutates a single field so the
 specific check fires.
+
+Covers: R-FACTORY-RUN-EVIDENCE-007, R-FACTORY-RUN-EVIDENCE-008,
+R-FACTORY-RUN-EVIDENCE-009, R-FACTORY-RUN-EVIDENCE-010.
 """
 
 from __future__ import annotations
@@ -173,6 +176,10 @@ def test_validator_exits_zero_on_empty_dirs(validator):  # type: ignore[no-untyp
 
 
 def test_resolve_uri_repo_uri_returns_local_path(validator):  # type: ignore[no-untyped-def]
+    """Validator's resolve_uri rewrites a repo:// URI to a local path.
+
+    Covers: R-FACTORY-RUN-EVIDENCE-017, R-FACTORY-RUN-EVIDENCE-018.
+    """
     module, _, _ = validator
     sha = "a" * 40
     uri = f"repo://procurement-negotiation-lab@{sha}/ops/factory-tasks/x.yaml"

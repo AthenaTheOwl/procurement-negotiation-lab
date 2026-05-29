@@ -1,4 +1,7 @@
-"""Spec-to-factory task expansion tests."""
+"""Spec-to-factory task expansion tests.
+
+Covers: R-FACTORY-002.
+"""
 
 from __future__ import annotations
 

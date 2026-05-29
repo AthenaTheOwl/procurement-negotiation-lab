@@ -8,6 +8,9 @@ validator's module-level path constants at the temp dir, then asserts
 ``validate_run_evidence.main()`` exits non-zero and that stderr names the
 specific check that fired.
 
+Covers: R-FACTORY-RUN-EVIDENCE-029, R-FACTORY-RUN-EVIDENCE-030,
+R-FACTORY-RUN-EVIDENCE-031.
+
 The committed canonical sample is the unmodified positive baseline. A
 ``test_canonical_sample_validates_clean`` guard runs first so a real
 regression in the sample surfaces as a sample bug, not a chaos-test

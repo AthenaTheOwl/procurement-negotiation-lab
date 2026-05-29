@@ -1,4 +1,7 @@
-"""MCP-compatible factory server tests."""
+"""MCP-compatible factory server tests.
+
+Covers: R-FACTORY-001.
+"""
 
 from __future__ import annotations
 

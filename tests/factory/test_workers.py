@@ -1,4 +1,7 @@
-"""Worker tests. Real CLIs aren't required; we exercise stub + registry fallback."""
+"""Worker tests. Real CLIs aren't required; we exercise stub + registry fallback.
+
+Covers: R-FACTORY-004, R-FACTORY-RUN-EVIDENCE-026.
+"""
 
 from __future__ import annotations
 

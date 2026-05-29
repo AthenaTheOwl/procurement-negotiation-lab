@@ -1,4 +1,7 @@
-"""Router tests for multi-task factory execution."""
+"""Router tests for multi-task factory execution.
+
+Covers: R-FACTORY-005.
+"""
 
 from __future__ import annotations
 

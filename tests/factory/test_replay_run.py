@@ -9,6 +9,9 @@ Tests follow the same module-reload + path-redirect pattern that
 ``test_validate_run_evidence.py`` uses so the script's hard-coded
 ``ops/`` directories can point at fixture data for the duration of one
 test.
+
+Covers: R-FACTORY-RUN-EVIDENCE-011, R-FACTORY-RUN-EVIDENCE-012,
+R-FACTORY-RUN-EVIDENCE-013, R-FACTORY-RUN-EVIDENCE-014.
 """
 
 from __future__ import annotations
@@ -287,6 +290,8 @@ def test_now_iso_filename_is_microsecond_resolution(replay_module) -> None:  # t
 
     The Workflow B-Recovery audit flagged this as the determinism test's
     latent dependency on a second boundary crossing during CI setup.
+
+    Covers: R-FACTORY-RUN-EVIDENCE-027, R-FACTORY-RUN-EVIDENCE-028.
     """
     module, _, _, _ = replay_module
     import re as _re
