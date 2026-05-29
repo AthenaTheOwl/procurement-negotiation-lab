@@ -248,6 +248,48 @@
   `test_now_iso_filename_is_microsecond_resolution`.
   *(R-FACTORY-RUN-EVIDENCE-026..028)*
 
+## Pass M - chaos test suite (DEC-FACTORY-014)
+
+- [x] **M1**: Add `tests/factory/test_chaos_run_evidence.py`. The
+  suite defines `test_canonical_sample_validates_clean` as a
+  positive guard plus seven mutation tests (M1..M7) that copy the
+  canonical sample `run-7b662d3f68b1` into `tmp_path`, apply one
+  targeted mutation each, point the validator's
+  `EVENT_LEDGER_DIR` and `RUN_RECORDS_DIR` constants at the temp
+  dir via `monkeypatch.setattr`, and assert
+  `validate_run_evidence.main()` exits non-zero with stderr
+  naming the specific check. The committed canonical sample on
+  disk is never written.
+  *(R-FACTORY-RUN-EVIDENCE-029, R-FACTORY-RUN-EVIDENCE-030)*
+- [x] **M2**: Cover the seven mutation classes one per test:
+  M1 `Run.prompt_snapshot_hash` mutated to a different valid
+  hash (cross-check #1); M2 `Run.tool_schemas_snapshot_hash`
+  mutated (cross-check #2); M3 phantom gate name in
+  `Run.gate_results_summary.gates_passed` (cross-check #4);
+  M4 terminal `gate.run.evidence_recorded` event removed from
+  the ledger (required-event check); M5 `pipeline.start` event
+  payload drops `prompt_snapshot_hash` (Round 2's oneOf
+  discriminator); M6 `gate.run.evidence_recorded.payload
+  .fields_populated` claims an unpopulated field (cross-check
+  #3); M7 done Run drops `sandbox_image_ref` (required-for-done
+  check).
+  *(R-FACTORY-RUN-EVIDENCE-029, R-FACTORY-RUN-EVIDENCE-030)*
+- [x] **M3**: Add a `chaos-validation` job to
+  `.github/workflows/run-evidence-gates.yml` that checks out the
+  repo, syncs the project under `uv`, installs the chaos test
+  deps, and runs
+  `uv run pytest tests/factory/test_chaos_run_evidence.py -v
+  --no-cov`. The job carries no `continue-on-error: true` and
+  no `if: ${{ failure() }}` informational shape.
+  *(R-FACTORY-RUN-EVIDENCE-031)*
+- [x] **M4**: Register the chaos job proof tokens
+  (`chaos-validation`,
+  `tests/factory/test_chaos_run_evidence.py`) in
+  `scripts/spec_check.py::REQUIRED_WORKFLOW_PROOFS` for
+  `.github/workflows/run-evidence-gates.yml` so a renamed or
+  deleted job fails spec-check.
+  *(R-FACTORY-RUN-EVIDENCE-029..031)*
+
 ## Spec discipline
 
 - [x] **S1**: Register the spec in `specs/README.md`. *(R-SPEC-009)*
