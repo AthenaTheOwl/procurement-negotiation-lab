@@ -1,0 +1,75 @@
+# dream-job meta record, audit trail for the 2026-W22 weekly pass.
+# Pairs with report.md (narrative) and candidates/ (typed proposals).
+# Subject: retrospect on the v2 engineering-grade run-evidence rollout
+# (Rounds 1-8 + Workflows A/B) and project highest-leverage next moves.
+
+week: 2026-W22
+generated_at: 2026-05-29T18:00:00Z
+generated_by: learning.dream-orchestrator
+lookback_days: 7
+window_start: 2026-05-22
+window_end: 2026-05-29
+
+scope_sources:
+  - kind: git
+    ref: "git log --since=2026-05-22 --pretty='%h %s' (~30 commits)"
+  - kind: doc
+    ref: decisions/DEC-FACTORY-007-factory-emits-conformant-run-evidence.md
+  - kind: doc
+    ref: decisions/DEC-FACTORY-008-factory-run-evidence-cross-checks.md
+  - kind: doc
+    ref: decisions/DEC-FACTORY-009-factory-replay-command.md
+  - kind: doc
+    ref: decisions/DEC-FACTORY-010-procurement-lab-portable-repo-uri-migration.md
+  - kind: doc
+    ref: decisions/DEC-FACTORY-011-procurement-negotiation-lab-ci-enforces-run-evidence-chain.md
+  - kind: doc
+    ref: decisions/DEC-FACTORY-012-procurement-negotiation-lab-replay-determinism-test.md
+  - kind: doc
+    ref: .github/workflows/run-evidence-gates.yml
+  - kind: doc
+    ref: scripts/replay_run.py
+  - kind: doc
+    ref: scripts/finalize_sandbox_ref.py
+  - kind: doc
+    ref: scripts/validate_run_evidence.py
+  - kind: run
+    ref: ops/run-records/run-7b662d3f68b1.json
+  - kind: artifact
+    ref: ops/event-ledger/run-7b662d3f68b1.jsonl
+
+modes_run:
+  - memory_consolidation
+  - architecture_drift_detection
+  - adversarial_simulation
+
+modes_skipped:
+  - id: failure_clustering
+    reopen_when: at least two run-evidence-gates failures with distinct root causes are recorded
+  - id: counterfactual
+    reopen_when: the canonical sample is replayed against a non-stub worker (model swap candidate)
+  - id: skill_extraction
+    reopen_when: a third repo independently implements the two-pass-emit + finalize pattern
+  - id: prompt_patch_generation
+    reopen_when: a factory worker prompt drifts in a real (non-stub) run
+  - id: golden_test_generation
+    reopen_when: a new spec requirement under R-FACTORY-RUN-EVIDENCE-* lacks a covering test
+
+candidate_tally:
+  memory_consolidation: 1
+  architecture_drift_detection: 2
+  adversarial_simulation: 1
+  backlog_extend: 1
+  backlog_cross_link: 1
+  total: 6
+
+candidate_files:
+  - candidates/memory-001-two-pass-emit-is-now-load-bearing.md
+  - candidates/backlog-001-retire-legacy-path-at-sha-fallback.md
+  - candidates/backlog-002-extend-canonical-sample-matrix.md
+  - candidates/test-001-chaos-replay-determinism-under-clock-skew.md
+  - candidates/backlog-003-eval-skipped-modes-in-w23.md
+  - candidates/backlog-004-cross-link-trace-to-eval-packet-fixture.md
+
+human_review_required: true
+auto_promoted: false
