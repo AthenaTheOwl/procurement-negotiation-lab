@@ -274,3 +274,41 @@ def test_replay_detects_divergence_when_task_mutated(  # type: ignore[no-untyped
     assert report["replay_equivalent"] is False
     # prompt_snapshot_hash must be the diverging field.
     assert report["field_comparison"]["prompt_snapshot_hash"]["equal"] is False
+
+
+# ------------------------------------------------------------------ timestamp
+
+
+def test_now_iso_filename_is_microsecond_resolution(replay_module) -> None:  # type: ignore[no-untyped-def]
+    """Per-second resolution let back-to-back replays collide on the same
+    ledger filename. The fix moves to microsecond resolution so two calls
+    inside the same second yield distinct filenames, and the formatted
+    string carries the ``.<6-digit-microseconds>Z`` suffix.
+
+    The Workflow B-Recovery audit flagged this as the determinism test's
+    latent dependency on a second boundary crossing during CI setup.
+    """
+    module, _, _, _ = replay_module
+    import re as _re
+
+    # Format must carry the microsecond suffix.
+    stamp = module._now_iso_filename()
+    assert _re.match(
+        r"^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{6}Z$", stamp
+    ), f"unexpected timestamp shape: {stamp!r}"
+
+    # Two calls separated by a brief sleep MUST land in different
+    # microseconds. The per-second-resolution bug let two replays inside
+    # the same wall-clock second clobber each other; microsecond
+    # resolution closes that window even when ``time.sleep`` advances
+    # by less than a millisecond.
+    import time as _time
+
+    stamps: list[str] = []
+    for _ in range(5):
+        stamps.append(module._now_iso_filename())
+        _time.sleep(0.001)
+    assert len(set(stamps)) == len(stamps), (
+        "microsecond-resolution timestamp collided across 5 sleeping "
+        f"calls (1 ms gap each): {stamps!r}"
+    )
