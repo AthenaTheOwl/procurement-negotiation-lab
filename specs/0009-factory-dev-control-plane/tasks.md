@@ -290,6 +290,38 @@
   deleted job fails spec-check.
   *(R-FACTORY-RUN-EVIDENCE-029..031)*
 
+## Pass N - systems-thinking adoption (DEC-FACTORY-015)
+
+- [x] **N1**: Refresh `ops/schemas-cache/decision.schema.json`,
+  `ops/schemas-cache/dream-output.schema.json`, and
+  `ops/schemas-cache/run.schema.json` from
+  `athena-site/ops/schemas/` so the four optional fields from
+  DEC-CDCP-020 land in the local cache.
+  `python scripts/check_schema_cache_freshness.py` exits 0.
+  *(R-FACTORY-RUN-EVIDENCE-032)*
+- [x] **N2**: Add the "Systems-thinking discipline (per
+  DEC-CDCP-020)" section to `AGENTS.md` naming the four fields
+  (`systems_map`, `transferable_principle`, `falsification_test`,
+  `adoption_ladder`) plus the 30-day warning-to-failure ratchet.
+  *(R-FACTORY-RUN-EVIDENCE-033)*
+- [x] **N3**: Extend `scripts/validate_decisions.py` to emit a
+  non-fatal warning when an approved DEC is missing any of the
+  four fields. The warning prefix `validate_decisions:
+  systems-thinking discipline warnings (non-fatal; see
+  DEC-CDCP-020)` goes to stderr followed by per-DEC lines that name
+  the missing field(s); exit code stays 0 when only warnings are
+  present.
+  *(R-FACTORY-RUN-EVIDENCE-034)*
+- [x] **N4**: Retrofit DEC-FACTORY-012, DEC-FACTORY-013, and
+  DEC-FACTORY-014 with substantive content in all four fields.
+  `validate_decisions.py` emits no warning for the three
+  retrofitted DECs.
+  *(R-FACTORY-RUN-EVIDENCE-035)*
+- [x] **N5**: Land `DEC-FACTORY-015-systems-thinking-discipline-
+  adoption.md` amending `DEC-FACTORY-014`; populate the four
+  fields on the DEC itself so the discipline is self-applying.
+  *(R-FACTORY-RUN-EVIDENCE-032..035)*
+
 ## Spec discipline
 
 - [x] **S1**: Register the spec in `specs/README.md`. *(R-SPEC-009)*
