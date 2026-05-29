@@ -105,8 +105,19 @@ def _now_iso() -> str:
 
 
 def _now_iso_filename() -> str:
-    """ISO timestamp safe for use in a filename (no colons)."""
-    return datetime.now(UTC).strftime("%Y-%m-%dT%H-%M-%SZ")
+    """ISO timestamp safe for use in a filename (no colons), microsecond-resolution.
+
+    Microsecond resolution closes the per-second collision window that the
+    earlier ``%Y-%m-%dT%H-%M-%SZ`` format left open. The
+    replay-determinism test fixture invokes the replay command back-to-back
+    under ``RERUNS`` so two replays inside the same wall-clock second would
+    write to the same ledger filename and the second invocation would
+    append to the first run's ledger. A single ``datetime.now`` call
+    keeps the seconds and microseconds atomic. The format matches the
+    supplier-risk-rag-agent pattern locked in DEC-EVL-011.
+    """
+    now = datetime.now(UTC)
+    return f"{now:%Y-%m-%dT%H-%M-%S}.{now.microsecond:06d}Z"
 
 
 def _safe_rel(path: Path) -> str:
