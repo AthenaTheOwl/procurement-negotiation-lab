@@ -480,6 +480,83 @@ Acceptance:
   every push to main without exception).
 - No step invokes `git commit --no-verify` or any equivalent bypass.
 
+### R-FACTORY-RUN-EVIDENCE-023: replay-determinism test fixture exists
+
+WHEN the procurement-negotiation-lab repo carries a canonical
+sample Run record at `ops/run-records/run-7b662d3f68b1.json`,
+THE SYSTEM SHALL ship a replay-determinism test fixture at
+`tests/factory/test_replay_determinism.py` that replays the
+canonical sample `RERUNS` times (default 3, override via the
+`RERUNS` env var) at the recorded sandbox SHA and asserts that
+the three replay-equivalence fields hash to the same value on
+every replay.
+
+Acceptance:
+- The file `tests/factory/test_replay_determinism.py` exists and
+  declares a single test
+  `test_canonical_sample_replay_is_deterministic`.
+- The fixture extracts the sandbox SHA from the canonical Run
+  record's `sandbox_image_ref`, checks the recorded SHA out,
+  restores the finalized Run record into the worktree, and runs
+  `scripts/replay_run.py --run-id run-7b662d3f68b1` `RERUNS`
+  times via `subprocess.run`.
+- The canonical-field whitelist is exactly
+  `recomputed_prompt_snapshot_hash`,
+  `recomputed_tool_schemas_snapshot_hash`, and
+  `recomputed_gate_results_summary`; the gate-results summary
+  canonicalization sorts `gates_passed` and `gates_failed` and
+  coerces `all_passed` to bool.
+- Canonical bytes are produced via
+  `json.dumps(..., sort_keys=True, separators=(",", ":"))`
+  and hashed via SHA-256.
+- Teardown restores the original HEAD (branch name preferred over
+  detached SHA) and removes the replay artifacts the test
+  created under `ops/replay-records/<run-id>/` and
+  `ops/event-ledger/replay-*.jsonl`.
+
+### R-FACTORY-RUN-EVIDENCE-024: CI runs the determinism fixture
+
+WHEN the `run-evidence-gates` workflow runs, THE SYSTEM SHALL
+execute a dedicated `replay-determinism` job that runs the
+fixture under `fetch-depth: 0`, `RERUNS=3`, and the project's
+`uv` setup, and uploads `artifacts/failbundles/` as a workflow
+artifact when the test step fails.
+
+Acceptance:
+- `.github/workflows/run-evidence-gates.yml` declares a
+  `replay-determinism` job.
+- The job's checkout step carries `fetch-depth: 0` so the
+  recorded sandbox SHA is reachable.
+- The job runs `uv sync --python 3.11` then
+  `uv run pytest tests/factory/test_replay_determinism.py -v
+  --no-cov` with `RERUNS=3` in the environment.
+- The job uploads `artifacts/failbundles/` via
+  `actions/upload-artifact@v4` with `if-no-files-found: ignore`
+  on step failure.
+- The job carries no `continue-on-error: true` and no
+  `if: ${{ failure() }}` informational shape on the test step.
+
+### R-FACTORY-RUN-EVIDENCE-025: failure bundle on non-deterministic replay
+
+WHEN the canonical-sample replay produces more than one unique
+hash across `RERUNS` invocations, THE SYSTEM SHALL write a
+failure bundle to `artifacts/failbundles/determinism_failure.json`
+plus `artifacts/failbundles/trace_0.json` and
+`artifacts/failbundles/trace_1.json`, then fail the test with
+the bundle path in the assertion message.
+
+Acceptance:
+- The failure bundle JSON carries `canonical_sample_id`,
+  `sandbox_sha`, `rerun_count`, `unique_hashes` (sorted),
+  `first_mismatch_indices` (two-element list), `trace_paths`
+  (repo-relative posix strings), and `hashes_per_rerun`.
+- `trace_0.json` and `trace_1.json` carry the canonicalized
+  three-field dictionaries for the first two diverging replays.
+- The pytest assertion message names the failure bundle path
+  relative to the repo root so CI logs can link to it.
+- `artifacts/failbundles/` is listed in `.gitignore` so the
+  bundle never ships as committed evidence.
+
 ### R-SPEC-009: spec discipline
 
 Standard.

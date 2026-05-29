@@ -187,6 +187,14 @@ deferred:
   - id: R-FACTORY-RUN-EVIDENCE-022
     note: covered collectively by DEC-FACTORY-011-procurement-negotiation-lab-ci-enforces-run-evidence-chain
 
+  # R-FACTORY-RUN-EVIDENCE-023 is resolved by DEC-FACTORY-012 directly.
+  # R-FACTORY-RUN-EVIDENCE-024..025 are resolved collectively by the same
+  # DEC-FACTORY-012; the DEC's `## coverage` section enumerates them.
+  - id: R-FACTORY-RUN-EVIDENCE-024
+    note: covered collectively by DEC-FACTORY-012-procurement-negotiation-lab-replay-determinism-test
+  - id: R-FACTORY-RUN-EVIDENCE-025
+    note: covered collectively by DEC-FACTORY-012-procurement-negotiation-lab-replay-determinism-test
+
   # R-LEARN-* — spec 0010 pedagogical redesign.
   - id: R-LEARN-001
     note: phase pre-CDCP requirement (spec 0010 pedagogical redesign); backfill pending

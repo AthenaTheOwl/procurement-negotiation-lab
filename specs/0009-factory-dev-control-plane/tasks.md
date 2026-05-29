@@ -168,6 +168,38 @@
   renamed workflow file fails spec-check.
   *(R-FACTORY-RUN-EVIDENCE-019..022)*
 
+## Pass K - replay-determinism test fixture (DEC-FACTORY-012)
+
+- [x] **K1**: Add `tests/factory/test_replay_determinism.py` that
+  replays the canonical sample `run-7b662d3f68b1` `RERUNS` times
+  (default 3, override via `RERUNS` env var) at the recorded
+  sandbox SHA, canonicalizes the three replay-equivalence fields
+  per replay report, SHA-256 hashes the canonical bytes, and
+  asserts every hash matches. Teardown restores the original HEAD
+  and removes any replay artifacts the test created.
+  *(R-FACTORY-RUN-EVIDENCE-023)*
+- [x] **K2**: Add a dedicated `replay-determinism` job to
+  `.github/workflows/run-evidence-gates.yml` that checks out with
+  `fetch-depth: 0`, syncs the project under `uv`, runs the fixture
+  with `RERUNS=3`, and uploads `artifacts/failbundles/` as a
+  workflow artifact when the step fails. The job carries no
+  `continue-on-error: true`.
+  *(R-FACTORY-RUN-EVIDENCE-024)*
+- [x] **K3**: Write a failure bundle at
+  `artifacts/failbundles/determinism_failure.json` (plus
+  `trace_0.json` and `trace_1.json`) when the canonical hashes
+  diverge, fail the pytest assertion with the bundle path in the
+  message, and gitignore `artifacts/failbundles/` so the bundle
+  never ships as committed evidence.
+  *(R-FACTORY-RUN-EVIDENCE-025)*
+- [x] **K4**: Register the determinism job proof tokens
+  (`replay-determinism`, `tests/factory/test_replay_determinism.py`,
+  `RERUNS`) in
+  `scripts/spec_check.py::REQUIRED_WORKFLOW_PROOFS` for
+  `.github/workflows/run-evidence-gates.yml` so a missing or
+  renamed job fails spec-check.
+  *(R-FACTORY-RUN-EVIDENCE-023..025)*
+
 ## Spec discipline
 
 - [x] **S1**: Register the spec in `specs/README.md`. *(R-SPEC-009)*
