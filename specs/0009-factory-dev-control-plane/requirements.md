@@ -640,6 +640,68 @@ Acceptance:
   format contract and verifies five back-to-back calls separated
   by a 1 ms sleep never collide.
 
+### R-FACTORY-RUN-EVIDENCE-029: chaos test suite covers required-for-done + cross-checks
+
+WHEN `tests/factory/test_chaos_run_evidence.py` runs against the
+canonical sample `run-7b662d3f68b1`, THE SYSTEM SHALL exercise at
+least seven mutation classes (M1..M7) that each target one validator
+branch in `scripts/validate_run_evidence.py`. Every mutation MUST be
+applied on a temp-dir copy of the canonical sample so the committed
+artifacts are never written to.
+
+Acceptance:
+- `tests/factory/test_chaos_run_evidence.py` defines one positive
+  guard plus seven negative tests: M1 prompt hash mismatch, M2 tool
+  schemas hash mismatch, M3 phantom gate in
+  `gate_results_summary.gates_passed`, M4 missing terminal
+  `gate.run.evidence_recorded` event, M5 `pipeline.start` payload
+  missing `prompt_snapshot_hash`, M6 `fields_populated` claims an
+  unpopulated field, M7 done Run missing `sandbox_image_ref`.
+- Each negative test asserts `validate_run_evidence.main() != 0` and
+  that stderr names the specific check (the field name or event
+  type) that fired.
+- The fixture redirects `EVENT_LEDGER_DIR` and `RUN_RECORDS_DIR` to
+  a `tmp_path` copy of the canonical sample; the committed
+  `ops/run-records/run-7b662d3f68b1.json` and
+  `ops/event-ledger/run-7b662d3f68b1.jsonl` are read-only inputs.
+
+### R-FACTORY-RUN-EVIDENCE-030: chaos suite catches typed-payload regressions
+
+WHEN the `pipeline.start` event in a ledger drops a required
+payload field (here `prompt_snapshot_hash`), THE SYSTEM SHALL fail
+the chaos test M5 because the event-schema oneOf discriminator
+flagged the missing field at schema-validation time. This protects
+against a regression where Round 2's typed-payload contract is
+silently weakened.
+
+Acceptance:
+- `test_M5_pipeline_start_missing_prompt_hash_is_caught` mutates the
+  `pipeline.start` event's payload, re-runs the validator, asserts
+  exit code is non-zero, and asserts stderr names
+  `prompt_snapshot_hash`.
+- The mutation lands on the temp-dir ledger copy only; the
+  canonical sample is untouched.
+
+### R-FACTORY-RUN-EVIDENCE-031: chaos suite runs on every PR + push to main
+
+WHEN a pull request opens or a push lands on `main`, THE SYSTEM
+SHALL run the chaos suite in CI as an independent
+`chaos-validation` job inside
+`.github/workflows/run-evidence-gates.yml`. The job MUST carry no
+`continue-on-error: true` and MUST be registered in
+`scripts/spec_check.py::REQUIRED_WORKFLOW_PROOFS` so a renamed or
+deleted job fails spec-check.
+
+Acceptance:
+- `.github/workflows/run-evidence-gates.yml` declares a
+  `chaos-validation` job that runs
+  `uv run pytest tests/factory/test_chaos_run_evidence.py -v --no-cov`.
+- `scripts/spec_check.py::REQUIRED_WORKFLOW_PROOFS` for that
+  workflow file carries the tokens `chaos-validation` and
+  `tests/factory/test_chaos_run_evidence.py`.
+- The job carries no `continue-on-error: true` and no
+  `if: ${{ failure() }}` informational shape.
+
 ### R-SPEC-009: spec discipline
 
 Standard.
