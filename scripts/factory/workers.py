@@ -22,6 +22,27 @@ from .task import GateSpec
 
 @dataclass
 class WorkerResult:
+    """Worker outcome plus an extensible metadata bag.
+
+    Per DEC-FACTORY-013 the metadata bag carries six addendum-6 fields on
+    every worker invocation (real or stub):
+
+    - ``thread_id`` (str | None): opaque conversation/thread handle;
+      synthesized as ``<label>-cli-<uuid12>`` when the CLI does not emit
+      one so the field is always populated.
+    - ``run_id`` (str | None): one-shot invocation handle; same
+      synthesis convention with a ``run`` suffix.
+    - ``model`` (str | None): model identifier when the CLI surfaces it.
+    - ``duration_ms`` (int): wall-clock duration of the subprocess.
+    - ``tokens_input`` (int | None): prompt-side token count when the
+      CLI emits a usage block. None when unknown.
+    - ``tokens_output`` (int | None): completion-side token count.
+
+    The dict shape is intentionally extensible: callers may stash
+    additional debugging hints under unreserved keys without breaking
+    the documented contract surface.
+    """
+
     ok: bool
     stdout: str = ""
     stderr: str = ""
@@ -36,6 +57,32 @@ class WorkerResult:
     def run_id(self) -> str | None:
         value = self.metadata.get("run_id")
         return value if isinstance(value, str) else None
+
+    @property
+    def model(self) -> str | None:
+        value = self.metadata.get("model")
+        return value if isinstance(value, str) else None
+
+    @property
+    def duration_ms(self) -> int | None:
+        value = self.metadata.get("duration_ms")
+        if isinstance(value, bool):
+            return None
+        return value if isinstance(value, int) else None
+
+    @property
+    def tokens_input(self) -> int | None:
+        value = self.metadata.get("tokens_input")
+        if isinstance(value, bool):
+            return None
+        return value if isinstance(value, int) else None
+
+    @property
+    def tokens_output(self) -> int | None:
+        value = self.metadata.get("tokens_output")
+        if isinstance(value, bool):
+            return None
+        return value if isinstance(value, int) else None
 
 
 class Worker(ABC):
@@ -74,9 +121,25 @@ def _string_at_path(obj: dict[str, Any], *path: str) -> str | None:
     return current if isinstance(current, str) else None
 
 
-def _extract_json_ids_from_obj(parsed: dict[str, Any]) -> dict[str, str]:
-    """Best-effort extraction from known Claude/Codex-style JSON shapes."""
-    out: dict[str, str] = {}
+def _int_at_path(obj: dict[str, Any], *path: str) -> int | None:
+    current: Any = obj
+    for key in path:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(key)
+    if isinstance(current, bool):  # bool is a subclass of int; skip it
+        return None
+    return current if isinstance(current, int) else None
+
+
+def _extract_json_ids_from_obj(parsed: dict[str, Any]) -> dict[str, Any]:
+    """Best-effort extraction from known Claude/Codex-style JSON shapes.
+
+    Returns a flat dict with optional ``thread_id``, ``run_id``, ``model``,
+    ``tokens_input``, ``tokens_output`` keys. Missing fields are dropped
+    so callers can use a simple ``out.update`` to merge multiple objects.
+    """
+    out: dict[str, Any] = {}
     for key in ("thread_id", "threadId", "conversation_id", "conversationId"):
         if isinstance(parsed.get(key), str):
             out["thread_id"] = parsed[key]
@@ -107,17 +170,59 @@ def _extract_json_ids_from_obj(parsed: dict[str, Any]) -> dict[str, str]:
         )
         if value:
             out["model"] = value
+    # Token counts. Real CLIs emit these under a usage object with a few
+    # naming conventions: input_tokens/output_tokens (Anthropic),
+    # prompt_tokens/completion_tokens (OpenAI). Capture either flavour
+    # under our canonical tokens_input / tokens_output keys so downstream
+    # consumers do not have to branch on provider.
+    for usage_path in (("usage",), ("response", "usage"), ("message", "usage")):
+        usage = parsed
+        for segment in usage_path:
+            usage = usage.get(segment) if isinstance(usage, dict) else None
+            if usage is None:
+                break
+        if not isinstance(usage, dict):
+            continue
+        if "tokens_input" not in out:
+            for key in ("input_tokens", "prompt_tokens"):
+                value = usage.get(key)
+                if isinstance(value, int) and not isinstance(value, bool):
+                    out["tokens_input"] = value
+                    break
+        if "tokens_output" not in out:
+            for key in ("output_tokens", "completion_tokens"):
+                value = usage.get(key)
+                if isinstance(value, int) and not isinstance(value, bool):
+                    out["tokens_output"] = value
+                    break
+        if "tokens_input" in out and "tokens_output" in out:
+            break
+    # Top-level fallback for the rare CLI that flattens the usage block.
+    if "tokens_input" not in out:
+        value = _int_at_path(parsed, "tokens_input") or _int_at_path(
+            parsed, "input_tokens"
+        )
+        if value is not None:
+            out["tokens_input"] = value
+    if "tokens_output" not in out:
+        value = _int_at_path(parsed, "tokens_output") or _int_at_path(
+            parsed, "output_tokens"
+        )
+        if value is not None:
+            out["tokens_output"] = value
     return out
 
 
-def _extract_json_ids(stdout: str) -> dict[str, str]:
-    """Best-effort: parse JSON or JSONL with thread/run/model fields.
+def _extract_json_ids(stdout: str) -> dict[str, Any]:
+    """Best-effort: parse JSON or JSONL with thread/run/model/usage fields.
 
     Real CLIs vary: some emit one JSON object, some emit JSONL events, and
     some only include IDs in stderr. This helper prefers real IDs whenever
     they appear and lets `_run_cli` synthesize tagged IDs only as a fallback.
+    Token counts (tokens_input/tokens_output) ride alongside the IDs when
+    a ``usage`` block is present in any of the parsed objects.
     """
-    out: dict[str, str] = {}
+    out: dict[str, Any] = {}
     if not stdout:
         return out
     for line in stdout.splitlines() or [stdout]:
@@ -131,8 +236,16 @@ def _extract_json_ids(stdout: str) -> dict[str, str]:
         if not isinstance(parsed, dict):
             continue
         extracted = _extract_json_ids_from_obj(parsed)
-        out.update({key: value for key, value in extracted.items() if value})
-        if {"thread_id", "run_id", "model"}.issubset(out):
+        # First non-empty value wins per key; later JSONL events do not
+        # clobber an ID already pinned by an earlier event. (The usage
+        # block typically rides on the terminal event, but its values
+        # are still terminal-event values; later events do not roll
+        # them back.)
+        for key, value in extracted.items():
+            if value is None or value == "":
+                continue
+            out.setdefault(key, value)
+        if {"thread_id", "run_id", "model", "tokens_input", "tokens_output"}.issubset(out):
             break
     return out
 
@@ -157,23 +270,39 @@ def _run_cli(
             check=False,
         )
     except subprocess.TimeoutExpired as cause:
+        # Even on failure we still populate thread_id + run_id so downstream
+        # consumers can rely on the contract: every WorkerResult carries an
+        # opaque ID pair, real-or-synthesized.
         return WorkerResult(
             ok=False,
             stderr=f"timeout after {timeout}s: {cause}",
-            metadata={"duration_ms": int((time.monotonic() - start) * 1000)},
+            metadata={
+                "duration_ms": int((time.monotonic() - start) * 1000),
+                "thread_id": f"{label}-cli-{uuid.uuid4().hex[:12]}",
+                "run_id": f"{label}-run-{uuid.uuid4().hex[:12]}",
+                "model": None,
+                "tokens_input": None,
+                "tokens_output": None,
+            },
         )
     except FileNotFoundError as cause:
         return WorkerResult(
             ok=False,
             stderr=f"binary not found: {cause}",
-            metadata={"duration_ms": int((time.monotonic() - start) * 1000)},
+            metadata={
+                "duration_ms": int((time.monotonic() - start) * 1000),
+                "thread_id": f"{label}-cli-{uuid.uuid4().hex[:12]}",
+                "run_id": f"{label}-run-{uuid.uuid4().hex[:12]}",
+                "model": None,
+                "tokens_input": None,
+                "tokens_output": None,
+            },
         )
     duration_ms = int((time.monotonic() - start) * 1000)
     json_ids = _extract_json_ids(result.stdout)
     if len(json_ids) < 2:
-        json_ids.update(
-            {key: value for key, value in _extract_json_ids(result.stderr).items() if value}
-        )
+        for key, value in _extract_json_ids(result.stderr).items():
+            json_ids.setdefault(key, value)
     thread_id = (
         json_ids.get("thread_id")
         or _extract_id(_THREAD_RE, result.stdout)
@@ -191,6 +320,8 @@ def _run_cli(
         thread_id = f"{label}-cli-{uuid.uuid4().hex[:12]}"
     if run_id is None:
         run_id = f"{label}-run-{uuid.uuid4().hex[:12]}"
+    tokens_input = json_ids.get("tokens_input")
+    tokens_output = json_ids.get("tokens_output")
     return WorkerResult(
         ok=result.returncode == 0,
         stdout=result.stdout,
@@ -201,15 +332,64 @@ def _run_cli(
             "run_id": run_id,
             "model": model,
             "duration_ms": duration_ms,
+            "tokens_input": tokens_input,
+            "tokens_output": tokens_output,
         },
     )
+
+
+_UNSUPPORTED_FLAG_MARKERS = (
+    "unknown option",
+    "unrecognized option",
+    "unrecognised option",
+    "unknown argument",
+    "no such option",
+    "invalid option",
+    "unknown flag",
+)
+
+
+def _looks_like_unsupported_flag(stderr: str) -> bool:
+    """Detect a CLI complaining about an unknown ``--output-format`` flag.
+
+    The addendum-6 emission slice asks each real-CLI worker to try the
+    json-output flag first and fall back to plain text on older CLIs
+    that do not yet support it. Different CLIs phrase the rejection
+    differently; we match the common substrings case-insensitively.
+    """
+    if not stderr:
+        return False
+    lowered = stderr.lower()
+    if "--output-format" not in lowered:
+        return False
+    return any(marker in lowered for marker in _UNSUPPORTED_FLAG_MARKERS)
+
+
+def _always_populated_synthetic_metadata(label: str) -> dict[str, Any]:
+    """Return the always-populated metadata block for a synthetic-only result.
+
+    Used when the CLI is not on PATH so even the no-CLI branch ships a
+    thread_id/run_id pair downstream consumers can trust.
+    """
+    return {
+        "thread_id": f"{label}-cli-{uuid.uuid4().hex[:12]}",
+        "run_id": f"{label}-run-{uuid.uuid4().hex[:12]}",
+        "model": None,
+        "duration_ms": 0,
+        "tokens_input": None,
+        "tokens_output": None,
+    }
 
 
 class ClaudeCodeWorker(Worker):
     """Invokes the `claude` CLI in non-interactive print mode.
 
-    Uses `claude --print "<prompt>"` so the agent runs to completion and
-    emits its final answer to stdout.
+    Tries ``claude --print --output-format json "<prompt>"`` first so the
+    real CLI emits a structured payload we can parse for thread/run/model
+    + token counts. Falls back to plain ``claude --print "<prompt>"`` when
+    the installed CLI does not recognize ``--output-format``; the fallback
+    still synthesizes a tagged thread_id/run_id pair via ``_run_cli`` so
+    the WorkerResult.metadata contract holds.
     """
 
     name = "claude_code"
@@ -221,18 +401,25 @@ class ClaudeCodeWorker(Worker):
     def run(self, prompt: str, *, cwd: Path, timeout: int = 1800) -> WorkerResult:
         if not self.available():
             return WorkerResult(
-                ok=False, stderr="claude CLI not on PATH; install Claude Code first"
+                ok=False,
+                stderr="claude CLI not on PATH; install Claude Code first",
+                metadata=_always_populated_synthetic_metadata("claude"),
             )
-        argv = ["claude", "--print", prompt]
-        return _run_cli(argv, cwd=cwd, timeout=timeout, label="claude")
+        argv = ["claude", "--print", "--output-format", "json", prompt]
+        first = _run_cli(argv, cwd=cwd, timeout=timeout, label="claude")
+        if first.ok or not _looks_like_unsupported_flag(first.stderr):
+            return first
+        fallback_argv = ["claude", "--print", prompt]
+        return _run_cli(fallback_argv, cwd=cwd, timeout=timeout, label="claude")
 
 
 class CodexWorker(Worker):
     """Invokes the `codex` CLI in non-interactive exec mode.
 
-    `codex exec "<prompt>"` is the documented one-shot form; this worker
-    assumes the CLI is configured (auth, working model, etc.) outside the
-    factory.
+    Tries ``codex exec --output-format json "<prompt>"`` first so the real
+    CLI emits structured metadata. Falls back to ``codex exec "<prompt>"``
+    on older CLIs that do not yet support the flag. The fallback still
+    synthesizes a tagged ID pair via ``_run_cli``.
     """
 
     name = "codex"
@@ -244,10 +431,16 @@ class CodexWorker(Worker):
     def run(self, prompt: str, *, cwd: Path, timeout: int = 1800) -> WorkerResult:
         if not self.available():
             return WorkerResult(
-                ok=False, stderr="codex CLI not on PATH; install Codex CLI first"
+                ok=False,
+                stderr="codex CLI not on PATH; install Codex CLI first",
+                metadata=_always_populated_synthetic_metadata("codex"),
             )
-        argv = ["codex", "exec", prompt]
-        return _run_cli(argv, cwd=cwd, timeout=timeout, label="codex")
+        argv = ["codex", "exec", "--output-format", "json", prompt]
+        first = _run_cli(argv, cwd=cwd, timeout=timeout, label="codex")
+        if first.ok or not _looks_like_unsupported_flag(first.stderr):
+            return first
+        fallback_argv = ["codex", "exec", prompt]
+        return _run_cli(fallback_argv, cwd=cwd, timeout=timeout, label="codex")
 
 
 # --- gate worker ---------------------------------------------------------
@@ -340,6 +533,9 @@ class StubWorker(Worker):
             f"prompt head: {head[:160]}\n"
             f"prompt length: {len(prompt)} chars"
         )
+        # Token counts are advisory in dry-run; pin them to 0 (not None)
+        # so the WorkerResult.metadata block always carries the addendum-6
+        # contract keys and the test fixture can assert on a concrete int.
         return WorkerResult(
             ok=True,
             stdout=body,
@@ -349,6 +545,8 @@ class StubWorker(Worker):
                 "run_id": self._synth_id("run"),
                 "model": "stub-model",
                 "duration_ms": 0,
+                "tokens_input": 0,
+                "tokens_output": 0,
             },
         )
 
