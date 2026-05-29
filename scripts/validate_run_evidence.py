@@ -46,6 +46,7 @@ network, and treats a missing schema cache file as a hard error.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -54,6 +55,41 @@ ROOT = Path(__file__).resolve().parents[1]
 CACHE_DIR = ROOT / "ops" / "schemas-cache"
 EVENT_LEDGER_DIR = ROOT / "ops" / "event-ledger"
 RUN_RECORDS_DIR = ROOT / "ops" / "run-records"
+
+# DEC-CDCP-014 + DEC-FACTORY-010 portable URI scheme. Two forms appear in
+# run-evidence artifacts:
+#   repo://<repo-name>@<sha>/<rel-path>   file at a specific commit
+#   artifact://<repo-name>/<artifact-id>  logical artifact reference
+# Legacy local paths remain valid during the migration window.
+_REPO_URI_RE = re.compile(
+    r"^repo://(?P<repo>[a-z][a-z0-9-]*)@(?P<sha>[a-f0-9]{40})/(?P<path>.*)$"
+)
+_ARTIFACT_URI_RE = re.compile(
+    r"^artifact://(?P<repo>[a-z][a-z0-9-]*)/(?P<id>.+)$"
+)
+_DEFAULT_PORTFOLIO_ROOT = Path("e:/claude_code/random-apps")
+
+
+def resolve_uri(
+    uri: str, portfolio_root: Path | None = None
+) -> Path | None:
+    """Resolve a repo:// URI to a local filesystem path.
+
+    Returns:
+        - For ``repo://<repo>@<sha>/<path>``: ``portfolio_root/<repo>/<path>``.
+          The ``<sha>`` is advisory metadata.
+        - For ``artifact://<repo>/<id>``: ``None`` (logical ref, no file).
+        - For legacy local paths / malformed URIs: ``Path(uri)`` as-is so
+          this validator stays tolerant of pre-DEC-CDCP-014 records.
+    """
+    if portfolio_root is None:
+        portfolio_root = _DEFAULT_PORTFOLIO_ROOT
+    match = _REPO_URI_RE.match(uri)
+    if match:
+        return portfolio_root / match.group("repo") / match.group("path")
+    if _ARTIFACT_URI_RE.match(uri):
+        return None
+    return Path(uri)
 
 EVENT_SCHEMA_PATH = CACHE_DIR / "event.schema.json"
 RUN_SCHEMA_PATH = CACHE_DIR / "run.schema.json"

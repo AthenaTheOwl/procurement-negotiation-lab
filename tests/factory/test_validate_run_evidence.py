@@ -169,6 +169,37 @@ def test_validator_exits_zero_on_empty_dirs(validator):  # type: ignore[no-untyp
     assert module.main() == 0
 
 
+# ----------------------------------------------------------------- DEC-FACTORY-010 resolve_uri tests
+
+
+def test_resolve_uri_repo_uri_returns_local_path(validator):  # type: ignore[no-untyped-def]
+    module, _, _ = validator
+    sha = "a" * 40
+    uri = f"repo://procurement-negotiation-lab@{sha}/ops/factory-tasks/x.yaml"
+    portfolio = Path("/tmp/portfolio")
+    resolved = module.resolve_uri(uri, portfolio)
+    assert resolved == (
+        portfolio / "procurement-negotiation-lab" / "ops" / "factory-tasks" / "x.yaml"
+    )
+
+
+def test_resolve_uri_artifact_uri_returns_none(validator):  # type: ignore[no-untyped-def]
+    module, _, _ = validator
+    assert module.resolve_uri("artifact://procurement-negotiation-lab/x") is None
+
+
+def test_resolve_uri_legacy_path_returns_path_as_is(validator):  # type: ignore[no-untyped-def]
+    module, _, _ = validator
+    legacy = "E:/some/legacy/path.yaml"
+    assert module.resolve_uri(legacy) == Path(legacy)
+
+
+def test_resolve_uri_malformed_uri_returns_path_as_is(validator):  # type: ignore[no-untyped-def]
+    module, _, _ = validator
+    bad = "repo://procurement-negotiation-lab@abc/path"  # SHA too short
+    assert module.resolve_uri(bad) == Path(bad)
+
+
 def test_validator_accepts_well_formed_done_run(validator):  # type: ignore[no-untyped-def]
     """Positive: the baseline done-Run + ledger validates clean."""
     module, event_dir, record_dir = validator
