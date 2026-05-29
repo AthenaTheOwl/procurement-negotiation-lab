@@ -17,6 +17,17 @@ This repo is a public learning lab. Preserve the boundary:
   math, component tests for interaction, and Playwright smoke for the rendered
   path
 
+## Systems-thinking discipline (per DEC-CDCP-020)
+
+Per DEC-CDCP-020 in athena-site, every substantive DEC + dream candidate + Run record in this repo SHOULD carry four fields:
+
+- `systems_map`: what underlying mechanism does this expose?
+- `transferable_principle`: what generalizes beyond this decision?
+- `falsification_test`: what would prove this wrong?
+- `adoption_ladder`: minimum_viable -> mid_adoption -> full_adoption + monitoring_signals
+
+All four fields are optional in the schema. The validator emits a warning when missing on new DECs. After 30 days, the warning ratchets to failure via amendment DEC.
+
 Before merging implementation changes, run:
 
 ```powershell

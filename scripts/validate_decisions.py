@@ -132,6 +132,7 @@ def main() -> int:
         return 0
 
     violations: list[str] = []
+    warnings: list[str] = []
     for dec_path in decisions:
         rel = dec_path.relative_to(ROOT).as_posix()
         data, err = parse_front_matter(dec_path)
@@ -152,6 +153,36 @@ def main() -> int:
         for err_obj in errors:
             location = "/".join(str(part) for part in err_obj.absolute_path) or "<root>"
             violations.append(f"{rel}: {location}: {err_obj.message}")
+
+        # DEC-CDCP-020 systems-thinking discipline: warn (don't fail) when
+        # an approved DEC is missing any of the four optional fields. The
+        # warning hardens to a failure via a future amendment DEC after a
+        # 30-day adoption window.
+        if data.get("status") == "approved":
+            missing = [
+                field
+                for field in (
+                    "systems_map",
+                    "transferable_principle",
+                    "falsification_test",
+                    "adoption_ladder",
+                )
+                if field not in data
+            ]
+            if missing:
+                warnings.append(
+                    f"{rel}: missing systems-thinking field(s): "
+                    f"{', '.join(missing)} (see DEC-CDCP-020)"
+                )
+
+    if warnings:
+        print(
+            "validate_decisions: systems-thinking discipline warnings "
+            "(non-fatal; see DEC-CDCP-020)",
+            file=sys.stderr,
+        )
+        for w in warnings:
+            print(f"  - {w}", file=sys.stderr)
 
     if violations:
         print("validate_decisions: violations found", file=sys.stderr)
