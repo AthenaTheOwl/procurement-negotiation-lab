@@ -1,12 +1,24 @@
 """Replay a recorded factory run and assert equivalence.
 
 Usage:
-    python scripts/replay_run.py --run-id run-<id>
+    python scripts/replay_run.py --run-id run-<id> [--mode {default,agents-sdk}]
 
 The factory pipeline runs in dry-run mode with stub workers (deterministic).
 The replay framing is "equivalence" rather than "deterministic" because real
 (non-stub) workers would call live LLMs whose outputs vary; the SHAPE of the
 pipeline is an LLM pipeline even when the stubs return canned text.
+
+Modes
+-----
+
+- ``default``: the legacy factory-task replay (plan/implement/gate stub
+  workers via ``scripts.factory.run``). Compares ``prompt_snapshot_hash``,
+  ``tool_schemas_snapshot_hash``, ``gate_results_summary``.
+- ``agents-sdk``: rehydrate the run from ``sandbox_manifest_ref`` +
+  ``checkpoint_ref`` via the Agents SDK runtime adapter, re-run in stub
+  mode (or live if the env vars are set), and compare the freshly emitted
+  refs + hashes against the recorded ones. Stub-mode agents-sdk replay
+  is the dominant CI path because the SDK is not installed in CI.
 
 The script:
 
@@ -56,6 +68,14 @@ ROOT = Path(__file__).resolve().parents[1]
 RUN_RECORDS_DIR = ROOT / "ops" / "run-records"
 EVENT_LEDGER_DIR = ROOT / "ops" / "event-ledger"
 REPLAY_RECORDS_DIR = ROOT / "ops" / "replay-records"
+
+# The procurement_lab package lives under src/ per the repo layout
+# (hatchling-built wheel; pyproject sets pythonpath=["src"] for pytest).
+# Standalone CLI invocation does not pick that up automatically, so we
+# prepend src/ to sys.path here. Idempotent: only inserts when missing.
+_SRC_DIR = str(ROOT / "src")
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
 
 # DEC-CDCP-014 + DEC-FACTORY-010 portable URI grammar. Same definitions as
 # validate_run_evidence.resolve_uri so the two consumers stay in lockstep.
@@ -488,6 +508,257 @@ def _write_replay_report(
     return path
 
 
+# ----------------------------------------------------------------- agents-sdk replay
+
+
+_PENDING_URI_RE = re.compile(
+    r"^repo://(?P<repo>[a-z][a-z0-9-]*)@PENDING/(?P<path>.*)$"
+)
+
+
+def _resolve_task_ref_for_replay(recorded_run: dict[str, Any]) -> str:
+    """Resolve the task input ref to a local filesystem path.
+
+    Handles three shapes in priority order:
+      1. ``repo://<repo>@PENDING/<rel-path>`` — Agents-SDK adapter
+         emits these in stub mode. Resolved against the local repo
+         root using the ``<rel-path>`` component.
+      2. ``repo://<repo>@<sha>/<rel-path>`` — finalized refs. Resolved
+         via the existing ``resolve_uri`` helper (returns
+         ``portfolio_root/<repo>/<rel-path>``).
+      3. Legacy absolute / relative local paths. Returned as-is.
+
+    Raises SystemExit when no task input is found or when the resolved
+    path does not exist on disk.
+    """
+    inputs = recorded_run.get("inputs")
+    if not isinstance(inputs, list):
+        raise SystemExit(
+            "replay_run --mode agents-sdk: Run.inputs is missing or not a list"
+        )
+    for entry in inputs:
+        if not (isinstance(entry, dict) and entry.get("kind") == "task"):
+            continue
+        ref = entry.get("ref")
+        if not isinstance(ref, str) or not ref:
+            continue
+        pending_match = _PENDING_URI_RE.match(ref)
+        if pending_match:
+            candidate = ROOT / pending_match.group("path")
+            if not candidate.is_file():
+                raise SystemExit(
+                    f"replay_run --mode agents-sdk: PENDING task ref "
+                    f"{ref!r} resolves to {candidate} which does not exist"
+                )
+            return str(candidate)
+        resolved = resolve_uri(ref)
+        if resolved is None:
+            raise SystemExit(
+                f"replay_run --mode agents-sdk: task ref {ref!r} resolved "
+                "to None"
+            )
+        return str(resolved)
+    raise SystemExit(
+        "replay_run --mode agents-sdk: Run.inputs contains no entry with "
+        "kind == 'task'"
+    )
+
+
+def _replay_agents_sdk_mode(args: Any) -> int:
+    """Replay a recorded run via the Agents SDK runtime adapter.
+
+    Rehydrates the adapter from ``ops/run-records/<run-id>.json`` (which
+    must carry both ``sandbox_manifest_ref`` and ``checkpoint_ref``),
+    runs it again (stub mode unless ``OPENAI_API_KEY`` is set AND the
+    ``openai-agents`` package is installed), and compares the fresh refs
+    + hashes against the recorded record.
+
+    Comparison fields:
+      - ``prompt_snapshot_hash``
+      - ``tool_schemas_snapshot_hash``
+      - ``sandbox_manifest_ref``
+      - ``checkpoint_ref``
+      - ``gate_results_summary``
+
+    The Agents-SDK adapter writes a NEW run record into a scratch path
+    so the committed evidence under ``ops/run-records/`` stays intact.
+    """
+    # Local import to avoid loading the adapter (and its SDK probe) when
+    # the legacy default mode is used.
+    from procurement_lab.runtime.openai_agents_runtime import (
+        AgentsSDKRuntimeAdapter,
+    )
+
+    run_id = args.run_id
+    started_at = _now_iso()
+    recorded_run = _load_run_record(run_id)
+    _load_ledger(run_id)
+
+    sandbox_manifest_ref = recorded_run.get("sandbox_manifest_ref")
+    checkpoint_ref = recorded_run.get("checkpoint_ref")
+    if not isinstance(sandbox_manifest_ref, str) or not sandbox_manifest_ref:
+        raise SystemExit(
+            "replay_run --mode agents-sdk: Run record has no "
+            "sandbox_manifest_ref; only Agents-SDK-runtime runs can be "
+            "replayed in this mode."
+        )
+    if not isinstance(checkpoint_ref, str) or not checkpoint_ref:
+        raise SystemExit(
+            "replay_run --mode agents-sdk: Run record has no "
+            "checkpoint_ref; rehydration requires it."
+        )
+
+    # The recorded task ref carries the PENDING placeholder in stub
+    # mode runs (the post-commit finalize step would rewrite it once
+    # the regeneration commit lands). Resolve PENDING refs by mapping
+    # them to the local repo's matching relative path; SHA-form refs
+    # fall through to the existing resolver.
+    task_path = _resolve_task_ref_for_replay(recorded_run)
+
+    # Scratch dir for the fresh adapter output. We assemble a minimal
+    # "fake repo" inside scratch (schemas-cache + factory-tasks copy)
+    # so the adapter's validator path resolves without touching the
+    # committed ops/.
+    import shutil
+    import tempfile
+
+    scratch_ctx: Any
+    if args.scratch_dir is not None:
+        args.scratch_dir.mkdir(parents=True, exist_ok=True)
+        scratch_path = args.scratch_dir
+        scratch_ctx = None
+    else:
+        scratch_ctx = tempfile.TemporaryDirectory(
+            prefix="replay-agents-sdk-"
+        )
+        scratch_path = Path(scratch_ctx.name)
+
+    try:
+        scratch_schemas = scratch_path / "ops" / "schemas-cache"
+        if not scratch_schemas.exists():
+            shutil.copytree(ROOT / "ops" / "schemas-cache", scratch_schemas)
+        for sub in ("event-ledger", "run-records", "sandbox-manifests", "checkpoints"):
+            (scratch_path / "ops" / sub).mkdir(parents=True, exist_ok=True)
+
+        # Use a fresh run_id for the replay so artifacts do not clobber
+        # the originals (and so the validator can distinguish them).
+        replay_run_id = f"{run_id}-replay-{uuid.uuid4().hex[:8]}"
+        adapter = AgentsSDKRuntimeAdapter(
+            run_id=replay_run_id,
+            task_yaml_path=Path(task_path),
+            repo_root=scratch_path,
+            workspace_root=scratch_path,
+        )
+        fresh_run = adapter.run()
+    finally:
+        if scratch_ctx is not None:
+            scratch_ctx.cleanup()
+
+    # Compare. The recorded record's id differs (we use a fresh
+    # replay_run_id) so we ignore the id field and pair the
+    # equivalence-relevant fields by name.
+    COMPARED = (
+        "prompt_snapshot_hash",
+        "tool_schemas_snapshot_hash",
+        "sandbox_manifest_ref",
+        "checkpoint_ref",
+        "gate_results_summary",
+    )
+    detail: dict[str, dict[str, Any]] = {}
+    equivalent = True
+    for compared_field in COMPARED:
+        recorded_value = recorded_run.get(compared_field)
+        fresh_value = fresh_run.get(compared_field)
+        # For ref fields, normalize the run_id portion (the fresh refs
+        # carry the replay_run_id; the recorded refs carry the original).
+        if compared_field in ("sandbox_manifest_ref", "checkpoint_ref"):
+            recorded_norm = (
+                recorded_value.replace(run_id, "<RUN-ID>")
+                if isinstance(recorded_value, str)
+                else recorded_value
+            )
+            fresh_norm = (
+                fresh_value.replace(replay_run_id, "<RUN-ID>")
+                if isinstance(fresh_value, str)
+                else fresh_value
+            )
+            equal = recorded_norm == fresh_norm
+        else:
+            equal = recorded_value == fresh_value
+        if not equal:
+            equivalent = False
+        detail[compared_field] = {
+            "recorded": recorded_value,
+            "fresh": fresh_value,
+            "equal": equal,
+        }
+
+    finished_at = _now_iso()
+
+    replay_ledger_path = (
+        EVENT_LEDGER_DIR
+        / f"replay-{run_id}-agents-sdk-{_now_iso_filename()}.jsonl"
+    )
+    replay_event_id = str(uuid.uuid4())
+    packet_ref = _safe_rel(
+        REPLAY_RECORDS_DIR / run_id / f"{replay_event_id}.json"
+    )
+    _write_replay_event(
+        event_id=replay_event_id,
+        run_id=run_id,
+        replay_equivalent=equivalent,
+        packet_ref=packet_ref,
+        ledger_path=replay_ledger_path,
+    )
+
+    report_path = REPLAY_RECORDS_DIR / run_id / f"{replay_event_id}.json"
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report = {
+        "schema_version": 1,
+        "run_id": run_id,
+        "replay_event_id": replay_event_id,
+        "replay_method": REPLAY_METHOD,
+        "replay_mode": "agents-sdk",
+        "replay_equivalent": equivalent,
+        "started_at": started_at,
+        "finished_at": finished_at,
+        "task_path": task_path,
+        "compared_fields": list(COMPARED),
+        "field_comparison": detail,
+        "fresh_run_id": replay_run_id,
+        "recorded_run_summary": {
+            "id": recorded_run.get("id"),
+            "status": recorded_run.get("status"),
+            "sandbox_manifest_ref": sandbox_manifest_ref,
+            "checkpoint_ref": checkpoint_ref,
+        },
+    }
+    report_path.write_text(
+        json.dumps(report, sort_keys=True, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+    summary_marker = "EQUIVALENT" if equivalent else "DIVERGENT"
+    diverging = [
+        compared_field
+        for compared_field, info in detail.items()
+        if not info["equal"]
+    ]
+    print(
+        f"replay_run --mode agents-sdk: {summary_marker} "
+        f"run_id={run_id} "
+        f"method={REPLAY_METHOD} "
+        f"ledger={_safe_rel(replay_ledger_path)} "
+        f"report={_safe_rel(report_path)}"
+    )
+    if diverging:
+        print(
+            "replay_run: diverging fields: " + ", ".join(diverging),
+            file=sys.stderr,
+        )
+    return 0 if equivalent else 1
+
+
 # ----------------------------------------------------------------- main
 
 
@@ -510,7 +781,20 @@ def main(argv: list[str] | None = None) -> int:
             "system tmpdir. Pass an explicit path for debug runs."
         ),
     )
+    parser.add_argument(
+        "--mode",
+        choices=("default", "agents-sdk"),
+        default="default",
+        help=(
+            "Replay mode. 'default' re-runs the factory dry-run pipeline; "
+            "'agents-sdk' rehydrates the run via the Agents SDK runtime "
+            "adapter (DEC-CDCP-021)."
+        ),
+    )
     args = parser.parse_args(argv)
+
+    if args.mode == "agents-sdk":
+        return _replay_agents_sdk_mode(args)
 
     run_id = args.run_id
     started_at = _now_iso()
