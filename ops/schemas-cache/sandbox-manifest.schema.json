@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://athena.dev/ops/schemas/sandbox-manifest.schema.json",
+  "title": "Sandbox Manifest",
+  "description": "Describes the sandbox/workspace a runtime adapter mounts for an agent run. Captures model + adapter ids, file mounts, env vars (referenced not inlined), tool surface, and the runtime provider. Referenced from Run.sandbox_manifest_ref.",
+  "type": "object",
+  "required": ["manifest_version", "runtime_provider", "model", "mounts", "tool_surface"],
+  "additionalProperties": false,
+  "properties": {
+    "manifest_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "SemVer of the manifest schema this document targets."
+    },
+    "runtime_provider": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Runtime provider id. Example: openai-agents-sdk, anthropic-sdk, local-stub."
+    },
+    "model": {
+      "type": "string",
+      "description": "Model identifier (vendor:name:version)."
+    },
+    "adapter_ids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "LoRA/persona adapter ids in load order."
+    },
+    "mounts": {
+      "type": "array",
+      "description": "Filesystem mounts attached to the sandbox.",
+      "items": {
+        "type": "object",
+        "required": ["src", "dst"],
+        "additionalProperties": false,
+        "properties": {
+          "src": {
+            "type": "string",
+            "description": "Source path or repo:// URI."
+          },
+          "dst": {
+            "type": "string",
+            "description": "Destination path inside the sandbox."
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["ro", "rw"],
+            "default": "ro",
+            "description": "Mount access mode."
+          }
+        }
+      }
+    },
+    "env_refs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Names of env vars the adapter expects to be set (e.g. OPENAI_API_KEY). Values are NOT inlined."
+    },
+    "tool_surface": {
+      "type": "array",
+      "description": "Tools exposed inside the sandbox at run start.",
+      "items": {
+        "type": "object",
+        "required": ["tool_name"],
+        "additionalProperties": false,
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "description": "Tool identifier as registered in the tool registry."
+          },
+          "schema_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "SHA-256 hex digest of the tool's canonicalized JSON schema."
+          }
+        }
+      }
+    },
+    "determinism": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Reproducibility knobs in effect for the sandbox.",
+      "properties": {
+        "seed": {
+          "type": "integer",
+          "description": "Sampler seed if pinned."
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Sampler temperature."
+        },
+        "top_p": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Sampler nucleus parameter."
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the manifest was created."
+    }
+  }
+}
