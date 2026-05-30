@@ -1,0 +1,10 @@
+{
+  "created_at": "2026-05-30T13:47:23.281974Z",
+  "mode": "stub",
+  "notes": "Initial pre-execution checkpoint. Live mode overwrites this file on each checkpoint.paused event with the serialized session_state + RunState payload from the Agents SDK runner.",
+  "run_id": "run-agentsdk-0d021cc4f661",
+  "run_state": null,
+  "runtime_provider": "openai-agents-sdk",
+  "schema_version": 1,
+  "session_state": null
+}
