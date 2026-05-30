@@ -54,17 +54,30 @@ def _read_committed_run() -> tuple[dict[str, Any], list[dict[str, Any]]]:
 
     The sample id changes when DEC-FACTORY-010 regenerates the sample
     (the URI migration + sandbox off-by-one fix produces a fresh
-    run-id). We discover the current committed sample by globbing
-    ``ops/run-records/*.json`` and reject if there is not exactly one.
+    run-id). We discover the current committed sample by filtering
+    ``ops/run-records/*.json`` to records whose ``runtime`` field is
+    ``procurement-lab-factory`` (the legacy stub-worker factory replay).
+    Records emitted by other runtimes (for example the Agents-SDK
+    adapter under DEC-FACTORY-016, which lives under the same dir but
+    carries ``runtime == "openai-agents-sdk"``) are skipped because the
+    legacy ``replay_run.py --mode default`` path cannot drive them.
     """
     run_records = sorted(
         (REPO_ROOT / "ops" / "run-records").glob("run-*.json")
     )
     assert run_records, "no committed run record under ops/run-records/"
-    run_path = run_records[-1]
+    factory_runs = []
+    for path in run_records:
+        run = json.loads(path.read_text(encoding="utf-8"))
+        if run.get("runtime") == "procurement-lab-factory":
+            factory_runs.append((path, run))
+    assert factory_runs, (
+        "no committed factory-runtime run record under ops/run-records/"
+    )
+    # Pick the most recent factory run (last alphabetically by id).
+    run_path, run = factory_runs[-1]
     run_id = run_path.stem
     ledger_path = REPO_ROOT / "ops" / "event-ledger" / f"{run_id}.jsonl"
-    run = json.loads(run_path.read_text(encoding="utf-8"))
     events: list[dict[str, Any]] = []
     for line in ledger_path.read_text(encoding="utf-8").splitlines():
         if line.strip():
