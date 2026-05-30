@@ -1,0 +1,32 @@
+{
+  "created_at": "2026-05-30T13:47:23.137197Z",
+  "env_refs": [
+    "OPENAI_API_KEY"
+  ],
+  "manifest_version": "1.0.0",
+  "model": "openai:gpt-5:stub",
+  "mounts": [
+    {
+      "dst": "/workspace",
+      "mode": "rw",
+      "src": "E:/claude_code/random-apps/procurement-negotiation-lab"
+    },
+    {
+      "dst": "/workspace/task.yaml",
+      "mode": "ro",
+      "src": "E:/claude_code/random-apps/procurement-negotiation-lab/ops/factory-tasks/example-rename-fc-count.yaml"
+    }
+  ],
+  "runtime_provider": "openai-agents-sdk",
+  "tool_surface": [
+    {
+      "tool_name": "claude_code"
+    },
+    {
+      "tool_name": "codex"
+    },
+    {
+      "tool_name": "stub"
+    }
+  ]
+}

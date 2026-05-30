@@ -1,0 +1,28 @@
+{
+  "agent_id": "procurement-lab-factory@openai-agents-sdk",
+  "checkpoint_ref": "repo://procurement-negotiation-lab@PENDING/ops/checkpoints/run-agentsdk-0d021cc4f661.runstate.json",
+  "events": [],
+  "finished_at": "2026-05-30T13:47:23.292465Z",
+  "gate_results_summary": {
+    "all_passed": true,
+    "gates_failed": [],
+    "gates_passed": []
+  },
+  "id": "run-agentsdk-0d021cc4f661",
+  "inputs": [
+    {
+      "kind": "task",
+      "ref": "repo://procurement-negotiation-lab@PENDING/ops/factory-tasks/example-rename-fc-count.yaml"
+    }
+  ],
+  "outputs": [],
+  "prompt_snapshot_hash": "66ec0391019c4f28f6d5840face99c4684b2f0a85833fc71dab269a0f411757c",
+  "runtime": "openai-agents-sdk",
+  "sandbox_image_ref": "repo://procurement-negotiation-lab@PENDING/",
+  "sandbox_manifest_ref": "repo://procurement-negotiation-lab@PENDING/ops/sandbox-manifests/run-agentsdk-0d021cc4f661.json",
+  "spec_id": "E:/claude_code/random-apps/procurement-negotiation-lab/ops/factory-tasks/example-rename-fc-count.yaml",
+  "started_at": "2026-05-30T13:47:23.136413Z",
+  "status": "done",
+  "tool_schemas_snapshot_hash": "97d15cabc62ed6845d51be589771de83546989ec57ac43729e2998e08f31f6ec",
+  "workspace_id": "procurement-negotiation-lab"
+}
