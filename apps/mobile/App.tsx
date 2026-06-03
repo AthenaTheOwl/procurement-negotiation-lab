@@ -19,6 +19,7 @@ import { Level08 } from "./src/screens/learn/Level08";
 import { Level09 } from "./src/screens/learn/Level09";
 import { Level10 } from "./src/screens/learn/Level10";
 import { Level11 } from "./src/screens/learn/Level11";
+import { Level12 } from "./src/screens/learn/Level12";
 import { SandboxStub } from "./src/screens/sandbox/SandboxStub";
 import { colors } from "./src/theme/tokens";
 import {
@@ -57,6 +58,7 @@ const LEVEL_COMPONENTS = {
   9: Level09,
   10: Level10,
   11: Level11,
+  12: Level12,
 } satisfies Record<LevelId, ComponentType<LearnLevelProps>>;
 
 export default function App() {

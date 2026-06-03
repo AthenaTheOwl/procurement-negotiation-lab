@@ -30,3 +30,8 @@ The learning proof is `npm.cmd run test --workspace=@lab/web -- Level12`,
 which covers the Level 12 weighted-Nash intro, BATNA framing, bounded
 leakage epsilon display, plaintext oracle contrast, and gated Continue
 behavior.
+The mobile learning-contract proof is
+`npm.cmd run typecheck --workspace=@lab/mobile` plus
+`npm.cmd run test --workspace=@lab/mobile -- --runInBand`; mobile now
+has the same 12-level progression and Level 12 weighted-Nash intro.
+`T-MOB-MP` remains open for true `N = 3` mobile fixture parity.
