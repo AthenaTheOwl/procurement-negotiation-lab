@@ -212,7 +212,7 @@ export function HomeSurface({
           A small lab for mechanism design — built one screen at a time.
         </h1>
         <p style={subtitle}>
-          Walk through ten short levels and end up with the intuition to
+          Walk through twelve short levels and end up with the intuition to
           build your own utility formulas in the Sandbox.
         </p>
 

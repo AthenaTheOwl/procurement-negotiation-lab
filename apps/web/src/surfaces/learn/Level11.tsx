@@ -162,7 +162,7 @@ export function Level11({
       completedThrough={progress.highest_completed}
       title="How to coordinate without a solver"
       stakes="Twelve mechanisms, twelve different trust boundaries. The right pick depends on what you can afford to reveal."
-      continueLabel="Continue → Sandbox"
+      continueLabel="Continue to Level 12"
       continueDisabled={!canContinue}
       onContinue={() => canContinue && onComplete()}
       onJumpTo={onJumpTo}

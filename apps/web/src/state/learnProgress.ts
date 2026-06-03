@@ -7,8 +7,8 @@
  */
 
 const STORAGE_KEY = "proc-lab.learnProgress";
-export const TOTAL_LEVELS = 11;
-export type LevelId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
+export const TOTAL_LEVELS = 12;
+export type LevelId = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 export type CompletedThrough = 0 | LevelId;
 
 export interface LearnProgress {
