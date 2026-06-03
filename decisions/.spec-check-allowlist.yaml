@@ -308,6 +308,20 @@ deferred:
   - id: R-NASH-010
     note: deferred until DEC-NASH-001 lands in W2 of the 2026-06-01 reset
 
+  # R-NEGOTIATE-* -- spec 0016 negotiate-surface engine reconnect.
+  # DEC-NEGOTIATE-001 resolves R-NEGOTIATE-001 via front-matter; the
+  # rest stay deferred until W3-W5 implementation DECs land.
+  - id: R-NEGOTIATE-002
+    note: covered collectively by DEC-NEGOTIATE-001 until W3 selector implementation lands
+  - id: R-NEGOTIATE-003
+    note: covered collectively by DEC-NEGOTIATE-001 until W3 legacy URL translator lands
+  - id: R-NEGOTIATE-004
+    note: covered collectively by DEC-NEGOTIATE-001 until W3 two-tab proof lands
+  - id: R-NEGOTIATE-005
+    note: covered collectively by DEC-NEGOTIATE-001 until W3 leakage report UI lands
+  - id: R-NEGOTIATE-006
+    note: covered collectively by DEC-NEGOTIATE-001 until W4 mobile and SDK parity lands
+
   # R-PROP-* — spec 0017 engine property test battery.
   # DEC-PROP-001 lands in W1 of the 2026-06-01 reset.
   - id: R-PROP-001

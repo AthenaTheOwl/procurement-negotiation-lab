@@ -1,89 +1,56 @@
 # product expansion roadmap
 
-This repo is now useful as a public learning lab. The next expansions should
-make it more durable, more inspectable, and more extensible without turning it
-into a fake production procurement system.
+The active roadmap is the W0 no-shortcuts reset. Specs 0015, 0016,
+and 0017 define the next product arc:
 
-## What shipped in spec 0004
+- weighted-Nash bargaining and preference privacy in the engine
+- NegotiateSurface reconnect with a real versioned URL adapter
+- property tests for the engine claims
+- `N >= 2` bargaining instead of a two-party ceiling
+- bounded-leakage privacy first, MPC privacy as a second mechanism
 
-- Alpha clipping: bound the VCG-style transfer and show when that weakens
-  no-worse-off guarantees.
-- Reliability multipliers: discount stated capacity using behavioral priors.
-- Epsilon frontier: inspect near-optimal plans instead of pretending one plan
-  is always the whole answer.
-- Decoy demand: run known-answer probes against authored strategies.
+The May roadmap for specs 0005-0008 is archived at
+`docs/archive/2026-05-product-expansion-roadmap.md`.
 
-## Research-informed next specs
+## W0 complete surface
 
-### Spec 0005: multi-party portal and scenario authoring
+- `specs/0015-weighted-nash-preference-private/` defines the math and
+  protocol scope.
+- `specs/0016-negotiate-surface-engine-reconnect/` defines the web,
+  URL, selector, and two-tab proof scope.
+- `specs/0017-engine-property-test-battery/` defines the property-test
+  proof layer.
+- `ops/factory-tasks/w0-codex-cleanup-tranche-a.yaml` records the
+  Codex W0 factory handoff.
 
-Add a vendor-portal-shaped flow with separate views for buyer, supplier, and
-coordinator. Support 3+ suppliers, multiple product families, and a scenario
-registry. Good references:
+## W1-W2
 
-- NegMAS: multi-issue utilities and negotiation protocols.
-- AgenticPay: environment registration, multi-product, multi-seller, and
-  multi-buyer scenario organization.
-- Magentic Marketplace: full economic lifecycle from search and matching to
-  negotiation and transaction.
+- Build the property battery scaffold and first four invariants.
+- Implement bounded-leakage weighted-Nash in Python.
+- Mirror the TypeScript engine path for deployed-web parity.
+- Wire the property CI job.
 
-Acceptance shape:
+## W3
 
-- Canonical agent strategy library with buyer, supplier, packager, and
-  coordinator roles.
-- Scenario JSON schema with versioning and import/export.
-- Separate per-party view that hides private information from the other party.
-- Multi-party welfare and transfer ledger.
+- Reconnect NegotiateSurface to the engine contract.
+- Add the real legacy `?n=` to `?neg=` URL translator.
+- Add a functional mechanism selector.
+- Add the copied-URL two-tab Playwright proof.
 
-### Spec 0006: run reports, replay, and shareable evidence
+## W4
 
-Add a run-report artifact that exports a full trace: scenario parameters,
-mechanism settings, authored formulas, algorithm comparison, frontier plans,
-audit-mode results, and browser QA evidence.
+- Lift the engine and SDK paths to `N >= 2`.
+- Exercise `N = 3` through SDK CLI and browser proof.
+- Keep mobile parity on the same contract shape or an explicit adapter.
 
-Acceptance shape:
+## W5
 
-- One-click JSON and Markdown export.
-- Replayable encoded URL or local file import.
-- Run ledger stored in browser local storage.
-- Screenshot-safe summary page for portfolio sharing.
+- Ship the MPC lane after DEC-MPC-001 chooses the implementation path.
+- Add golden fixtures comparing MPC against plaintext weighted-Nash.
+- Add MPC mode to SDK and NegotiateSurface.
 
-### Spec 0007: production hardening from MedRoute patterns
+## W6
 
-Borrow the habits, not the domain, from `../cargo-health/medroute-main`:
-
-- Test rings: unit/property, integration, contract/observability, browser.
-- Schema-first scenario validation using zod or an equivalent TS schema layer.
-- Test data factories instead of inline one-off fixtures.
-- PR/spec check that maps every requirement to tests and UI proof.
-- Event-style audit log for mechanism runs.
-
-Acceptance shape:
-
-- `web/src/model/scenarioSchema.ts` validates every imported scenario.
-- `web/src/model/runReport.ts` emits a typed decision-event log.
-- Playwright smoke test covers deployed Vercel, not just Vitest DOM tests.
-- Spec checker includes all active specs and refuses missing traceability.
-
-### Spec 0008: data bridge
-
-Use public datasets only as optional imports. Start with synthetic examples
-and then add a "source graph" mode that can ingest normalized supplier-buyer
-edges. Good references:
-
-- `snap-stanford/supply-chains` for synthetic and public-data boundary shape.
-- Open Contracting field conventions for procurement records.
-- The existing chip supply-chain map if a portfolio bridge is desired.
-
-Acceptance shape:
-
-- Import normalized supplier-buyer-product-period CSV.
-- Convert imported graph into a lab scenario with visible assumptions.
-- Keep deterministic fallback traces so the hosted demo never depends on live
-  external data.
-
-## Product principle
-
-Every new control must create a visible causal delta. If a slider, toggle, or
-agent edit does not immediately change a chart, ledger, or explanation, it
-does not belong in the main lab surface.
+- Add replay-determinism and chaos tests over the new engine flows.
+- Create the release ledger entry.
+- Run the dream retrospective over the reset.

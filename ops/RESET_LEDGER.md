@@ -22,4 +22,20 @@ Each entry has the shape:
 
 ## Entries
 
-No resets recorded.
+## 2026-06-03 00:00 ET - local-only Codex W0 branch abandonment
+
+- operator: codex
+- kind: history-rewrite
+- ref: local codex/w0-cleanup-tranche-a only
+- from: 9d3f5a9 (reported local-only object; absent from this clean checkout)
+- to: 753bd0a800dbb5f5e1b8a3ada2268512408c7d88
+- cause: Codex's first W0 branch was reported to contain stale legacy
+  setup docs in local history. Claude verified procurement-lab
+  origin/main was clean at 753bd0a and that no remote ref exposed the
+  stale commit. This checkout could not resolve 9d3f5a9, so W0 work
+  restarted from the clean main commit instead of rebasing the old
+  branch.
+- recovery: `git rev-parse HEAD` and `git rev-parse origin/main`
+  both returned 753bd0a800dbb5f5e1b8a3ada2268512408c7d88 before the
+  Codex W0 lane continued. The branch being pushed is
+  `codex/w0-cleanup-tranche-a-clean`.

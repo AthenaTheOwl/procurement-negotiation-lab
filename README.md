@@ -18,7 +18,8 @@ Not FloPro-branded. Not an official Amazon example.
   oracle, menu contracts, alternating best response, and consensus
   averaging — without crowning ADMM.
 - Tutorial pages that explain utility, residuals, risk scores, ADMM,
-  oracle gaps, and cost-benefit transfers in plain English.
+  oracle gaps, cost-benefit transfers, and the W0 reset toward
+  weighted-Nash bargaining in plain English.
 - A native iOS and Android port (Expo) that mirrors the web learn flow.
 
 ## For your role
@@ -37,13 +38,15 @@ discipline named in DEC-PLAY-003.
 
 **Domain expert.** This is an independent public demo against the
 open-source [amzn/FloPro](https://github.com/amzn/FloPro) ADMM
-implementation. The 14 specs under `specs/` document where the design
+implementation. The 17 specs under `specs/` document where the design
 follows the published literature (Bergemann + Morris information
 design in spec 0003; canonical ADMM in
 [`docs/algorithms.md`](docs/algorithms.md)) and where it departs:
 no crowning of ADMM (DEC-LAB-008), cost-benefit transfers prove
 no-worse-off participation, six-mode information-vs-privacy on the
-same instance (DEC-LAB-009).
+same instance (DEC-LAB-009), and the W0 reset now specifies
+weighted-Nash bargaining, preference privacy, surface reconnect, and
+property tests (specs 0015-0017).
 
 **Engineer.** Fork the factory subsystem at `scripts/factory/`.
 DEC-FACTORY-001..005 document the architectural choices: narrow MCP
@@ -53,7 +56,7 @@ synthetic fallback, and an optional LangGraph router with a threadpool
 fallback. [`docs/factory.md`](docs/factory.md) is the adopt-in-your-repo
 guide.
 
-**Hiring manager.** 14 specs, 24 architectural decisions captured in
+**Hiring manager.** 17 specs, 36 architectural decisions captured in
 `decisions/`, mobile plus web parity (spec 0012 + tier 0-3 proof
 ladder), the factory subsystem as orchestration runtime (spec 0009),
 the first weekly dream retrospective at `dreams/2026-W21/` with five
@@ -63,7 +66,7 @@ candidates promoted. The throughline is the
 ## How it's organized
 
 The repo runs the [Cognitive Delivery Control Plane](https://github.com/AthenaTheOwl/athena-site/blob/main/ops/control-plane.md)
-operating model: 14 specs with R-PREFIX requirements, 24 architectural
+operating model: 17 specs with R-PREFIX requirements, 36 architectural
 decisions captured in `decisions/`, weekly dream-job retrospectives,
 eight roles, twelve tools, six policies, seven executable gate scripts.
 
@@ -216,8 +219,8 @@ first.
 ## What's intentionally not built
 
 - Real procurement data. Synthetic only.
-- Multi-party negotiation beyond the six-role taxonomy (Domain Guild
-  TODO in `.agents/CATALOG.md`).
+- Weighted-Nash, MPC, and `N >= 2` bargaining are specified in the
+  W0 reset but not implemented yet.
 - A production solver. Agents in the Domain Guild advise; deterministic
   FloPro reference code decides anything consequential.
 
@@ -253,6 +256,8 @@ drifts.
   or rollback.
 - `ops/run-ledger.md` — the factory subsystem's per-task pipeline
   ledger (separate from the release ledger).
+- `docs/product-expansion-roadmap.md` documents the active W0 reset
+  roadmap. Older expansion framing is archived under `docs/archive/`.
 - The cross-repo CDCP charter lives at
   `https://github.com/AthenaTheOwl/athena-site` under
   `ops/control-plane.md`.

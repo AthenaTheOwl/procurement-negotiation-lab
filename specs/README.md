@@ -106,6 +106,13 @@ Current active specs:
 - `0015-weighted-nash-preference-private/research.md`
 - `0015-weighted-nash-preference-private/traceability.md`
 
+- `0016-negotiate-surface-engine-reconnect/requirements.md`
+- `0016-negotiate-surface-engine-reconnect/design.md`
+- `0016-negotiate-surface-engine-reconnect/tasks.md`
+- `0016-negotiate-surface-engine-reconnect/acceptance.md`
+- `0016-negotiate-surface-engine-reconnect/research.md`
+- `0016-negotiate-surface-engine-reconnect/traceability.md`
+
 - `0017-engine-property-test-battery/requirements.md`
 - `0017-engine-property-test-battery/design.md`
 - `0017-engine-property-test-battery/tasks.md`
