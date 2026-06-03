@@ -32,12 +32,13 @@
 
 ## W4 (paired across both agents)
 
-- C1: Lift the existing ADMM and oracle implementations to handle
+- [ ] C1: Lift the existing ADMM and oracle implementations to handle
   `N >= 2` parties; remove the `NotImplementedError` branches at
-  `N > 2` (R-NASH-007).
-- C2: Extend SDK + CLI multi-party support so `compare_mechanisms`
+  `N > 2` (R-NASH-007). Centralized oracle and weighted-Nash wrappers
+  are live; ADMM remains for Claude's W4 lane.
+- [x] C2: Extend SDK + CLI multi-party support so `compare_mechanisms`
   accepts `N` and demos exercise `N = 3`.
-- C3: Mobile parity for multi-party scenarios so the Expo app does
+- [ ] C3: Mobile parity for multi-party scenarios so the Expo app does
   not regress against the web app.
 
 ## W5 (Claude lead, Codex integration reviewer) — MPC lane

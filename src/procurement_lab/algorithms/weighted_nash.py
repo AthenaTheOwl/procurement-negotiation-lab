@@ -32,7 +32,6 @@ import time
 import uuid
 from dataclasses import dataclass
 
-from procurement_lab.engine.information import overrides_for_mode
 from procurement_lab.engine.privacy import (
     PROTOCOL_VERSION,
     ProtocolOutcome,
@@ -52,7 +51,6 @@ from procurement_lab.engine.utility import (
     build_ledger,
     evaluate_participant_utility,
 )
-
 
 # --- DEC-NASH-001 parameters (mirrored to weighted_nash_params.json) -------
 
@@ -254,17 +252,6 @@ class WeightedNashPlaintext:
                 note="weighted_nash v1 supports n_periods=1 only",
                 runtime_ms=(time.perf_counter() - started) * 1000,
             )
-        if len(scenario.participants) > 2:
-            # N>2 lift is W4 (R-NASH-007).
-            return _failure_run(
-                scenario,
-                name=self.name,
-                information_mode=information_mode,
-                reason=MechanismFailureReason.NO_FEASIBLE_ALLOCATION,
-                note="weighted_nash v1 supports 2 participants only; N>=3 lands in W4",
-                runtime_ms=(time.perf_counter() - started) * 1000,
-            )
-
         weights = _default_weights(scenario)
         upper = _upper_bound(scenario)
         solution = plaintext_argmax(scenario, weights=weights, upper_bound=upper)
@@ -344,16 +331,6 @@ class WeightedNashBounded:
                 note="weighted_nash_bounded v1 supports n_periods=1 only",
                 runtime_ms=(time.perf_counter() - started) * 1000,
             )
-        if len(scenario.participants) > 2:
-            return _failure_run(
-                scenario,
-                name=self.name,
-                information_mode=information_mode,
-                reason=MechanismFailureReason.NO_FEASIBLE_ALLOCATION,
-                note="weighted_nash_bounded v1 supports 2 participants only; N>=3 lands in W4",
-                runtime_ms=(time.perf_counter() - started) * 1000,
-            )
-
         if information_mode != InformationMode.PRIVATE:
             # Falling back to plaintext behavior; no leakage report.
             run = self._plaintext.run(

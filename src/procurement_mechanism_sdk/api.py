@@ -13,6 +13,10 @@ from procurement_lab.algorithms.simple import (
     ConsensusAveraging,
     PriceOnlyDual,
 )
+from procurement_lab.algorithms.weighted_nash import (
+    WeightedNashBounded,
+    WeightedNashPlaintext,
+)
 from procurement_lab.engine.cbt import compute_transfer
 from procurement_lab.engine.schemas import (
     AlgorithmRun,
@@ -24,13 +28,15 @@ from procurement_lab.engine.schemas import (
     TransferPlan,
 )
 
-ScenarioKind = Literal["base", "risky"]
+ScenarioKind = Literal["base", "risky", "multi_party"]
 MechanismName = Literal[
     "centralized_oracle",
     "admm",
     "alternating_best_response",
     "price_only_dual",
     "consensus_averaging",
+    "weighted_nash_plaintext",
+    "weighted_nash_bounded",
 ]
 
 DEFAULT_MECHANISMS: tuple[MechanismName, ...] = (
@@ -39,6 +45,8 @@ DEFAULT_MECHANISMS: tuple[MechanismName, ...] = (
     "alternating_best_response",
     "price_only_dual",
     "consensus_averaging",
+    "weighted_nash_plaintext",
+    "weighted_nash_bounded",
 )
 
 
@@ -92,11 +100,13 @@ def build_procurement_scenario(
     capacity: float = 800.0,
     risk_score: float = 0.0,
     evidence_ids: Sequence[str] = (),
+    extra_participants: Sequence[Participant] = (),
 ) -> Scenario:
-    """Build a deterministic two-party procurement scenario.
+    """Build a deterministic procurement scenario.
 
     The formulas and parameters mirror the Python reference engine tests so
     SDK consumers get the same behavior as the lab's deterministic primitives.
+    Extra participants are appended after the canonical buyer and supplier.
     """
 
     product = Product(
@@ -144,12 +154,13 @@ def build_procurement_scenario(
         },
         outside_option=0.0,
     )
+    participants = [buyer, supplier, *extra_participants]
     return Scenario(
         id=scenario_id,
         title=title,
         n_periods=1,
         products=[product],
-        participants=[buyer, supplier],
+        participants=participants,
         capacity={product.id: capacity},
         risk_score=risk_score,
         evidence_ids=list(evidence_ids),
@@ -168,6 +179,37 @@ def sample_scenario(kind: ScenarioKind = "base") -> Scenario:
             risk_score=0.7,
             evidence_ids=("nvda-10k-customer-concentration", "tsm-10k-cowos-capacity"),
         )
+    if kind == "multi_party":
+        return build_procurement_scenario(
+            scenario_id="sdk-substrate-crunch-multi-party",
+            title="SDK substrate crunch with buyer, supplier, and packager",
+            evidence_ids=(
+                "nvda-10k-customer-concentration",
+                "tsm-10k-cowos-capacity",
+                "ase-packaging-capacity-note",
+            ),
+            extra_participants=(
+                Participant(
+                    id="packager-orion",
+                    name="Orion Advanced Packaging",
+                    role=Role.PACKAGER,
+                    utility_formula=(
+                        "packaging_fee * q "
+                        "- packaging_cost * q "
+                        "- overtime_penalty * max(q - soft_capacity, 0) "
+                        "- risk_premium * risk_score * q"
+                    ),
+                    parameters={
+                        "packaging_fee": 16.0,
+                        "packaging_cost": 7.0,
+                        "overtime_penalty": 1.5,
+                        "soft_capacity": 520.0,
+                        "risk_premium": 2.0,
+                    },
+                    outside_option=0.0,
+                ),
+            ),
+        )
     raise ValueError(f"unknown sample scenario kind: {kind!r}")
 
 
@@ -175,15 +217,16 @@ def solve_allocation(
     scenario: Scenario,
     *,
     mechanism: MechanismName = "admm",
-    information_mode: InformationMode = InformationMode.FULL_ORACLE,
+    information_mode: InformationMode | None = None,
     max_iter: int = 50,
     tolerance: float = 0.01,
 ) -> AlgorithmRun:
     """Run one existing deterministic mechanism on a scenario."""
 
+    effective_mode = _default_information_mode(mechanism, information_mode)
     return _algorithm_for(mechanism).run(
         scenario,
-        information_mode=information_mode,
+        information_mode=effective_mode,
         max_iter=max_iter,
         tolerance=tolerance,
     )
@@ -192,20 +235,25 @@ def solve_allocation(
 def compare_mechanisms(
     scenario: Scenario,
     *,
-    mechanisms: Sequence[MechanismName] = DEFAULT_MECHANISMS,
-    information_mode: InformationMode = InformationMode.FULL_ORACLE,
+    mechanisms: Sequence[MechanismName] | None = None,
+    information_mode: InformationMode | None = None,
     max_iter: int = 50,
     tolerance: float = 0.01,
     transfer_rule: str = "proportional",
 ) -> MechanismComparison:
     """Run mechanisms and attach oracle-gap plus CBT participation data."""
 
+    selected_mechanisms = (
+        tuple(mechanisms)
+        if mechanisms is not None
+        else _default_mechanisms_for(scenario)
+    )
     oracle_run = CentralizedOracle().run(
         scenario,
         information_mode=InformationMode.FULL_ORACLE,
     )
     runs: list[AlgorithmRun] = []
-    for mechanism in mechanisms:
+    for mechanism in selected_mechanisms:
         if mechanism == "centralized_oracle":
             run = oracle_run.model_copy(update={"utility_gap_vs_oracle": 0.0})
         else:
@@ -288,4 +336,29 @@ def _algorithm_for(mechanism: MechanismName) -> _AlgorithmRunner:
         return PriceOnlyDual()
     if mechanism == "consensus_averaging":
         return ConsensusAveraging()
+    if mechanism == "weighted_nash_plaintext":
+        return WeightedNashPlaintext()
+    if mechanism == "weighted_nash_bounded":
+        return WeightedNashBounded()
     raise ValueError(f"unknown mechanism: {mechanism!r}")
+
+
+def _default_information_mode(
+    mechanism: MechanismName,
+    requested: InformationMode | None,
+) -> InformationMode:
+    if requested is not None:
+        return requested
+    if mechanism == "weighted_nash_bounded":
+        return InformationMode.PRIVATE
+    return InformationMode.FULL_ORACLE
+
+
+def _default_mechanisms_for(scenario: Scenario) -> tuple[MechanismName, ...]:
+    if len(scenario.participants) > 2:
+        return (
+            "centralized_oracle",
+            "weighted_nash_plaintext",
+            "weighted_nash_bounded",
+        )
+    return DEFAULT_MECHANISMS

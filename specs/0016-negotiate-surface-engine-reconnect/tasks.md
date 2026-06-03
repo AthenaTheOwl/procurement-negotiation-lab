@@ -34,7 +34,7 @@
 
 ## W4 (paired)
 
-- [ ] **T-MP-003**: Extend the SDK multi-party API and fixtures for
+- [x] **T-MP-003**: Extend the SDK multi-party API and fixtures for
   `N >= 2`. *(R-NEGOTIATE-006)*
 - [ ] **T-MOB-MP**: Keep mobile parity with the shared contract.
   *(R-NEGOTIATE-006)*
