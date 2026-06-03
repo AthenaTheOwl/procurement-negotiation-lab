@@ -1,0 +1,20 @@
+{
+  "$comment": "Source-of-truth parameter mirror for the weighted-Nash bargaining solver. Python reads from algorithms/weighted_nash.py + engine/privacy.py module-level constants. The TS engine mirror (W2 Codex lane T-NASH-009) reads this file. Parity tests assert both implementations honor identical values. See decisions/DEC-NASH-001 + DEC-NASH-002.",
+  "nash_quantization_levels": 64,
+  "tie_break_tolerance": 1e-9,
+  "plaintext_numerical_tolerance": 1e-4,
+  "protocol_numerical_tolerance": 1e-3,
+  "step_eta_0": 0.5,
+  "step_beta": 0.5,
+  "step_scale_fraction": 0.05,
+  "step_quantization_levels": 32,
+  "max_rounds": 200,
+  "convergence_tolerance": 1e-3,
+  "protocol_version": "bounded-leakage/v1",
+  "mechanism_identifiers": {
+    "plaintext": "weighted_nash_plaintext",
+    "bounded_leakage": "weighted_nash_bounded",
+    "mpc_reserved_w5": "weighted_nash_mpc"
+  },
+  "leakage_sufficiency_note": "information-theoretic upper bound; not a differential-privacy guarantee"
+}

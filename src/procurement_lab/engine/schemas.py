@@ -193,3 +193,130 @@ class AlgorithmRun(BaseModel):
         default=None,
         description="oracle.global_utility - this.global_utility ($); None for the oracle itself",
     )
+    leakage_report: LeakageReport | None = Field(
+        default=None,
+        description=(
+            "Per-run LeakageReport for preference-private mechanisms "
+            "(weighted_nash_bounded, weighted_nash_mpc). None for "
+            "mechanisms that reveal full preferences to the aggregator."
+        ),
+    )
+    failure: MechanismFailure | None = Field(
+        default=None,
+        description=(
+            "Structured failure for mechanisms that cannot return a "
+            "valid allocation; None on success. See DEC-NASH-001 for "
+            "reason-code semantics."
+        ),
+    )
+
+
+class MechanismFailureReason(StrEnum):
+    """Reason codes for MechanismFailure (DEC-NASH-001)."""
+
+    NO_FEASIBLE_ALLOCATION = "no_feasible_allocation"
+    BATNA_FLOOR_UNREACHABLE = "batna_floor_unreachable"
+    CAPACITY_EXCEEDED = "capacity_exceeded"
+    DEALBREAKER_CONFLICT = "dealbreaker_conflict"
+    PRIVATE_MODE_UNSUPPORTED = "private_mode_unsupported"
+
+
+class MechanismFailure(BaseModel):
+    """A structured failure result from a bargaining mechanism.
+
+    Mechanisms return this in the AlgorithmRun.failure field rather
+    than raising, so SDK callers can route every mechanism through the
+    same return path and surface a "no deal" state without exception
+    handling. See DEC-NASH-001.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    reason: MechanismFailureReason
+    note: str = Field(default="")
+
+
+class PartyLeakage(BaseModel):
+    """Per-party leakage accounting in a LeakageReport (DEC-NASH-002)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    party_id: str
+    epsilon_bound: float = Field(
+        ge=0,
+        description="Declared per-protocol-version upper bound on bits of utility-function information that the transcript reveals about this party.",
+    )
+    epsilon_measured: float = Field(
+        ge=0,
+        description="Measured per-run information-theoretic upper bound: round_count * (n_coords * log2(3) + log2(STEP_QUANTIZATION_LEVELS)).",
+    )
+    round_count: int = Field(ge=0)
+    message_log_hash: str = Field(
+        min_length=64,
+        max_length=64,
+        pattern=r"^[a-f0-9]{64}$",
+        description="SHA-256 of the canonical-JSON-serialized message log this party sent.",
+    )
+    sufficiency_note: str = Field(
+        default="",
+        description="Human-readable note on the bound's looseness (e.g., 'information-theoretic upper bound; not a differential-privacy guarantee').",
+    )
+
+
+class AggregateLeakage(BaseModel):
+    """Aggregate leakage across parties in a LeakageReport."""
+
+    model_config = ConfigDict(frozen=True)
+
+    max_epsilon_measured: float = Field(ge=0)
+    max_epsilon_bound: float = Field(ge=0)
+    all_within_bound: bool
+
+
+class LeakageReport(BaseModel):
+    """Per-run leakage report for preference-private bargaining (DEC-NASH-002).
+
+    Schema mirrored to JSON Schema at
+    `ops/schemas/leakage-report.schema.json` for cross-repo consumers
+    (run-evidence packet emitter chain, DEC-FACTORY-007).
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    protocol_version: str = Field(
+        min_length=1,
+        description="Protocol contract identifier. v1 today is 'bounded-leakage/v1' per DEC-NASH-002.",
+    )
+    run_id: str = Field(min_length=1)
+    seed: int = Field(
+        description="64-bit seed pinned for the protocol run; same seed + scenario + parameter file reproduces the message sequence.",
+    )
+    round_count: int = Field(ge=0)
+    per_party: list[PartyLeakage] = Field(min_length=1)
+    aggregate: AggregateLeakage
+
+    @model_validator(mode="after")
+    def _aggregate_matches_per_party(self) -> LeakageReport:
+        if not self.per_party:
+            return self
+        expected_max_measured = max(p.epsilon_measured for p in self.per_party)
+        expected_max_bound = max(p.epsilon_bound for p in self.per_party)
+        expected_within = all(
+            p.epsilon_measured <= p.epsilon_bound for p in self.per_party
+        )
+        if abs(self.aggregate.max_epsilon_measured - expected_max_measured) > 1e-9:
+            raise ValueError(
+                f"aggregate.max_epsilon_measured ({self.aggregate.max_epsilon_measured}) "
+                f"does not match per_party max ({expected_max_measured})"
+            )
+        if abs(self.aggregate.max_epsilon_bound - expected_max_bound) > 1e-9:
+            raise ValueError(
+                f"aggregate.max_epsilon_bound ({self.aggregate.max_epsilon_bound}) "
+                f"does not match per_party max ({expected_max_bound})"
+            )
+        if self.aggregate.all_within_bound != expected_within:
+            raise ValueError(
+                f"aggregate.all_within_bound ({self.aggregate.all_within_bound}) "
+                f"does not match per_party check ({expected_within})"
+            )
+        return self

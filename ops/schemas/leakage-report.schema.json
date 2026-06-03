@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://procurement-negotiation-lab.dev/schemas/leakage-report.schema.json",
+  "title": "LeakageReport",
+  "description": "Per-run leakage report for the bounded-leakage preference-private bargaining protocol. Pinned by DEC-NASH-002; mirrored from the Pydantic model in src/procurement_lab/engine/schemas.py.",
+  "type": "object",
+  "required": [
+    "protocol_version",
+    "run_id",
+    "seed",
+    "round_count",
+    "per_party",
+    "aggregate"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "protocol_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Protocol contract identifier. v1 today is 'bounded-leakage/v1'."
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "round_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "per_party": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/PartyLeakage"
+      }
+    },
+    "aggregate": {
+      "$ref": "#/$defs/AggregateLeakage"
+    }
+  },
+  "$defs": {
+    "PartyLeakage": {
+      "type": "object",
+      "required": [
+        "party_id",
+        "epsilon_bound",
+        "epsilon_measured",
+        "round_count",
+        "message_log_hash"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "party_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "epsilon_bound": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Declared per-protocol-version upper bound on bits of utility-function information that the transcript reveals about this party."
+        },
+        "epsilon_measured": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Measured per-run information-theoretic upper bound: round_count * (n_coords * log2(3) + log2(STEP_QUANTIZATION_LEVELS))."
+        },
+        "round_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "message_log_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sufficiency_note": {
+          "type": "string"
+        }
+      }
+    },
+    "AggregateLeakage": {
+      "type": "object",
+      "required": [
+        "max_epsilon_measured",
+        "max_epsilon_bound",
+        "all_within_bound"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "max_epsilon_measured": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_epsilon_bound": {
+          "type": "number",
+          "minimum": 0
+        },
+        "all_within_bound": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
