@@ -1,0 +1,45 @@
+id: w0-codex-cleanup-tranche-a
+title: "Codex W0 reset docs, spec 0016, and factory handoff"
+target_repo: e:/claude_code/random-apps/procurement-negotiation-lab
+base_branch: main
+
+goal: |
+  Land the Codex W0 lane from the clean post-753bd0a main:
+  - record the local-only contaminated-branch abandonment in RESET_LEDGER
+  - slim README claims around the active W0 reset
+  - archive the old product expansion roadmap
+  - add spec 0016 for NegotiateSurface engine reconnect and legacy URL translation
+  - add a factory task that future W3 agents can run from the factory runtime
+
+  Do not reintroduce legacy setup docs, provider examples, key prefixes,
+  or environment-variable samples.
+
+risk: low
+
+checkpoints:
+  - plan_review
+  - diff_review
+
+gates:
+  - cmd: python scripts/spec_check.py
+    name: spec_check
+  - cmd: python scripts/voice_lint.py
+    name: voice_lint
+  - cmd: python scripts/validate_decisions.py
+    name: validate_decisions
+  - cmd: python scripts/check_no_bom.py
+    name: check_no_bom
+
+review:
+  reviewers:
+    - claude_code
+    - codex
+  max_patch_rounds: 2
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: codex

@@ -121,12 +121,12 @@ command list the task YAML carries.
 
 - The MCP surface ships over stdio for local clients only. A hosted
   variant (long-running socket, auth, multi-tenant routing) is out of
-  scope and tracked in `specs/0009-.../STATUS.md`.
+  scope for this repo.
 - The router's dry-run path uses stub workers; the real-CLI fan-out
   has not been exercised end to end.
-- The factory event-log schema is not pinned by an R-FACTORY-*
-  requirement yet; the `factory-run-emits-events` policy watches the
-  gap.
+- The factory event ledger and Run record schema are pinned by
+  R-FACTORY-RUN-EVIDENCE-001..035; new task families still need their
+  own task YAML and review gates.
 - No auto-merge. The pipeline stops at "draft PR opened" by default.
 - No background poller. You run `python -m scripts.factory.run` when
   you want it.
