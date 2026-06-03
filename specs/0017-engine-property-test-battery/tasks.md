@@ -25,7 +25,7 @@
 
 ## W2 (Codex lead, Claude review)
 
-- B1: Stand up `.github/workflows/engine-properties.yml` covering
+- [x] B1: Stand up `.github/workflows/engine-properties.yml` covering
   R-PROP-007. Workflow runs property battery on every PR touching
   engine code; uploads `.hypothesis/` directory on failure.
 - B2: Implement `tests/property/test_ts_python_parity.py` covering

@@ -323,29 +323,30 @@ deferred:
     note: covered collectively by DEC-NEGOTIATE-001 until W4 mobile and SDK parity lands
 
   # R-PROP-* — spec 0017 engine property test battery.
-  # DEC-PROP-001 lands in W1 of the 2026-06-01 reset.
-  - id: R-PROP-001
-    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+  # DEC-PROP-001 (landed) resolves R-PROP-001 via front-matter; the
+  # remaining R-PROP-* are covered collectively by DEC-PROP-001 when
+  # their concrete proof files have landed, or deferred to the planned
+  # W3/W4 follow-on when the proof file is still absent.
   - id: R-PROP-002
-    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+    note: covered collectively by DEC-PROP-001; tests/property/test_individual_rationality.py landed in W1
   - id: R-PROP-003
-    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+    note: covered collectively by DEC-PROP-001; tests/property/test_determinism.py landed in W1
   - id: R-PROP-004
-    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+    note: covered collectively by DEC-PROP-001; tests/property/test_monotonicity.py landed in W1
   - id: R-PROP-005
-    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+    note: covered collectively by DEC-PROP-001; tests/property/test_cbt_budget_balance.py landed in W1
   - id: R-PROP-006
-    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+    note: covered collectively by DEC-PROP-001; tests/property/test_leakage_bound.py landed in W2
   - id: R-PROP-007
-    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+    note: covered collectively by DEC-PROP-001; .github/workflows/engine-properties.yml landed in W2
   - id: R-PROP-008
-    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+    note: deferred until tests/property/test_pareto.py lands in W3
   - id: R-PROP-009
-    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+    note: deferred until tests/property/test_infeasibility.py lands in W3
   - id: R-PROP-010
-    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+    note: deferred until tests/property/test_numerical_stability.py lands in W3
   - id: R-PROP-011
-    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+    note: deferred until tests/property/test_ts_python_parity.py lands in W2 (paired with Codex TS engine mirror)
 
 # Roles-deferred allowlist: R-* IDs whose traceability.md row carries an
 # `owner_role:` token mapped to the closest installed role plus an

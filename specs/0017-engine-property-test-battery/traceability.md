@@ -8,7 +8,7 @@
 | **R-PROP-004** monotonicity invariant (owner_role: science.proof-gate-runner) | A2, A5, C1 | test_monotonicity.py runs weight-perturbation pairs; weighted_nash covered | planned |
 | **R-PROP-005** CBT budget-balance invariant (owner_role: science.proof-gate-runner) | A2, A6 | test_cbt_budget_balance.py asserts surplus-share sum equals total surplus within tolerance | planned |
 | **R-PROP-006** leakage-bound invariant (owner_role: science.proof-gate-runner) | A2, A7, C1 | test_leakage_bound.py covers bounded-leakage + MPC; measured_epsilon <= declared_bound | planned |
-| **R-PROP-007** CI property workflow (owner_role: operations.release-manager) | B1 | engine-properties.yml runs pytest tests/property/ on PRs; uploads .hypothesis/ on red; 10-minute cap | planned |
+| **R-PROP-007** CI property workflow (owner_role: operations.release-manager) | B1 | engine-properties.yml runs pytest tests/property/ on PRs; uploads .hypothesis/ on red; 10-minute cap | implemented |
 | **R-PROP-008** Pareto efficiency invariant (owner_role: science.proof-gate-runner) | A2, A9, C1 | test_pareto.py enumerates feasible frontier for small action sets; no Pareto-dominating alternative | planned |
 | **R-PROP-009** infeasibility handling invariant (owner_role: science.proof-gate-runner) | A2, A10 | test_infeasibility.py covers every mechanism; MechanismFailure returned; no uncaught exceptions | planned |
 | **R-PROP-010** numerical stability invariant (owner_role: science.proof-gate-runner) | A2, A11 | test_numerical_stability.py covers mechanisms with declared Lipschitz constant; bound documented per mechanism | planned |
@@ -18,6 +18,9 @@
 
 The property battery itself is the proof surface for spec 0017. Each
 property test file maps 1:1 to an R-PROP-* requirement. The
-engine-properties.yml workflow runs the battery on every PR. DEC-PROP-001
-carries the systems-thinking fields and resolves the per-mechanism
-Lipschitz constants + Pareto enumeration tractability cap.
+engine-properties.yml workflow runs the battery on every PR that
+touches Python engine code, TypeScript engine code, or property tests,
+and separately typechecks the TS engine mirror plus its weighted-Nash
+regression tests. DEC-PROP-001 carries the systems-thinking fields and
+resolves the per-mechanism Lipschitz constants + Pareto enumeration
+tractability cap.
