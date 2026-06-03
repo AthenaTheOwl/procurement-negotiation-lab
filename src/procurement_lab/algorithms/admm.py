@@ -6,8 +6,10 @@ z is the average of participants' preferred quantities and the dual
 variables update by the constraint violation. Standard recipe; see
 Boyd et al., *Distributed Optimization via ADMM* (2011).
 
-v0: discrete grid search per subproblem (2 participants, n_periods=1).
-v1 will add gradient-based subproblem solvers and multi-party support.
+v1: discrete grid search per subproblem; n_periods=1; multi-party N>=2
+supported. The averaging and dual-update loops are N-general; the
+prior 2-party guard (a v0 caution) is retired in W4 of the 2026-06-01
+reset. Gradient-based subproblem solvers + multi-period remain v2.
 """
 
 from __future__ import annotations
@@ -30,7 +32,7 @@ from procurement_lab.engine.utility import (
 
 
 class ADMM:
-    """Classical 2-block ADMM for buyer-supplier consensus."""
+    """Classical N-block ADMM for multi-party consensus (W4 lift)."""
 
     name = "admm"
 
@@ -55,9 +57,11 @@ class ADMM:
         overrides = overrides_for_mode(scenario, information_mode)
 
         if scenario.n_periods != 1:
-            raise NotImplementedError("ADMM v0 supports n_periods=1 only")
-        if len(scenario.participants) != 2:
-            raise NotImplementedError("ADMM v0 supports 2 participants only")
+            raise NotImplementedError("ADMM v1 supports n_periods=1 only")
+        if len(scenario.participants) < 2:
+            raise NotImplementedError(
+                "ADMM needs at least 2 participants for consensus"
+            )
 
         product = scenario.products[0]
         cap = scenario.capacity.get(product.id, product.demand_mean * 2.0)
