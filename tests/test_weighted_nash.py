@@ -8,15 +8,11 @@ batteries.
 
 from __future__ import annotations
 
-import pytest
-
 from procurement_lab.algorithms.weighted_nash import (
     NASH_QUANTIZATION_LEVELS,
-    PROTOCOL_NUMERICAL_TOLERANCE,
     WeightedNashBounded,
     WeightedNashPlaintext,
     compute_nash_product,
-    plaintext_argmax,
 )
 from procurement_lab.engine.privacy import PROTOCOL_VERSION
 from procurement_lab.engine.schemas import (
@@ -25,7 +21,6 @@ from procurement_lab.engine.schemas import (
     MechanismFailureReason,
     Scenario,
 )
-
 
 # Existing fixtures: `scenario` and `risky_scenario` from tests/conftest.py.
 
@@ -182,24 +177,61 @@ def test_plaintext_returns_structured_failure_on_unsupported_n_periods(
     assert run.convergence == Convergence.NO_DEAL
 
 
-def test_bounded_returns_structured_failure_on_three_parties(
-    scenario: Scenario, buyer, supplier, product
-) -> None:
-    """N>2 is unsupported in v1; returns structured failure (W4 lift later)."""
+def test_bounded_runs_on_three_parties(scenario: Scenario, buyer, supplier) -> None:
+    """W4 lifts bounded weighted-Nash past the old N=2 ceiling."""
     from procurement_lab.engine.schemas import Participant, Role
 
     third = Participant(
-        id="extra-buyer",
-        name="Extra",
-        role=Role.BUYER,
-        utility_formula="50.0 * min(q, demand)",
-        parameters={},
+        id="packager-orion",
+        name="Orion Advanced Packaging",
+        role=Role.PACKAGER,
+        utility_formula=(
+            "packaging_fee * q "
+            "- packaging_cost * q "
+            "- overtime_penalty * max(q - soft_capacity, 0)"
+        ),
+        parameters={
+            "packaging_fee": 16.0,
+            "packaging_cost": 7.0,
+            "overtime_penalty": 1.5,
+            "soft_capacity": 520.0,
+        },
         outside_option=0.0,
     )
     three_party = scenario.model_copy(
         update={"participants": [buyer, supplier, third]}
     )
     run = WeightedNashBounded().run(three_party, information_mode=InformationMode.PRIVATE)
-    assert run.failure is not None
-    assert run.failure.reason == MechanismFailureReason.NO_FEASIBLE_ALLOCATION
-    assert "N>=3" in run.failure.note or "2 participants" in run.failure.note
+    assert run.failure is None
+    assert run.convergence in {Convergence.CONVERGED, Convergence.NOT_CONVERGED}
+    assert run.leakage_report is not None
+    assert len(run.leakage_report.per_party) == 3
+    assert set(run.ledger.local) == {
+        "buyer-northstar",
+        "supplier-cinder",
+        "packager-orion",
+    }
+
+
+def test_plaintext_runs_on_five_parties(scenario: Scenario, buyer, supplier) -> None:
+    """The plaintext oracle path accepts N up to the R-NASH-007 target range."""
+    from procurement_lab.engine.schemas import Participant, Role
+
+    extra = [
+        Participant(
+            id=f"coordinator-{idx}",
+            name=f"Coordinator {idx}",
+            role=Role.CUSTOM,
+            utility_formula="service_fee * q - operating_cost * q",
+            parameters={"service_fee": 9.0 + idx, "operating_cost": 3.0},
+            outside_option=0.0,
+        )
+        for idx in range(3)
+    ]
+    five_party = scenario.model_copy(
+        update={"participants": [buyer, supplier, *extra]}
+    )
+    run = WeightedNashPlaintext().run(five_party)
+    assert run.failure is None
+    assert run.convergence == Convergence.CONVERGED
+    assert len(run.ledger.local) == 5

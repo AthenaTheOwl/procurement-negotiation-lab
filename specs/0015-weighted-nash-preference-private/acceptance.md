@@ -25,6 +25,8 @@ the merge commit that closes the spec.
 
 - `python -m procurement_mechanism_sdk.demo --mechanism weighted_nash_bounded`
   prints a deterministic allocation + leakage report.
+- `python -m procurement_mechanism_sdk.demo --sample multi_party --mechanism weighted_nash_bounded`
+  prints a deterministic `N = 3` allocation + participation report.
 - `python -m procurement_mechanism_sdk.demo --mechanism weighted_nash_mpc`
   prints a deterministic allocation + cryptographic leakage report.
 - `compare_mechanisms(..., mechanisms=["weighted_nash_bounded",
@@ -38,7 +40,7 @@ the merge commit that closes the spec.
   `NotImplementedError`.
 - The Playwright two-tab test for spec 0016 covers the `N = 2`
   bounded-leakage and `N = 2` MPC flows; the `N = 3` test runs
-  through the SDK CLI rather than the UI in this spec cycle.
+  through the SDK CLI in this spec cycle.
 
 ### Per-run record + replay
 

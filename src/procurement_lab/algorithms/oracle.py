@@ -5,9 +5,10 @@ utility functions and picks the joint quantity vector that maximizes
 sum-of-utilities subject to capacity. Other algorithms are graded against
 this oracle's global utility.
 
-v0 supports 2 participants and n_periods=1 via grid search over quantity
-pairs. Multi-party / multi-period oracle is a v1 extension (will use a
-proper LP/MIP via SciPy or HiGHS once we go beyond grid search).
+v1 supports N>=2 participants and n_periods=1 via grid search over a
+single consensus quantity. Multi-period oracle is a later extension
+that can move to a proper LP/MIP via SciPy or HiGHS once the allocation
+vector has more than one decision variable.
 """
 
 from __future__ import annotations
@@ -53,11 +54,9 @@ class CentralizedOracle:
         # build a discrete grid of candidate quantities per period
         grid = _grid(0.0, upper, self.grid_step)
 
-        # for v0 we assume 2 participants and n_periods=1
+        # W4 lifts participant count; this remains single-period.
         if scenario.n_periods != 1:
             raise NotImplementedError("oracle v0 supports n_periods=1 only")
-        if len(scenario.participants) != 2:
-            raise NotImplementedError("oracle v0 supports 2 participants only")
 
         # search: pick the consensus quantity that maximizes sum of utilities
         # (assuming both participants must agree on the same quantity)

@@ -44,7 +44,7 @@ Leakage measurement (R-NASH-005) bounds the information a transcript
 of these messages reveals about each party's utility, expressed as an
 epsilon value with a documented worst-case derivation per party.
 DEC-NASH-002 fixes the leakage-bound derivation; spec 0015 references
-that derivation rather than redoing it inline.
+that derivation directly instead of redoing it inline.
 
 ## Algorithm: cryptographic MPC mechanism (W5)
 

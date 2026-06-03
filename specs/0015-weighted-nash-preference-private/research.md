@@ -30,8 +30,7 @@
   Confidentiality* 1(1): 59-98. Survey of MPC primitives that
   DEC-MPC-001 evaluates against.
 - Damgård, I., Pastro, V., Smart, N., Zakarias, S. (2012).
-  "Multiparty Computation from Somewhat Homomorphic Encryption".
-  *CRYPTO 2012*. SPDZ protocol family that MP-SPDZ implements;
+  CRYPTO 2012 paper introducing the SPDZ protocol family that MP-SPDZ implements;
   candidate path for R-NASH-008.
 
 ### Bounded-leakage iteration
