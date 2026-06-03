@@ -102,6 +102,19 @@ REQUIRED_WORKFLOW_PROOFS = {
         "chaos-validation",
         "tests/factory/test_chaos_run_evidence.py",
     ],
+    ".github/workflows/engine-properties.yml": [
+        "pull_request",
+        "paths:",
+        "src/procurement_lab/**",
+        "packages/engine/**",
+        "tests/property/**",
+        "timeout-minutes: 10",
+        "uv run pytest tests/property/ -q --no-cov",
+        "actions/upload-artifact@v4",
+        ".hypothesis/",
+        "npm run lint --workspace=@lab/engine",
+        "npm run test --workspace=@lab/engine -- src/model/weightedNash.test.ts",
+    ],
 }
 
 REQUIRED_PACKAGE_SCRIPTS = {
