@@ -5,7 +5,7 @@
 | **R-NEGOTIATE-001** versioned surface engine contract (owner_role: engineering.implementation) | T-SPEC-0016-A, T-NEG-001 | `packages/engine/src/learn/negotiationContract.ts` plus tests; unknown versions and mechanism ids rejected | [DEC-NEGOTIATE-001](../../decisions/DEC-NEGOTIATE-001-versioned-surface-contract-before-engine-reconnect.md) | implemented |
 | **R-NEGOTIATE-002** functional mechanism selector (owner_role: engineering.implementation) | T-NEG-002, T-NEG-004, T-MPC-INT-002 | Selector lists only functional mechanisms; selection changes output and survives URL copy | [DEC-NEGOTIATE-001](../../decisions/DEC-NEGOTIATE-001-versioned-surface-contract-before-engine-reconnect.md) | partial: weighted-Nash bounded/plaintext live |
 | **R-NEGOTIATE-003** legacy URL translator (owner_role: engineering.implementation) | T-NEG-003 | v1 `?n=` links translate to v2 `?neg=`; invalid links fail closed | [DEC-NEGOTIATE-001](../../decisions/DEC-NEGOTIATE-001-versioned-surface-contract-before-engine-reconnect.md) | implemented |
-| **R-NEGOTIATE-004** two-tab engine round trip (owner_role: science.proof-gate-runner) | T-NEG-002, T-NEG-005, T-MPC-INT-003 | Playwright two-tab copied-URL proof for bounded-leakage and MPC modes | [DEC-NEGOTIATE-001](../../decisions/DEC-NEGOTIATE-001-versioned-surface-contract-before-engine-reconnect.md) | partial: engine response live; Playwright proof pending |
+| **R-NEGOTIATE-004** two-tab engine round trip (owner_role: science.proof-gate-runner) | T-NEG-002, T-NEG-005, T-MPC-INT-003 | Playwright two-tab copied-URL proof for bounded-leakage and MPC modes | [DEC-NEGOTIATE-001](../../decisions/DEC-NEGOTIATE-001-versioned-surface-contract-before-engine-reconnect.md) | partial: bounded Playwright proof live; MPC proof pending W5 |
 | **R-NEGOTIATE-005** leakage and participation report in the UI (owner_role: science.proof-gate-runner) | T-NEG-002, T-LEARN-12, T-MPC-INT-002 | UI renders leakage epsilon or cryptographic parameter plus BATNA and participation status from engine response | [DEC-NEGOTIATE-001](../../decisions/DEC-NEGOTIATE-001-versioned-surface-contract-before-engine-reconnect.md) | partial: bounded leakage report live |
 | **R-NEGOTIATE-006** mobile and SDK parity (owner_role: engineering.implementation) | T-MP-003, T-MOB-MP | SDK CLI and mobile fixtures match the web contract or a documented equivalent adapter | [DEC-NEGOTIATE-001](../../decisions/DEC-NEGOTIATE-001-versioned-surface-contract-before-engine-reconnect.md) | planned |
 
@@ -21,3 +21,8 @@ surface proof is
 `npm.cmd run test --workspace=@lab/web -- NegotiateSurface`, which
 covers v2 URL writes, legacy link translation, functional mechanism
 selection, and leakage/participation rendering from engine responses.
+The copied-URL browser proof is
+`npm.cmd run smoke --workspace=@lab/web -- negotiate`, which opens
+buyer and supplier pages, exchanges the encoded URL, runs
+weighted-Nash bounded, and returns the supplier counterpacket to the
+buyer tab.

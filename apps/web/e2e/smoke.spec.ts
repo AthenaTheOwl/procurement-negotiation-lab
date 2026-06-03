@@ -85,4 +85,39 @@ test.describe("procurement-negotiation-lab smoke", () => {
       "selected_option",
     );
   });
+
+  test("negotiate copied URL runs weighted-Nash across two tabs", async ({ page, context }) => {
+    await page.goto("/#/negotiate", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("mechanism-weighted_nash_bounded")).toBeVisible();
+    await page.getByTestId("role-buyer").click();
+    await page.getByTestId("draft-q").fill("420");
+    await page.getByTestId("draft-price").fill("86");
+    await page.getByTestId("draft-note").fill("buyer opening packet");
+    await page.getByTestId("submit-offer").click();
+    await expect(page.getByTestId("engine-response-report")).toBeVisible();
+    await expect(page.getByTestId("engine-leakage")).toContainText("epsilon");
+    const buyerPacketUrl = page.url();
+    expect(new URL(buyerPacketUrl).searchParams.get("neg")).toBeTruthy();
+
+    const supplierPage = await context.newPage();
+    await supplierPage.goto(buyerPacketUrl, { waitUntil: "domcontentloaded" });
+    await expect(supplierPage.getByTestId("role-suggestion")).toContainText("supplier");
+    await supplierPage.getByTestId("role-supplier").click();
+    await expect(supplierPage.getByTestId("partner-last-offer")).toContainText("q=420");
+    await expect(supplierPage.getByTestId("engine-response-report")).toBeVisible();
+    await supplierPage.getByTestId("draft-q").fill("360");
+    await supplierPage.getByTestId("draft-price").fill("94");
+    await supplierPage.getByTestId("draft-note").fill("supplier counterpacket");
+    await supplierPage.getByTestId("submit-offer").click();
+    await expect(supplierPage.getByTestId("engine-mechanism")).toContainText("weighted_nash_bounded");
+    const supplierPacketUrl = supplierPage.url();
+    await supplierPage.close();
+
+    await page.goto(supplierPacketUrl, { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("partner-last-offer")).toContainText("q=360");
+    await expect(page.getByTestId("engine-participation")).toContainText("BATNA");
+    await page.getByTestId("accept-offer").click();
+    await page.getByTestId("accept-confirm-yes").click();
+    await expect(page.getByTestId("half-accepted-banner")).toContainText("Buyer accepted");
+  });
 });
