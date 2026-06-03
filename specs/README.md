@@ -99,6 +99,20 @@ Current active specs:
 - `0014-mechanism-design-sdk/research.md`
 - `0014-mechanism-design-sdk/traceability.md`
 
+- `0015-weighted-nash-preference-private/requirements.md`
+- `0015-weighted-nash-preference-private/design.md`
+- `0015-weighted-nash-preference-private/tasks.md`
+- `0015-weighted-nash-preference-private/acceptance.md`
+- `0015-weighted-nash-preference-private/research.md`
+- `0015-weighted-nash-preference-private/traceability.md`
+
+- `0017-engine-property-test-battery/requirements.md`
+- `0017-engine-property-test-battery/design.md`
+- `0017-engine-property-test-battery/tasks.md`
+- `0017-engine-property-test-battery/acceptance.md`
+- `0017-engine-property-test-battery/research.md`
+- `0017-engine-property-test-battery/traceability.md`
+
 The development loop is:
 
 1. Write or update requirements in testable language.

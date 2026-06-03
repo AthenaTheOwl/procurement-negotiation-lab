@@ -285,6 +285,54 @@ deferred:
   - id: R-AIBRIEF-001
     note: phase pre-CDCP requirement (spec 0012 mobile release + agentic SDLC); backfill pending
 
+  # R-NASH-* — spec 0015 weighted-Nash preference-private bargaining.
+  # DEC-NASH-001 + DEC-NASH-002 land in W2; DEC-MPC-001 lands in W5.
+  - id: R-NASH-001
+    note: deferred until DEC-NASH-001 lands in W2 of the 2026-06-01 reset
+  - id: R-NASH-002
+    note: deferred until DEC-NASH-001 lands in W2 of the 2026-06-01 reset
+  - id: R-NASH-003
+    note: deferred until DEC-NASH-001 lands in W2 of the 2026-06-01 reset
+  - id: R-NASH-004
+    note: deferred until DEC-NASH-002 lands in W2 of the 2026-06-01 reset
+  - id: R-NASH-005
+    note: deferred until DEC-NASH-002 lands in W2 of the 2026-06-01 reset
+  - id: R-NASH-006
+    note: deferred until DEC-NASH-002 lands in W2 of the 2026-06-01 reset
+  - id: R-NASH-007
+    note: deferred until DEC-NASH-001 multi-party amendment lands in W4
+  - id: R-NASH-008
+    note: deferred until DEC-MPC-001 lands in W5 of the 2026-06-01 reset
+  - id: R-NASH-009
+    note: deferred until DEC-NASH-001 lands in W2 of the 2026-06-01 reset
+  - id: R-NASH-010
+    note: deferred until DEC-NASH-001 lands in W2 of the 2026-06-01 reset
+
+  # R-PROP-* — spec 0017 engine property test battery.
+  # DEC-PROP-001 lands in W1 of the 2026-06-01 reset.
+  - id: R-PROP-001
+    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+  - id: R-PROP-002
+    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+  - id: R-PROP-003
+    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+  - id: R-PROP-004
+    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+  - id: R-PROP-005
+    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+  - id: R-PROP-006
+    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+  - id: R-PROP-007
+    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+  - id: R-PROP-008
+    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+  - id: R-PROP-009
+    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+  - id: R-PROP-010
+    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+  - id: R-PROP-011
+    note: deferred until DEC-PROP-001 lands in W1 of the 2026-06-01 reset
+
 # Roles-deferred allowlist: R-* IDs whose traceability.md row carries an
 # `owner_role:` token mapped to the closest installed role plus an
 # `owner_role_pending_graduation:` marker that names a CATALOG role this
