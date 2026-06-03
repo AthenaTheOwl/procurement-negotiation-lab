@@ -185,6 +185,46 @@ export type { DecisionEvent, DecisionEventLog } from "./model/decisionEvent";
 // --- model: formula engine (spec 0003) -----------------------------------
 export { FormulaError, compileFormula } from "./model/formula";
 export type { CompiledFormula } from "./model/formula";
+export {
+  LEAKAGE_SUFFICIENCY_NOTE,
+  NASH_QUANTIZATION_LEVELS,
+  PLAINTEXT_NUMERICAL_TOLERANCE,
+  PROTOCOL_NUMERICAL_TOLERANCE,
+  PROTOCOL_VERSION,
+  TIE_BREAK_TOLERANCE,
+  WEIGHTED_NASH_PARAMS,
+  buildWeightedNashLedger,
+  computeNashProduct,
+  computeSha256,
+  declaredEpsilonBound,
+  evaluateParticipantUtility,
+  partyGradientDirection,
+  plaintextArgmax,
+  quantizeStep,
+  runBoundedLeakageProtocol,
+  runWeightedNashBounded,
+  runWeightedNashPlaintext,
+  stepSize,
+} from "./model/weightedNash";
+export type {
+  AggregateLeakage,
+  IterationRecord,
+  LeakageReport,
+  MechanismFailure,
+  MechanismFailureReason,
+  NashConvergence,
+  NashInformationMode,
+  NashParticipant,
+  NashProduct,
+  NashRole,
+  NashScenario,
+  PartyLeakage,
+  ProtocolMessage,
+  ProtocolOutcome,
+  UtilityLedger,
+  WeightedNashAlgorithmRun,
+  WeightedNashSolution,
+} from "./model/weightedNash";
 
 // --- data: presets, agents, strategies, story ---------------------------
 export { agentArchetypes, agentById, agentsForSide } from "./data/agents";

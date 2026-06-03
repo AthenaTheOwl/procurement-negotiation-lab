@@ -21,9 +21,10 @@
 
 ## W2 (Codex lead, Claude parity reviewer)
 
-- B1: Implement the TypeScript engine mirror under
-  `packages/engine/src/` so the deployed app can run the plaintext
-  solver client-side at parity with the Python implementation.
+- [x] B1: Implement the TypeScript engine mirror under
+  `packages/engine/src/model/weightedNash.ts` so the deployed app can
+  run plaintext and bounded-leakage solvers client-side at parity with
+  the Python implementation.
 - B2: Stand up the engine-properties CI workflow under
   `.github/workflows/engine-properties.yml` (defined in spec 0017
   R-PROP-007; W2 wires the workflow itself, populated by spec 0017's

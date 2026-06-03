@@ -78,6 +78,14 @@ The new mechanisms register through the existing mechanism registry in
 R-NASH-009 without API breakage; existing identifiers and behavior
 remain.
 
+The TypeScript mirror lives in
+`packages/engine/src/model/weightedNash.ts` and reads
+`packages/engine/src/weighted_nash_params.json`, the same parameter
+mirror referenced by DEC-NASH-001. It mirrors the Python plaintext
+grid search and bounded-leakage protocol, including transcript hashes,
+so the deployed app can run the mechanism without a Python service
+while later parity tests compare the two implementations directly.
+
 The NegotiateSurface engine reconnect (spec 0016) consumes this spec's
 mechanism selector and leakage report. Spec 0015 does not modify the
 UI directly; it provides the API surface that spec 0016 wires.
