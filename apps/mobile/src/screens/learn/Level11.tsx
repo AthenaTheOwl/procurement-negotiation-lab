@@ -68,12 +68,11 @@ export function Level11({
       completedThrough={progress.highest_completed}
       title="How to coordinate without a solver"
       stakes="Each mechanism asks parties to reveal different things. Pick the lightest protocol that still gets the job done."
-      continueLabel="Open Sandbox ->"
+      continueLabel="Continue to Level 12"
       continueDisabled={!canContinue}
       onContinue={() => {
         if (canContinue) {
           onComplete();
-          onOpenSandbox?.();
         }
       }}
       onJumpTo={onJumpTo}
