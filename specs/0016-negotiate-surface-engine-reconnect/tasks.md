@@ -28,7 +28,7 @@
   options visible. *(R-NEGOTIATE-002)*
 - [x] **T-NEG-005**: Add the Playwright two-tab proof for copied URLs.
   *(R-NEGOTIATE-004)*
-- [ ] **T-LEARN-12**: Add Level 12 as the plain-English introduction
+- [x] **T-LEARN-12**: Add Level 12 as the plain-English introduction
   to weighted-Nash, BATNAs, privacy mode, and leakage reports.
   *(R-NEGOTIATE-005)*
 

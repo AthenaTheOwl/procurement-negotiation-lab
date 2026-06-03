@@ -41,6 +41,9 @@ const Level09 = lazy(() =>
 const Level11 = lazy(() =>
   import("./Level11").then((module) => ({ default: module.Level11 })),
 );
+const Level12 = lazy(() =>
+  import("./Level12").then((module) => ({ default: module.Level12 })),
+);
 
 export interface LearnShellProps {
   level: LevelId;
@@ -125,6 +128,13 @@ export function LearnShell({
     return (
       <Suspense fallback={<div data-testid="level11-loading">Loading mechanism catalog...</div>}>
         <Level11 {...commonProps} />
+      </Suspense>
+    );
+  }
+  if (level === 12) {
+    return (
+      <Suspense fallback={<div data-testid="level12-loading">Loading weighted-Nash intro...</div>}>
+        <Level12 {...commonProps} />
       </Suspense>
     );
   }

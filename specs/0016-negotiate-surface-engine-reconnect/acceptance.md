@@ -19,6 +19,9 @@ the merge commit that closes the W3 reconnect.
 - `npm.cmd run test --workspace=@lab/web -- NegotiateSurface` passes
   with the mechanism selector, leakage report, and report-export
   assertions.
+- `npm.cmd run test --workspace=@lab/web -- Level12` passes with the
+  weighted-Nash, BATNA, privacy-mode, and leakage-report learning
+  proof.
 - No mechanism selector entry is visible until its engine path exists.
 - The selected mechanism survives copy-link, page reload, and partner
   open.
