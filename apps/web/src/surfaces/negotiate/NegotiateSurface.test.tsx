@@ -54,7 +54,11 @@ describe("NegotiateSurface", () => {
     );
     // URL was updated with the encoded state
     const url = new URL(window.location.href);
-    expect(url.searchParams.get("n")).toBeTruthy();
+    expect(url.searchParams.get("neg")).toBeTruthy();
+    expect(url.searchParams.get("n")).toBeNull();
+    expect(screen.getByTestId("engine-response-report")).toBeTruthy();
+    expect(screen.getByTestId("engine-leakage").textContent).toMatch(/epsilon/i);
+    expect(screen.getByTestId("engine-participation").textContent).toMatch(/BATNA/i);
   });
 
   it("both sides accepting closes the deal", () => {
@@ -122,6 +126,27 @@ describe("NegotiateSurface", () => {
     expect(screen.getByTestId("role-supplier").textContent).toMatch(
       /suggested/i,
     );
+    expect(screen.getByTestId("legacy-url-translated")).toBeTruthy();
+    const url = new URL(window.location.href);
+    expect(url.searchParams.get("neg")).toBeTruthy();
+    expect(url.searchParams.get("n")).toBeNull();
+  });
+
+  it("mechanism selector switches to plaintext and removes leakage report", () => {
+    render(<NegotiateSurface onOpenHome={() => {}} />);
+    expect(screen.getByTestId("mechanism-weighted_nash_bounded").getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByTestId("mechanism-weighted_nash_plaintext"));
+    fireEvent.click(screen.getByTestId("role-buyer"));
+    fireEvent.click(screen.getByTestId("submit-offer"));
+    expect(screen.getByTestId("engine-mechanism").textContent).toBe("weighted_nash_plaintext");
+    expect(screen.getByTestId("engine-leakage").textContent).toMatch(/full oracle/i);
+  });
+
+  it("invalid legacy links fail closed with a recovery banner", () => {
+    window.history.replaceState(null, "", "/?n=bad-url");
+    render(<NegotiateSurface onOpenHome={() => {}} />);
+    expect(screen.getByTestId("legacy-url-error").textContent).toMatch(/could not be opened/i);
+    expect(screen.getByTestId("negotiate-role-picker")).toBeTruthy();
   });
 
   it("picking the same role as the partner shows a conflict banner and switch button", async () => {

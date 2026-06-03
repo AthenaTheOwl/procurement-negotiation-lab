@@ -14,38 +14,59 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import {
-  appendRound,
-  applyAccept,
-  decodeSession,
-  encodeSession,
-  isDealClosed,
-  latestOfferFor,
-  newSession,
+  FUNCTIONAL_NEGOTIATION_MECHANISMS,
+  LEGACY_NEGOTIATION_URL_PARAM,
+  NEGOTIATION_URL_PARAM,
+  appendSurfaceRound,
+  applySurfaceAccept,
+  decodeNegotiationFromURLSearch,
+  decodeSurfaceState,
+  encodeSurfaceState,
+  latestSurfaceOfferFor,
+  newSurfaceState,
+  runSurfaceEngine,
+  withMechanism,
+  type NegotiationMechanismId,
   type NegotiationRole,
-  type NegotiationState,
+  type NegotiationSurfaceStateV2,
 } from "@lab/engine";
 import { AgentFigure } from "../../primitives/AgentFigure";
 
-const BROADCAST_CHANNEL = "proc-lab.negotiate.v1";
+const BROADCAST_CHANNEL = "proc-lab.negotiate.v2";
 const SESSION_STORAGE_KEY = "proc-lab.negotiate.role";
 
 interface NegotiateSurfaceProps {
   onOpenHome: () => void;
 }
 
-function readSessionFromURL(): NegotiationState | null {
+function readSessionFromURL(): {
+  state: NegotiationSurfaceStateV2;
+  translatedFromLegacy: boolean;
+  error: string | null;
+} | null {
   if (typeof window === "undefined") return null;
-  const params = new URLSearchParams(window.location.search);
-  const encoded = params.get("n");
-  if (!encoded) return null;
-  return decodeSession(encoded);
+  const decoded = decodeNegotiationFromURLSearch(window.location.search);
+  if (!decoded) return null;
+  if (!decoded.ok) {
+    return {
+      state: newSurfaceState(),
+      translatedFromLegacy: false,
+      error: decoded.reason,
+    };
+  }
+  return {
+    state: decoded.state,
+    translatedFromLegacy: decoded.translatedFromLegacy,
+    error: null,
+  };
 }
 
-function writeSessionToURL(state: NegotiationState): void {
+function writeSessionToURL(state: NegotiationSurfaceStateV2): void {
   if (typeof window === "undefined") return;
-  const encoded = encodeSession(state);
+  const encoded = encodeSurfaceState(state);
   const url = new URL(window.location.href);
-  url.searchParams.set("n", encoded);
+  url.searchParams.set(NEGOTIATION_URL_PARAM, encoded);
+  url.searchParams.delete(LEGACY_NEGOTIATION_URL_PARAM);
   window.history.replaceState(null, "", url.toString());
 }
 
@@ -62,9 +83,13 @@ function persistRole(role: NegotiationRole): void {
 }
 
 export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
-  const [state, setState] = useState<NegotiationState>(() => {
-    return readSessionFromURL() ?? newSession();
+  const [state, setState] = useState<NegotiationSurfaceStateV2>(() => {
+    return readSessionFromURL()?.state ?? newSurfaceState();
   });
+  const [decodeError, setDecodeError] = useState<string | null>(() => {
+    return readSessionFromURL()?.error ?? null;
+  });
+  const [translatedLegacy, setTranslatedLegacy] = useState(false);
   const [role, setRoleState] = useState<NegotiationRole | null>(() =>
     readRolePreference(),
   );
@@ -87,7 +112,14 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
   // Sync from URL once on mount.
   useEffect(() => {
     const urlState = readSessionFromURL();
-    if (urlState) setState(urlState);
+    if (urlState) {
+      setState(urlState.state);
+      setDecodeError(urlState.error);
+      setTranslatedLegacy(urlState.translatedFromLegacy);
+      if (urlState.translatedFromLegacy) {
+        writeSessionToURL(urlState.state);
+      }
+    }
   }, []);
 
   // Set up a BroadcastChannel so two tabs on the same machine keep
@@ -97,8 +129,9 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
     const channel = new BroadcastChannel(BROADCAST_CHANNEL);
     channelRef.current = channel;
     channel.onmessage = (event) => {
-      const next = decodeSession(event.data);
-      if (!next) return;
+      const decoded = typeof event.data === "string" ? decodeSurfaceState(event.data) : null;
+      if (!decoded?.ok) return;
+      const next = decoded.state;
       // Last writer wins by length, then by latest timestamp.
       setState((prev) => {
         if (next.history.length > prev.history.length) return next;
@@ -117,7 +150,7 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
   // Whenever state changes, write it to the URL + broadcast.
   useEffect(() => {
     writeSessionToURL(state);
-    const encoded = encodeSession(state);
+    const encoded = encodeSurfaceState(state);
     channelRef.current?.postMessage(encoded);
   }, [state]);
 
@@ -165,9 +198,9 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
 
   const otherRole: NegotiationRole | null =
     role === "buyer" ? "supplier" : role === "supplier" ? "buyer" : null;
-  const myLastOffer = role ? latestOfferFor(state, role) : null;
-  const partnerLastOffer = otherRole ? latestOfferFor(state, otherRole) : null;
-  const dealClosed = isDealClosed(state);
+  const myLastOffer = role ? latestSurfaceOfferFor(state, role) : null;
+  const partnerLastOffer = otherRole ? latestSurfaceOfferFor(state, otherRole) : null;
+  const dealClosed = state.buyerAccepted && state.supplierAccepted;
 
   const handlePickRole = (next: NegotiationRole) => {
     setRoleState(next);
@@ -185,8 +218,12 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
       },
       at: new Date().toISOString(),
     };
-    setState((prev) => appendRound(prev, round));
+    setState((prev) => runSurfaceEngine(appendSurfaceRound(prev, round)));
     setDraftNote("");
+  };
+
+  const handleMechanismChange = (mechanismId: NegotiationMechanismId) => {
+    setState((prev) => runSurfaceEngine(withMechanism(prev, mechanismId)));
   };
 
   // Suggest the OTHER role on the picker if the URL already carries
@@ -216,22 +253,25 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
 
   const handleAcceptConfirm = () => {
     if (!role) return;
-    setState((prev) => applyAccept(prev, role));
+    setState((prev) => applySurfaceAccept(prev, role));
     setPendingAcceptIdx(null);
   };
 
   const handleAcceptCancel = () => setPendingAcceptIdx(null);
 
   const handleNewSession = () => {
-    const fresh = newSession();
+    const fresh = newSurfaceState();
     setState(fresh);
+    setDecodeError(null);
+    setTranslatedLegacy(false);
     setRoleState(null);
     if (typeof sessionStorage !== "undefined") {
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
     }
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
-      url.searchParams.delete("n");
+      url.searchParams.delete(NEGOTIATION_URL_PARAM);
+      url.searchParams.delete(LEGACY_NEGOTIATION_URL_PARAM);
       window.history.replaceState(null, "", url.toString());
     }
   };
@@ -332,6 +372,72 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
           They open it, see your offer, counter, and send back. Two tabs
           on the same machine stay in sync automatically.
         </p>
+
+        {decodeError && (
+          <div
+            data-testid="legacy-url-error"
+            role="alert"
+            style={{
+              background: "var(--walkaway-zone, rgba(210, 74, 74, 0.1))",
+              borderLeft: "4px solid var(--surplus-lost, #d24a4a)",
+              borderRadius: "var(--radius-tile, 12px)",
+              padding: "var(--space-3, 12px) var(--space-4, 16px)",
+            }}
+          >
+            This negotiation link could not be opened: {decodeError}. Start a
+            new session or ask your partner to send a fresh link.
+          </div>
+        )}
+
+        {translatedLegacy && (
+          <div
+            data-testid="legacy-url-translated"
+            role="status"
+            style={{
+              background: "var(--deal-zone, rgba(27, 182, 118, 0.1))",
+              borderLeft: "4px solid var(--surplus-good, #1bb676)",
+              borderRadius: "var(--radius-tile, 12px)",
+              padding: "var(--space-3, 12px) var(--space-4, 16px)",
+            }}
+          >
+            Legacy link translated to the v2 engine contract.
+          </div>
+        )}
+
+        <div style={card} data-testid="mechanism-selector">
+          <h2 style={{ margin: 0, fontSize: "var(--type-3, 1.05rem)" }}>
+            Mechanism
+          </h2>
+          <div style={{ display: "flex", gap: "var(--space-3, 12px)", flexWrap: "wrap" }}>
+            {FUNCTIONAL_NEGOTIATION_MECHANISMS.map((mechanism) => {
+              const selected = state.mechanismId === mechanism.id;
+              return (
+                <button
+                  key={mechanism.id}
+                  type="button"
+                  style={{
+                    ...(selected ? button : ghostBtn),
+                    background: selected ? "var(--role-buyer, #3a78ff)" : ghostBtn.background,
+                  }}
+                  onClick={() => handleMechanismChange(mechanism.id)}
+                  data-testid={`mechanism-${mechanism.id}`}
+                  aria-pressed={selected}
+                >
+                  {mechanism.label}
+                </button>
+              );
+            })}
+          </div>
+          <div
+            data-testid="mechanism-description"
+            style={{ color: "var(--neutral-fg-soft, #5b5b62)" }}
+          >
+            {
+              FUNCTIONAL_NEGOTIATION_MECHANISMS.find((m) => m.id === state.mechanismId)
+                ?.description
+            }
+          </div>
+        </div>
 
         {role === null ? (
           <div style={card} data-testid="negotiate-role-picker">
@@ -480,6 +586,59 @@ export function NegotiateSurface({ onOpenHome }: NegotiateSurfaceProps) {
                       ? "Supplier accepted; buyer still deciding."
                       : "Waiting on next offer."}
               </div>
+
+              {state.engineResponse && (
+                <div
+                  data-testid="engine-response-report"
+                  style={{
+                    background: "var(--neutral-bg, #f7f7f4)",
+                    borderRadius: "var(--radius-tile, 12px)",
+                    border: "1px solid var(--neutral-line, #e3e3df)",
+                    padding: "var(--space-4, 16px)",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                    gap: "var(--space-3, 12px)",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: "var(--type-1, 0.85rem)", color: "var(--neutral-fg-soft, #5b5b62)" }}>
+                      mechanism
+                    </div>
+                    <strong data-testid="engine-mechanism">
+                      {state.engineResponse.mechanism_id}
+                    </strong>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "var(--type-1, 0.85rem)", color: "var(--neutral-fg-soft, #5b5b62)" }}>
+                      proposed counter
+                    </div>
+                    <strong data-testid="engine-proposal">
+                      q={state.engineResponse.proposed_offer.q}, $
+                      {state.engineResponse.proposed_offer.unitPrice}/unit
+                    </strong>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "var(--type-1, 0.85rem)", color: "var(--neutral-fg-soft, #5b5b62)" }}>
+                      leakage
+                    </div>
+                    <strong data-testid="engine-leakage">
+                      {state.engineResponse.leakage_report
+                        ? `epsilon ${state.engineResponse.leakage_report.aggregate.max_epsilon_measured.toFixed(2)}`
+                        : "full oracle"}
+                    </strong>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "var(--type-1, 0.85rem)", color: "var(--neutral-fg-soft, #5b5b62)" }}>
+                      participation
+                    </div>
+                    <strong data-testid="engine-participation">
+                      {state.engineResponse.participation.every((p) => p.no_worse_off)
+                        ? "both above BATNA"
+                        : "BATNA violation"}
+                    </strong>
+                  </div>
+                </div>
+              )}
 
               <div
                 style={{

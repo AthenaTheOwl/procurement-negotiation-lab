@@ -19,12 +19,12 @@
 
 - [x] **T-NEG-001**: Define the TypeScript engine contract shared by
   web, mobile, and SDK fixtures. *(R-NEGOTIATE-001)*
-- [ ] **T-NEG-002**: Reconnect NegotiateSurface to the engine response
+- [x] **T-NEG-002**: Reconnect NegotiateSurface to the engine response
   path for bounded-leakage weighted-Nash. *(R-NEGOTIATE-002,
   R-NEGOTIATE-004, R-NEGOTIATE-005)*
-- [ ] **T-NEG-003**: Implement the v1 `?n=` legacy URL translator and
+- [x] **T-NEG-003**: Implement the v1 `?n=` legacy URL translator and
   tests. *(R-NEGOTIATE-003)*
-- [ ] **T-NEG-004**: Add the mechanism selector with only functional
+- [x] **T-NEG-004**: Add the mechanism selector with only functional
   options visible. *(R-NEGOTIATE-002)*
 - [ ] **T-NEG-005**: Add the Playwright two-tab proof for copied URLs.
   *(R-NEGOTIATE-004)*
