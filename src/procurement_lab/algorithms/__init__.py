@@ -11,6 +11,10 @@ from procurement_lab.algorithms.simple import (
     ConsensusAveraging,
     PriceOnlyDual,
 )
+from procurement_lab.algorithms.weighted_nash import (
+    WeightedNashBounded,
+    WeightedNashPlaintext,
+)
 
 __all__ = [
     "Algorithm",
@@ -20,4 +24,6 @@ __all__ = [
     "AlternatingBestResponse",
     "ConsensusAveraging",
     "PriceOnlyDual",
+    "WeightedNashBounded",
+    "WeightedNashPlaintext",
 ]

@@ -25,6 +25,10 @@ from procurement_lab.algorithms.simple import (
     ConsensusAveraging,
     PriceOnlyDual,
 )
+from procurement_lab.algorithms.weighted_nash import (
+    WeightedNashBounded,
+    WeightedNashPlaintext,
+)
 
 
 @dataclass(frozen=True)
@@ -104,12 +108,33 @@ MECHANISMS: list[MechanismEntry] = [
         }),
         lipschitz=1.5,
     ),
-    # Future mechanisms (spec 0015 W2 + W5) register here:
-    # MechanismEntry(name="weighted_nash_bounded", factory=WeightedNashBounded,
-    #                claims=frozenset({...PROP_MONOTONICITY, PROP_LEAKAGE_BOUND...}),
-    #                lipschitz=2.0),
+    MechanismEntry(
+        name="weighted_nash_plaintext",
+        factory=WeightedNashPlaintext,
+        claims=frozenset({
+            PROP_INDIVIDUAL_RATIONALITY,
+            PROP_DETERMINISM,
+            PROP_PARETO,
+            PROP_INFEASIBILITY,
+            PROP_NUMERICAL_STABILITY,
+        }),
+        lipschitz=1.0,
+    ),
+    MechanismEntry(
+        name="weighted_nash_bounded",
+        factory=WeightedNashBounded,
+        claims=frozenset({
+            PROP_INDIVIDUAL_RATIONALITY,
+            PROP_DETERMINISM,
+            PROP_LEAKAGE_BOUND,
+            PROP_INFEASIBILITY,
+            PROP_NUMERICAL_STABILITY,
+        }),
+        lipschitz=2.0,
+    ),
+    # Future mechanism (W5):
     # MechanismEntry(name="weighted_nash_mpc", factory=WeightedNashMPC,
-    #                claims=frozenset({...PROP_LEAKAGE_BOUND...}),
+    #                claims=frozenset({..., PROP_LEAKAGE_BOUND, ...}),
     #                lipschitz=1.0),
 ]
 
