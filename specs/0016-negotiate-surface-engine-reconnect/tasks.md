@@ -17,7 +17,7 @@
 
 ## W3 (Codex lead, Claude review)
 
-- [ ] **T-NEG-001**: Define the TypeScript engine contract shared by
+- [x] **T-NEG-001**: Define the TypeScript engine contract shared by
   web, mobile, and SDK fixtures. *(R-NEGOTIATE-001)*
 - [ ] **T-NEG-002**: Reconnect NegotiateSurface to the engine response
   path for bounded-leakage weighted-Nash. *(R-NEGOTIATE-002,

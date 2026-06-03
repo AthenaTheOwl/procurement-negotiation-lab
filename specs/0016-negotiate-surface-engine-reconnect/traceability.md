@@ -2,7 +2,7 @@
 
 | Requirement | Tasks | Acceptance checks | Decision | Status |
 |---|---|---|---|---|
-| **R-NEGOTIATE-001** versioned surface engine contract (owner_role: engineering.implementation) | T-SPEC-0016-A, T-NEG-001 | Contract module in shared engine package; unknown versions and mechanism ids rejected | [DEC-NEGOTIATE-001](../../decisions/DEC-NEGOTIATE-001-versioned-surface-contract-before-engine-reconnect.md) | planned |
+| **R-NEGOTIATE-001** versioned surface engine contract (owner_role: engineering.implementation) | T-SPEC-0016-A, T-NEG-001 | `packages/engine/src/learn/negotiationContract.ts` plus tests; unknown versions and mechanism ids rejected | [DEC-NEGOTIATE-001](../../decisions/DEC-NEGOTIATE-001-versioned-surface-contract-before-engine-reconnect.md) | implemented |
 | **R-NEGOTIATE-002** functional mechanism selector (owner_role: engineering.implementation) | T-NEG-002, T-NEG-004, T-MPC-INT-002 | Selector lists only functional mechanisms; selection changes output and survives URL copy | [DEC-NEGOTIATE-001](../../decisions/DEC-NEGOTIATE-001-versioned-surface-contract-before-engine-reconnect.md) | planned |
 | **R-NEGOTIATE-003** legacy URL translator (owner_role: engineering.implementation) | T-NEG-003 | v1 `?n=` links translate to v2 `?neg=`; invalid links fail closed | [DEC-NEGOTIATE-001](../../decisions/DEC-NEGOTIATE-001-versioned-surface-contract-before-engine-reconnect.md) | planned |
 | **R-NEGOTIATE-004** two-tab engine round trip (owner_role: science.proof-gate-runner) | T-NEG-002, T-NEG-005, T-MPC-INT-003 | Playwright two-tab copied-URL proof for bounded-leakage and MPC modes | [DEC-NEGOTIATE-001](../../decisions/DEC-NEGOTIATE-001-versioned-surface-contract-before-engine-reconnect.md) | planned |
@@ -13,5 +13,7 @@
 
 Spec 0016 ships with the W0 task rows completed and the W3/W4/W5 work
 scheduled. The W0 proof is `python scripts/spec_check.py` plus
-`python scripts/voice_lint.py`. Product proof lands when W3 implements
-the contract and Playwright two-tab flow.
+`python scripts/voice_lint.py`. The W3 contract proof is
+`npm.cmd run test --workspace=@lab/engine -- negotiationContract`.
+Product proof lands when W3 wires the contract into NegotiateSurface
+and Playwright covers the copied-URL two-tab flow.

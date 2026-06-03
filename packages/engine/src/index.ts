@@ -299,6 +299,33 @@ export type {
   RoundRecord,
 } from "./learn/negotiationSession";
 export {
+  FUNCTIONAL_NEGOTIATION_MECHANISMS,
+  LEGACY_NEGOTIATION_URL_PARAM,
+  NEGOTIATION_CONTRACT_VERSION,
+  NEGOTIATION_URL_PARAM,
+  appendSurfaceRound,
+  applySurfaceAccept,
+  decodeLegacySessionToSurfaceState,
+  decodeNegotiationFromURLSearch,
+  decodeSurfaceState,
+  encodeSurfaceState,
+  isFunctionalMechanism,
+  latestSurfaceOfferFor,
+  legacySessionToSurfaceState,
+  newSurfaceState,
+  privacyModeForMechanism,
+  runSurfaceEngine,
+  scenarioFromSurfaceState,
+  withMechanism,
+} from "./learn/negotiationContract";
+export type {
+  DecodeSurfaceStateResult,
+  NegotiationEngineResponse,
+  NegotiationMechanismId,
+  NegotiationSurfaceStateV2,
+  ParticipationReport,
+} from "./learn/negotiationContract";
+export {
   DEFAULT_MENU_GUARDRAILS,
   DEFAULT_MENU_SIGNALS,
   MODEL_STATUSES,

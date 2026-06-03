@@ -19,6 +19,13 @@ The contract has three layers:
 The contract lives in the shared engine package so web, mobile, and
 SDK fixtures can share it.
 
+The first shared implementation is
+`packages/engine/src/learn/negotiationContract.ts`. It defines the v2
+URL payload, functional mechanism list, v1 legacy translator, and
+`runSurfaceEngine`, which maps a link-exchanged negotiation state into
+the weighted-Nash engine and returns a typed engine response with
+leakage and participation reports.
+
 ## URL versions
 
 The current URL shape is `?n=<base64url-json>` and decodes through
@@ -38,15 +45,16 @@ place of translation; it translates or fails closed.
 
 The selector reads the registered mechanism list from the engine
 contract. A mechanism appears only when its engine path exists. The
-display order for W3 is:
+visible W3 list starts with:
 
 1. bounded-leakage weighted-Nash
-2. ADMM
-3. centralized oracle
-4. MPC weighted-Nash once W5 lands
+2. plaintext weighted-Nash
 
 The selector stores the chosen mechanism in URL state and feeds it to
 the engine packet.
+
+ADMM, centralized oracle, and MPC weighted-Nash join the list only
+after their shared-contract engine paths land.
 
 ## Two-tab flow
 
