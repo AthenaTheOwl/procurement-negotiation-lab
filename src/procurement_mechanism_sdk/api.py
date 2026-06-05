@@ -17,6 +17,7 @@ from procurement_lab.algorithms.weighted_nash import (
     WeightedNashBounded,
     WeightedNashPlaintext,
 )
+from procurement_lab.algorithms.weighted_nash_mpc import WeightedNashMPC
 from procurement_lab.engine.cbt import compute_transfer
 from procurement_lab.engine.schemas import (
     AlgorithmRun,
@@ -37,6 +38,7 @@ MechanismName = Literal[
     "consensus_averaging",
     "weighted_nash_plaintext",
     "weighted_nash_bounded",
+    "weighted_nash_mpc",
 ]
 
 DEFAULT_MECHANISMS: tuple[MechanismName, ...] = (
@@ -47,6 +49,7 @@ DEFAULT_MECHANISMS: tuple[MechanismName, ...] = (
     "consensus_averaging",
     "weighted_nash_plaintext",
     "weighted_nash_bounded",
+    "weighted_nash_mpc",
 )
 
 
@@ -340,6 +343,8 @@ def _algorithm_for(mechanism: MechanismName) -> _AlgorithmRunner:
         return WeightedNashPlaintext()
     if mechanism == "weighted_nash_bounded":
         return WeightedNashBounded()
+    if mechanism == "weighted_nash_mpc":
+        return WeightedNashMPC()
     raise ValueError(f"unknown mechanism: {mechanism!r}")
 
 
@@ -349,13 +354,16 @@ def _default_information_mode(
 ) -> InformationMode:
     if requested is not None:
         return requested
-    if mechanism == "weighted_nash_bounded":
+    if mechanism in ("weighted_nash_bounded", "weighted_nash_mpc"):
         return InformationMode.PRIVATE
     return InformationMode.FULL_ORACLE
 
 
 def _default_mechanisms_for(scenario: Scenario) -> tuple[MechanismName, ...]:
     if len(scenario.participants) > 2:
+        # MPC mode is N=2 only per DEC-MPC-001; bounded-leakage remains
+        # the N>=3 privacy-preserving option until the MP-SPDZ follow-up
+        # DEC lands.
         return (
             "centralized_oracle",
             "weighted_nash_plaintext",
