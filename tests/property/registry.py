@@ -29,6 +29,7 @@ from procurement_lab.algorithms.weighted_nash import (
     WeightedNashBounded,
     WeightedNashPlaintext,
 )
+from procurement_lab.algorithms.weighted_nash_mpc import WeightedNashMPC
 
 
 @dataclass(frozen=True)
@@ -132,10 +133,21 @@ MECHANISMS: list[MechanismEntry] = [
         }),
         lipschitz=2.0,
     ),
-    # Future mechanism (W5):
-    # MechanismEntry(name="weighted_nash_mpc", factory=WeightedNashMPC,
-    #                claims=frozenset({..., PROP_LEAKAGE_BOUND, ...}),
-    #                lipschitz=1.0),
+    MechanismEntry(
+        name="weighted_nash_mpc",
+        factory=WeightedNashMPC,
+        claims=frozenset({
+            PROP_INDIVIDUAL_RATIONALITY,
+            PROP_DETERMINISM,
+            PROP_LEAKAGE_BOUND,
+            PROP_INFEASIBILITY,
+            PROP_NUMERICAL_STABILITY,
+        }),
+        # MPC is one secure multiplication per candidate + a sequential
+        # max-tree of secure comparisons; the cumulative numerical
+        # stability bound matches plaintext within MPC_NUMERICAL_TOLERANCE.
+        lipschitz=1.0,
+    ),
 ]
 
 

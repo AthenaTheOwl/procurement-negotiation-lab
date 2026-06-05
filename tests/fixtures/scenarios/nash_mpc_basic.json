@@ -1,0 +1,47 @@
+{
+  "_comment": "Golden fixture for the MPC weighted-Nash parity test (DEC-MPC-001). Synthetic 2-party scenario with a clearly-feasible Nash maximum. tests/test_weighted_nash_mpc.py asserts MPC matches plaintext on this scenario within MPC_NUMERICAL_TOLERANCE = 1e-2.",
+  "id": "nash-mpc-basic",
+  "title": "MPC parity baseline (2-party, symmetric)",
+  "n_periods": 1,
+  "currency": "USD",
+  "risk_score": 0.0,
+  "evidence_ids": [],
+  "products": [
+    {
+      "id": "widget",
+      "name": "Widget",
+      "demand_mean": 100.0,
+      "demand_std": 20.0,
+      "unit_value": 10.0
+    }
+  ],
+  "capacity": { "widget": 200.0 },
+  "participants": [
+    {
+      "id": "buyer",
+      "name": "Buyer",
+      "role": "buyer",
+      "outside_option": 0.0,
+      "utility_formula": "service_level_value * min(q, demand) - unit_price * q - shortage_penalty * max(demand - q, 0) - inventory_penalty * max(q - demand, 0)",
+      "parameters": {
+        "service_level_value": 10.0,
+        "unit_price": 5.0,
+        "shortage_penalty": 8.0,
+        "inventory_penalty": 1.0
+      }
+    },
+    {
+      "id": "supplier",
+      "name": "Supplier",
+      "role": "supplier",
+      "outside_option": 0.0,
+      "utility_formula": "revenue_per_unit * q - production_cost * q - holding_cost * max(q - demand, 0) - stockout_penalty * max(demand - q, 0)",
+      "parameters": {
+        "revenue_per_unit": 5.0,
+        "production_cost": 3.0,
+        "holding_cost": 0.3,
+        "stockout_penalty": 0.5
+      }
+    }
+  ]
+}
