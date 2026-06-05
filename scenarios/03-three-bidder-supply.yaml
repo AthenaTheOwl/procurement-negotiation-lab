@@ -1,0 +1,80 @@
+id: three-bidder-supply
+title: Three suppliers competing for a single buyer's contract
+n_periods: 1
+currency: USD
+risk_score: 0.2
+evidence_ids: []
+
+products:
+  - id: hbm-package
+    name: HBM-3 advanced package
+    demand_mean: 600.0
+    demand_std: 100.0
+    unit_value: 240.0
+
+capacity:
+  hbm-package: 1500.0
+
+participants:
+  - id: buyer-vela
+    name: Vela Compute
+    role: buyer
+    outside_option: 0.0
+    utility_formula: >-
+      service_level_value * min(q, demand)
+      - unit_price * q
+      - shortage_penalty * max(demand - q, 0)
+      - inventory_penalty * max(q - demand, 0)
+    parameters:
+      service_level_value: 240.0
+      unit_price: 130.0
+      shortage_penalty: 200.0
+      inventory_penalty: 10.0
+
+  - id: supplier-cinder
+    name: Cinder Lithography Services
+    role: supplier
+    outside_option: 0.0
+    utility_formula: >-
+      revenue_per_unit * q
+      - production_cost * q
+      - capacity_strain * max(q - capacity_share, 0)
+      - risk_premium * risk_score * q
+    parameters:
+      revenue_per_unit: 130.0
+      production_cost: 78.0
+      capacity_strain: 12.0
+      capacity_share: 500.0
+      risk_premium: 6.0
+
+  - id: supplier-horizon
+    name: Horizon Packaging Co.
+    role: supplier
+    outside_option: 0.0
+    utility_formula: >-
+      revenue_per_unit * q
+      - production_cost * q
+      - capacity_strain * max(q - capacity_share, 0)
+      - risk_premium * risk_score * q
+    parameters:
+      revenue_per_unit: 130.0
+      production_cost: 82.0
+      capacity_strain: 8.0
+      capacity_share: 500.0
+      risk_premium: 5.0
+
+  - id: supplier-meridian
+    name: Meridian Substrate Corp.
+    role: supplier
+    outside_option: 0.0
+    utility_formula: >-
+      revenue_per_unit * q
+      - production_cost * q
+      - capacity_strain * max(q - capacity_share, 0)
+      - risk_premium * risk_score * q
+    parameters:
+      revenue_per_unit: 130.0
+      production_cost: 75.0
+      capacity_strain: 15.0
+      capacity_share: 500.0
+      risk_premium: 8.0
