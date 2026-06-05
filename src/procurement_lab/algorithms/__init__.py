@@ -15,6 +15,7 @@ from procurement_lab.algorithms.weighted_nash import (
     WeightedNashBounded,
     WeightedNashPlaintext,
 )
+from procurement_lab.algorithms.weighted_nash_mpc import WeightedNashMPC
 
 __all__ = [
     "Algorithm",
@@ -25,5 +26,6 @@ __all__ = [
     "ConsensusAveraging",
     "PriceOnlyDual",
     "WeightedNashBounded",
+    "WeightedNashMPC",
     "WeightedNashPlaintext",
 ]

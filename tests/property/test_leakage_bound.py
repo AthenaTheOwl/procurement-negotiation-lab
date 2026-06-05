@@ -72,21 +72,42 @@ def test_leakage_measured_within_bound(
         f"per-party check should hold; bookkeeping inconsistent"
     )
 
-    # Cross-check the v1 formula directly: each round transmits at most
-    # n_coords * log2(3) + log2(STEP_QUANTIZATION_LEVELS) bits per party.
-    n_coords = 1  # v1: n_periods=1 + 1 product
-    from procurement_lab.engine.privacy import STEP_QUANTIZATION_LEVELS
+    # Cross-check the bound formula against the protocol contract. The
+    # two mechanisms claiming PROP_LEAKAGE_BOUND use different bounds:
+    # - bounded-leakage/v1 (DEC-NASH-002): info-theoretic upper bound,
+    #   epsilon_bound = R * (N * log2(3) + log2(K))
+    # - mpc-bgw/v1 (DEC-MPC-001): cryptographic guarantee encoded as
+    #   the constant MPC_NEGLIGIBLE_BITS independent of round count
+    if report.protocol_version.startswith("bounded-leakage/"):
+        from procurement_lab.engine.privacy import STEP_QUANTIZATION_LEVELS
 
-    per_round_max_bits = (
-        n_coords * math.log2(3) + math.log2(STEP_QUANTIZATION_LEVELS)
-    )
-    expected_bound = report.round_count * per_round_max_bits
+        n_coords = 1  # v1: n_periods=1 + 1 product
+        per_round_max_bits = (
+            n_coords * math.log2(3) + math.log2(STEP_QUANTIZATION_LEVELS)
+        )
+        expected_bound = report.round_count * per_round_max_bits
 
-    for party in report.per_party:
-        assert abs(party.epsilon_bound - expected_bound) < 1e-6, (
-            f"mechanism {entry.name} party {party.party_id}: "
-            f"epsilon_bound ({party.epsilon_bound:.6f}) does not match "
-            f"R * (N * log2(3) + log2(K)) = {expected_bound:.6f}"
+        for party in report.per_party:
+            assert abs(party.epsilon_bound - expected_bound) < 1e-6, (
+                f"mechanism {entry.name} party {party.party_id}: "
+                f"epsilon_bound ({party.epsilon_bound:.6f}) does not match "
+                f"R * (N * log2(3) + log2(K)) = {expected_bound:.6f}"
+            )
+    elif report.protocol_version.startswith("mpc-bgw/"):
+        from procurement_lab.algorithms.weighted_nash_mpc import (
+            MPC_NEGLIGIBLE_BITS,
+        )
+
+        for party in report.per_party:
+            assert party.epsilon_bound == pytest.approx(MPC_NEGLIGIBLE_BITS), (
+                f"mechanism {entry.name} party {party.party_id}: "
+                f"epsilon_bound ({party.epsilon_bound}) does not match "
+                f"MPC_NEGLIGIBLE_BITS ({MPC_NEGLIGIBLE_BITS})"
+            )
+    else:
+        raise AssertionError(
+            f"unknown protocol_version {report.protocol_version!r} on a "
+            f"mechanism claiming PROP_LEAKAGE_BOUND — extend this dispatch"
         )
 
 
