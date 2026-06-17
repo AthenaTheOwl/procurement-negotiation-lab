@@ -15,6 +15,9 @@ The SDK wraps these existing primitives:
 - `procurement_lab.algorithms.oracle.CentralizedOracle`
 - `procurement_lab.algorithms.simple` for educational comparison mechanisms
 - `procurement_lab.engine.cbt.compute_transfer`
+- `procurement_lab.algorithms.weighted_nash.WeightedNashPlaintext`
+- `procurement_lab.algorithms.weighted_nash.WeightedNashBounded`
+- `procurement_lab.algorithms.weighted_nash_mpc.WeightedNashMPC`
 
 It does not move the TypeScript app engine, web levels, mobile screens,
 factory subsystem, or browser-only sandbox code.
@@ -56,3 +59,14 @@ procurement-mechanism-sdk-demo
 
 The demo prints JSON with scenario id, mechanism results, oracle gap, residual,
 and no-worse-off transfer status.
+
+Weighted-Nash mechanisms are available through the same selector:
+
+```powershell
+python -m procurement_mechanism_sdk.demo --sample multi_party --mechanism weighted_nash_bounded
+python -m procurement_mechanism_sdk.demo --sample base --mechanism weighted_nash_mpc
+```
+
+Use `weighted_nash_plaintext` as the full-information reference,
+`weighted_nash_bounded` when a leakage report is needed, and
+`weighted_nash_mpc` for the v1 two-party BGW/additive-sharing path.

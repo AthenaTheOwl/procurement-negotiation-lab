@@ -20,6 +20,10 @@ Not FloPro-branded. Not an official Amazon example.
 - Tutorial pages that explain utility, residuals, risk scores, ADMM,
   oracle gaps, cost-benefit transfers, and the W0 reset toward
   weighted-Nash bargaining in plain English.
+- A mechanism-design research surface for AI-mediated coordination
+  under private information: weighted-Nash plaintext, bounded-leakage
+  weighted-Nash, v1 BGW MPC, oracle-gap metrics, leakage reports, and
+  property tests.
 - A native iOS and Android port (Expo) that mirrors the web learn flow.
 
 ## For your role
@@ -47,6 +51,12 @@ no-worse-off participation, six-mode information-vs-privacy on the
 same instance (DEC-LAB-009), and the W0 reset now specifies
 weighted-Nash bargaining, preference privacy, surface reconnect, and
 property tests (specs 0015-0017).
+
+**Project reader.** Start with
+[`TECHNICAL_BRIEF.md`](TECHNICAL_BRIEF.md). It states the
+empirical question, the synthetic boundary, the implemented mechanisms,
+one reproducible command path, and how the lab could become a public
+agent-coordination benchmark for AI economics and safety.
 
 **Engineer.** Fork the factory subsystem at `scripts/factory/`.
 DEC-FACTORY-001..005 document the architectural choices: narrow MCP
@@ -113,7 +123,8 @@ From there you can:
   privacy preference, and risk aversion.
 - Compare JIT baseline, centralized oracle, CPP/ADMM, CPP+VCG/CBT,
   menu-of-contracts, alternating best response, price-only
-  coordination, and consensus averaging.
+  coordination, consensus averaging, weighted-Nash plaintext,
+  bounded-leakage weighted-Nash, and MPC weighted-Nash.
 
 ## The factory subsystem
 
@@ -154,7 +165,8 @@ is the React/TypeScript app.
 
 The reusable mechanism logic is importable as `procurement_mechanism_sdk`.
 It wraps the deterministic Python engine instead of moving the deployed
-React/TypeScript simulator.
+React/TypeScript simulator. The SDK includes the weighted-Nash
+plaintext, bounded-leakage, and MPC mechanism ids.
 
 ```python
 from procurement_mechanism_sdk import compare_mechanisms, sample_scenario
@@ -162,6 +174,12 @@ from procurement_mechanism_sdk import compare_mechanisms, sample_scenario
 scenario = sample_scenario("base")
 comparison = compare_mechanisms(scenario, mechanisms=("centralized_oracle", "admm"))
 print(comparison.by_mechanism["admm"].utility_gap_vs_oracle)
+```
+
+Run the multi-party weighted-Nash demo:
+
+```powershell
+python -m procurement_mechanism_sdk.demo --sample multi_party --mechanism weighted_nash_bounded
 ```
 
 Run the standalone demo without the web app:
@@ -219,8 +237,10 @@ first.
 ## What's intentionally not built
 
 - Real procurement data. Synthetic only.
-- Weighted-Nash, MPC, and `N >= 2` bargaining are specified in the
-  W0 reset but not implemented yet.
+- Audited cryptographic MPC. The checked-in BGW MPC path is a
+  v1 reference mechanism for two-party correctness and contract tests;
+  a serious cryptographic deployment would need MP-SPDZ or comparable
+  audited infrastructure.
 - A production solver. Agents in the Domain Guild advise; deterministic
   FloPro reference code decides anything consequential.
 
