@@ -31,9 +31,9 @@ export const FUNCTIONAL_NEGOTIATION_MECHANISMS: Array<{
 }> = [
   {
     id: "weighted_nash_bounded",
-    label: "Weighted-Nash bounded leakage",
+    label: "Weighted-Nash transcript exposure",
     privacyMode: "private",
-    description: "Runs the bounded-leakage preference-private weighted-Nash protocol.",
+    description: "Runs the disclosure-limiting weighted-Nash protocol with transcript exposure accounting.",
   },
   {
     id: "weighted_nash_plaintext",

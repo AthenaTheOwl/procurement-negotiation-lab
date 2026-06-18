@@ -20,7 +20,7 @@
 - [x] **T-NEG-001**: Define the TypeScript engine contract shared by
   web, mobile, and SDK fixtures. *(R-NEGOTIATE-001)*
 - [x] **T-NEG-002**: Reconnect NegotiateSurface to the engine response
-  path for bounded-leakage weighted-Nash. *(R-NEGOTIATE-002,
+path for transcript-exposure weighted-Nash. *(R-NEGOTIATE-002,
   R-NEGOTIATE-004, R-NEGOTIATE-005)*
 - [x] **T-NEG-003**: Implement the v1 `?n=` legacy URL translator and
   tests. *(R-NEGOTIATE-003)*
@@ -29,7 +29,7 @@
 - [x] **T-NEG-005**: Add the Playwright two-tab proof for copied URLs.
   *(R-NEGOTIATE-004)*
 - [x] **T-LEARN-12**: Add Level 12 as the plain-English introduction
-  to weighted-Nash, BATNAs, privacy mode, and leakage reports.
+to weighted-Nash, BATNAs, information mode, and exposure reports.
   *(R-NEGOTIATE-005)*
 
 ## W4 (paired)

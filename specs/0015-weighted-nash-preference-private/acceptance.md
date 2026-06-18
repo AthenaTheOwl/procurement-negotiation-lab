@@ -1,4 +1,4 @@
-# acceptance: weighted-Nash preference-private bargaining
+# acceptance: weighted-Nash transcript-exposure bargaining
 
 ## Acceptance gates
 
@@ -8,9 +8,9 @@ the merge commit that closes the spec.
 ### Engine + algorithm
 
 - `python -m uv run pytest tests/test_weighted_nash.py` passes with
-  the unit tests covering plaintext, bounded-leakage, and MPC paths.
+  the unit tests covering plaintext, transcript-exposure, and MPC paths.
 - `python -m uv run pytest tests/engine/test_privacy.py` passes
-  covering the LeakageReport schema and the bounded-leakage iteration
+  covering the TranscriptExposureReport schema and the transcript-exposure iteration
   bookkeeping.
 - `python -m uv run pytest tests/test_golden_nash.py` passes against
   the locked golden fixture suite under `tests/fixtures/scenarios/`.
@@ -18,17 +18,17 @@ the merge commit that closes the spec.
   passes (covers spec 0017 R-PROP-002, R-PROP-003, R-PROP-004,
   R-PROP-008 for weighted-Nash mechanisms).
 - `python -m uv run pytest tests/property/test_leakage_bound.py`
-  passes (covers spec 0017 R-PROP-006 for both bounded-leakage and
+  passes (covers spec 0017 R-PROP-006 for both transcript-exposure and
   MPC).
 
 ### SDK + CLI
 
 - `python -m procurement_mechanism_sdk.demo --mechanism weighted_nash_bounded`
-  prints a deterministic allocation + leakage report.
+  prints a deterministic allocation + exposure report.
 - `python -m procurement_mechanism_sdk.demo --sample multi_party --mechanism weighted_nash_bounded`
   prints a deterministic `N = 3` allocation + participation report.
 - `python -m procurement_mechanism_sdk.demo --mechanism weighted_nash_mpc`
-  prints a deterministic allocation + cryptographic leakage report.
+  prints a deterministic allocation + cryptographic exposure report.
 - `compare_mechanisms(..., mechanisms=["weighted_nash_bounded",
   "weighted_nash_mpc", "admm", "oracle"])` returns a comparable
   result set with no per-mechanism branching in the caller.
@@ -36,10 +36,10 @@ the merge commit that closes the spec.
 ### Multi-party
 
 - An `N = 3` scenario runs end-to-end through `weighted_nash_bounded`
-  with a valid allocation, valid leakage report, and no
+  with a valid allocation, valid exposure report, and no
   `NotImplementedError`.
 - The Playwright two-tab test for spec 0016 covers the `N = 2`
-  bounded-leakage and `N = 2` MPC flows; the `N = 3` test runs
+  transcript-exposure and `N = 2` MPC flows; the `N = 3` test runs
   through the SDK CLI in this spec cycle.
 
 ### Per-run record + replay
@@ -47,7 +47,7 @@ the merge commit that closes the spec.
 - The run-evidence packet emitter writes `mechanism_id` and
   `leakage_report_ref` to the run record (DEC-FACTORY-007 chain).
 - The event ledger records a `mechanism.bargaining.completed` event
-  carrying the mechanism id and the leakage epsilon.
+  carrying the mechanism id and exposure summary.
 - The replay-determinism gate green for at least one run per
   mechanism identifier introduced in R-NASH-009.
 
@@ -64,6 +64,6 @@ the merge commit that closes the spec.
 
 ### Browser QA
 
-- Browser QA pass on the negotiate-surface MPC + bounded-leakage
+- Browser QA pass on the negotiate-surface MPC + transcript-exposure
   flows once spec 0016 reconnects the engine (cross-spec gate; this
   spec's acceptance defers the UI portion to spec 0016's acceptance).

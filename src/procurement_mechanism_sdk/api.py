@@ -361,8 +361,8 @@ def _default_information_mode(
 
 def _default_mechanisms_for(scenario: Scenario) -> tuple[MechanismName, ...]:
     if len(scenario.participants) > 2:
-        # MPC mode is N=2 only per DEC-MPC-001; bounded-leakage remains
-        # the N>=3 privacy-preserving option until the MP-SPDZ follow-up
+        # MPC mode is N=2 only per DEC-MPC-001; transcript exposure remains
+        # the N>=3 disclosure-limiting option until the MP-SPDZ follow-up
         # DEC lands.
         return (
             "centralized_oracle",

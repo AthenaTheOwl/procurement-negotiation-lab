@@ -68,5 +68,7 @@ python -m procurement_mechanism_sdk.demo --sample base --mechanism weighted_nash
 ```
 
 Use `weighted_nash_plaintext` as the full-information reference,
-`weighted_nash_bounded` when a leakage report is needed, and
-`weighted_nash_mpc` for the v1 two-party BGW/additive-sharing path.
+`weighted_nash_bounded` when transcript-exposure accounting is needed,
+and `weighted_nash_mpc` for the v1 two-party BGW/additive-sharing path.
+The serialized field is still named `leakage_report` for compatibility;
+new UI copy should describe it as transcript exposure, not privacy.

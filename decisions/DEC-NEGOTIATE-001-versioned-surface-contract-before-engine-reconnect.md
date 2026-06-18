@@ -9,7 +9,7 @@ decision: |
   NegotiateSurface reconnects to the mechanism engine through a
   versioned shared-engine contract before any React wiring lands. The
   contract owns session state, mechanism id, privacy mode, engine
-  packet, leakage report reference, and report-export fields.
+  packet, transcript-exposure report reference, and report-export fields.
 alternatives:
   - label: Wire weighted-Nash directly into the React component
     rejected_because: |
@@ -30,7 +30,7 @@ alternatives:
 rationale: |
   Specs 0015 and 0017 define the math and proof layer. Spec 0016 is
   the state boundary that lets the web surface consume that work
-  without mixing URL compatibility, mechanism ids, leakage reports,
+  without mixing URL compatibility, mechanism ids, transcript-exposure reports,
   and React state. The versioned contract makes W3 smaller because
   every consumer has the same packet shape before UI wiring starts.
 
@@ -74,7 +74,7 @@ adoption_ladder:
     Spec 0016 and this DEC land; old roadmap framing is archived.
   mid_adoption: |
     W3 implements the contract, legacy translator, selector, and
-    two-tab proof for bounded-leakage weighted-Nash.
+    two-tab proof for transcript-exposure weighted-Nash.
   full_adoption: |
     W4 lifts the contract to `N >= 2`; W5 adds MPC mode; SDK, web,
     and mobile parity fixtures all share the same contract.
@@ -90,7 +90,7 @@ adoption_ladder:
 NegotiateSurface reconnects to the mechanism engine through a
 versioned shared-engine contract before any React wiring lands. The
 contract owns session state, mechanism id, privacy mode, engine
-packet, leakage report reference, and report-export fields.
+packet, transcript-exposure report reference, and report-export fields.
 
 ## coverage
 

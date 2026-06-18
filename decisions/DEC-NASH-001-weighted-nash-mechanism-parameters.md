@@ -15,10 +15,10 @@ decision: |
     maximizing ``prod_p (max(u_p(x) - d_p, 0)) ** alpha_p`` where
     ``u_p`` is party ``p``'s utility, ``d_p`` is its BATNA, and
     ``alpha_p`` is its bargaining weight.
-  - A bounded-leakage iterative protocol that converges to the same
-    allocation under preference privacy, invoked when
-    ``information_mode=PRIVATE``. The protocol's leakage model and
-    LeakageReport schema are fixed in DEC-NASH-002.
+  - A transcript-exposure iterative protocol that converges to the same
+    allocation under limited disclosure, invoked when
+    ``information_mode=PRIVATE``. The protocol's exposure accounting and
+    TranscriptExposureReport schema are fixed in DEC-NASH-002.
 
   Parameters pinned by this DEC:
 
@@ -43,10 +43,10 @@ decision: |
     ``capacity_exceeded``, ``dealbreaker_conflict``. The solver
     never raises an unhandled exception.
   - Numerical tolerance for parity tests is ``1e-4`` between two
-    plaintext runs and ``1e-3`` between plaintext and the bounded-
-    leakage protocol's final allocation. The TS-Python parity test
+    plaintext runs and ``1e-3`` between plaintext and the transcript-
+    exposure protocol's final allocation. The TS-Python parity test
     (spec 0017 R-PROP-011) inherits the plaintext tolerance.
-  - The step-size schedule for the bounded-leakage iterative protocol
+  - The step-size schedule for the transcript-exposure iterative protocol
     is ``eta_t = eta_0 / (1 + t) ** beta`` with ``eta_0 = 0.5`` and
     ``beta = 0.5``. The schedule is part of the protocol contract so
     the TS engine mirror reproduces it bit-identically given the same
@@ -78,7 +78,7 @@ alternatives:
   - label: step-size schedule as a learnable hyperparameter
     rejected_because: |
       Learnable step sizes would require recording the schedule per
-      run in the LeakageReport (DEC-NASH-002 schema), which couples
+      run in the TranscriptExposureReport (DEC-NASH-002 schema), which couples
       the privacy contract to a hyperparameter optimizer that does
       not exist in the engine today. The fixed schedule
       ``0.5 / (1 + t) ** 0.5`` matches standard subgradient methods
@@ -100,7 +100,7 @@ alternatives:
       "the buyer's gain matters twice as much" not
       ``alpha = (2/3, 1/3)``. The DEC keeps weights unnormalized to
       match standard convention.
-  - label: ship only the plaintext solver in W2; defer bounded-leakage
+  - label: ship only the plaintext solver in W2; defer transcript exposure
     rejected_because: |
       Spec 0015 R-NASH-004 names the preference-private iteration
       protocol as a hard requirement, not a stretch. The credibility
@@ -119,11 +119,11 @@ rationale: |
   The grid-search plaintext solver is intentionally simple. The lab's
   audience is mechanism-design learners, not optimization researchers.
   The plaintext solver is the reference against which the iterative
-  protocol's leakage-vs-accuracy trade-off is measured (DEC-NASH-002's
-  epsilon-vs-allocation-error report). Making the reference solver
-  trivially correct keeps the discussion of bounded-leakage
-  approximation honest: the protocol earns its complexity by
-  preserving accuracy under privacy, not by inventing a better
+  protocol's exposure-vs-accuracy trade-off is measured (DEC-NASH-002's
+  transcript-exposure report). Making the reference solver
+  trivially correct keeps the discussion of transcript-exposure approximation
+  honest: the protocol earns its complexity by preserving accuracy
+  while reducing disclosure to the aggregator, not by inventing a better
   optimizer.
 
   The 64-level quantization is a CI-budget choice, not a math choice.
@@ -169,7 +169,7 @@ systems_map: |
   bargaining as a flagship mechanism but ships no code that
   implements it. DEC-NASH-001 closes that gap by fixing the
   parameters that all three implementations (Python plaintext,
-  Python bounded-leakage, future MPC) and the TS engine mirror share.
+  Python transcript exposure, future MPC) and the TS engine mirror share.
   Parameters live in one place so the three implementations stay in
   parity; the DEC is the parity contract.
 transferable_principle: |
@@ -182,7 +182,7 @@ transferable_principle: |
   stay in lockstep.
 falsification_test: |
   If two implementations (Python plaintext vs TS engine mirror, or
-  Python plaintext vs Python bounded-leakage) produce allocations
+  Python plaintext vs Python transcript exposure) produce allocations
   that differ by more than the documented tolerance on the golden
   fixture suite while both report reading the same
   ``weighted_nash_params.json``, the parameter-level contract is
@@ -190,13 +190,13 @@ falsification_test: |
   proof surface.
 adoption_ladder:
   minimum_viable: |
-    ``weighted_nash.py`` ships with the plaintext solver + bounded-
-    leakage protocol; both read parameters from ``WEIGHTED_NASH_PARAMS``;
+    ``weighted_nash.py`` ships with the plaintext solver + transcript-
+    exposure protocol; both read parameters from ``WEIGHTED_NASH_PARAMS``;
     unit tests + golden fixtures + property tests green; the W2 ship.
   mid_adoption: |
     TS engine mirror lands (W2 Codex lane T-NASH-009) reading
     ``weighted_nash_params.json``; parity test green; the deployed
-    NegotiateSurface (spec 0016) consumes the bounded-leakage
+    NegotiateSurface (spec 0016) consumes the transcript-exposure
     mechanism.
   full_adoption: |
     MPC mechanism lands (W5, DEC-MPC-001) registering under
@@ -206,7 +206,7 @@ adoption_ladder:
     Python, TS, and MPC paths.
   monitoring_signals:
     - "TS-Python parity test pass/fail trend on main"
-    - "delta between plaintext and bounded-leakage final allocations on golden fixtures"
+    - "delta between plaintext and transcript-exposure final allocations on golden fixtures"
     - "MechanismFailure reason-code distribution on real runs"
     - "weighted_nash_params.json drift between Python constants and the generated file"
 ---
@@ -215,15 +215,15 @@ adoption_ladder:
 
 procurement-negotiation-lab implements weighted-Nash bargaining at
 ``src/procurement_lab/algorithms/weighted_nash.py`` with a plaintext
-grid-search reference plus a bounded-leakage iterative protocol. All
+grid-search reference plus a transcript-exposure iterative protocol. All
 parameters (quantization, step-size, tie-breaking, tolerance, failure
 codes, mechanism identifiers) are pinned in a single
 ``WEIGHTED_NASH_PARAMS`` block and mirrored to
 ``packages/engine/src/weighted_nash_params.json`` for the TS engine.
 
-The bounded-leakage protocol's privacy contract — what is
-transmitted, what is not, how leakage is measured, what the
-LeakageReport schema looks like — is in the sibling DEC-NASH-002.
+The transcript-exposure protocol's disclosure contract — what is
+transmitted, what is not, how exposure is measured, what the
+TranscriptExposureReport schema looks like — is in the sibling DEC-NASH-002.
 
 ## coverage
 
@@ -241,5 +241,5 @@ This DEC resolves the following requirements added to spec
   SDK ``compare_mechanisms`` accepts the new identifiers without
   breaking existing callers.
 - ``R-NASH-010`` per-run record: ``mechanism_id`` is the registered
-  identifier; ``leakage_report_ref`` is the SHA-256 of the
-  LeakageReport (DEC-NASH-002 schema).
+  identifier; ``leakage_report_ref`` is the legacy field name for the SHA-256 of the
+  TranscriptExposureReport (DEC-NASH-002 schema).

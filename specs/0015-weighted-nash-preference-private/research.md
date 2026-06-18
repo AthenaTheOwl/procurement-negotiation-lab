@@ -16,7 +16,7 @@
   in Economics and Mathematical Systems 170. Background reading on
   the axiom set and disagreement-point treatment.
 
-### Preference privacy + cryptographic bargaining
+### Transcript exposure + cryptographic bargaining
 
 - Bogetoft, P., Christensen, D. L., Damgaard, I., Geisler, M.,
   Jakobsen, T., Krøigaard, M., Nielsen, J. D., Nielsen, J. B.,
@@ -33,15 +33,15 @@
   CRYPTO 2012 paper introducing the SPDZ protocol family that MP-SPDZ implements;
   candidate path for R-NASH-008.
 
-### Bounded-leakage iteration
+### Transcript-exposure iteration
 
 - Dwork, C., Roth, A. (2014). "The Algorithmic Foundations of
   Differential Privacy". *Foundations and Trends in Theoretical
-  Computer Science* 9(3-4): 211-407. Reference framework for the
-  epsilon-bound semantics of R-NASH-005 leakage measurement.
+  Computer Science* 9(3-4): 211-407. Reference framework for why
+  R-NASH-005 must avoid borrowing DP epsilon semantics without
+  calibrated noise.
 - Friedman, A., Schuster, A. (2010). "Data Mining with Differential
-  Privacy". *KDD 2010*. Pattern for measuring per-protocol leakage
-  against a declared bound.
+  Privacy". *KDD 2010*. Useful contrast case: true DP requires calibrated noise, which the transcript-exposure protocol intentionally does not claim.
 
 ### Mechanism comparison + sandbox precedent
 
@@ -68,14 +68,14 @@
    quantization-level parameter; revisiting the continuous path is
    tracked under a follow-up DEC if the parity test reveals
    irreducible discretization noise.
-3. **Multi-party leakage bounds**. The bounded-leakage protocol's
-   epsilon bound at `N > 2` requires additional analysis; the
+3. **Multi-party exposure bounds**. The transcript-exposure protocol's
+   bit bound at `N > 2` requires additional analysis; the
    W4 multi-party lift (R-NASH-007) updates DEC-NASH-002 with the
    `N >= 3` derivation.
 4. **Composition under repeated bargaining**. The existing rounds
    infrastructure (engine/rounds.py) lets parties iterate over many
-   bargaining instances. Leakage composes across instances; a
-   follow-up DEC bounds total leakage under repeated bargaining.
+   bargaining instances. Transcript exposure composes across instances; a
+   follow-up DEC bounds total exposure under repeated bargaining.
 
 ## Non-academic references
 

@@ -10,11 +10,13 @@
   "step_quantization_levels": 32,
   "max_rounds": 200,
   "convergence_tolerance": 1e-3,
-  "protocol_version": "bounded-leakage/v1",
+  "protocol_version": "transcript-exposure/v1",
   "mechanism_identifiers": {
     "plaintext": "weighted_nash_plaintext",
     "bounded_leakage": "weighted_nash_bounded",
+    "transcript_exposure": "weighted_nash_bounded",
     "mpc_reserved_w5": "weighted_nash_mpc"
   },
-  "leakage_sufficiency_note": "information-theoretic upper bound; not a differential-privacy guarantee"
+  "exposure_sufficiency_note": "transcript-exposure bit upper bound; not a differential-privacy guarantee",
+  "leakage_sufficiency_note": "transcript-exposure bit upper bound; not a differential-privacy guarantee"
 }

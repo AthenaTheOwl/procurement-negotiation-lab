@@ -5,7 +5,9 @@ import {
   WEIGHTED_NASH_PARAMS,
   computeNashProduct,
   computeSha256,
+  declaredExposureBitBound,
   declaredEpsilonBound,
+  runTranscriptExposureProtocol,
   plaintextArgmax,
   runWeightedNashBounded,
   runWeightedNashPlaintext,
@@ -79,7 +81,7 @@ describe("weighted-Nash TS mirror", () => {
   it("reads the DEC-NASH parameter mirror", () => {
     expect(NASH_QUANTIZATION_LEVELS).toBe(64);
     expect(WEIGHTED_NASH_PARAMS.step_quantization_levels).toBe(32);
-    expect(PROTOCOL_VERSION).toBe("bounded-leakage/v1");
+    expect(PROTOCOL_VERSION).toBe("transcript-exposure/v1");
   });
 
   it("computes known SHA-256 vectors without Node crypto", () => {
@@ -105,7 +107,7 @@ describe("weighted-Nash TS mirror", () => {
     expect(computeNashProduct(baseScenario(), solution.allocation)).toBeGreaterThan(0);
   });
 
-  it("matches the Python bounded-leakage transcript on the canonical scenario", () => {
+  it("matches the Python transcript-exposure transcript on the canonical scenario", () => {
     const run = runWeightedNashBounded(baseScenario(), { runId: "run-wnash-ts-test" });
     expect(run.algorithm).toBe("weighted_nash_bounded");
     expect(run.convergence).toBe("converged");
@@ -116,12 +118,12 @@ describe("weighted-Nash TS mirror", () => {
     expect(run.leakage_report?.round_count).toBe(5);
     expect(run.leakage_report?.aggregate.max_epsilon_measured).toBeCloseTo(32.92481250360578, 12);
     expect(run.leakage_report?.per_party.map((party) => party.message_log_hash)).toEqual([
-      "e32de4b782c7e84b2046c705c283857c6e7aa1bc27714df9b364e415c895a7ce",
-      "8bb7fab5f5ca6757670b8a73d9334b903732f48b6a63a9cac167af36da7739e0",
+      "9a9757b2d776ac6d5808733f34b3c4ade6505ff57e0cdec593435969c08b5196",
+      "cf5c2a33ace736abfdd4289a1ff1f80075504ac3935dee51e9004ad9d47cff56",
     ]);
   });
 
-  it("falls back to plaintext when bounded mode is called outside private mode", () => {
+  it("falls back to plaintext when disclosure-limiting mode is called outside private mode", () => {
     const run = runWeightedNashBounded(baseScenario(), { informationMode: "full_oracle" });
     expect(run.algorithm).toBe("weighted_nash_bounded");
     expect(run.leakage_report).toBeNull();
@@ -140,7 +142,18 @@ describe("weighted-Nash TS mirror", () => {
     expect(run.failure?.note).toContain("N>=3");
   });
 
-  it("keeps the leakage-bound formula in sync with Python", () => {
+  it("keeps the exposure-bit bound formula in sync with Python", () => {
+    expect(declaredExposureBitBound(5, 1)).toBeCloseTo(32.92481250360578, 12);
     expect(declaredEpsilonBound(5, 1)).toBeCloseTo(32.92481250360578, 12);
+  });
+
+  it("keeps the old protocol helper as a compatibility alias", () => {
+    const direct = runTranscriptExposureProtocol(baseScenario(), {
+      weights: { "buyer-northstar": 1, "supplier-cinder": 1 },
+      initialAllocation: [400],
+      upperBound: 800,
+      runId: "run-wnash-ts-alias",
+    });
+    expect(direct.leakage_report.protocol_version).toBe(PROTOCOL_VERSION);
   });
 });

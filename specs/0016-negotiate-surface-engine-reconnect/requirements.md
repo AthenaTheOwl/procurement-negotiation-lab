@@ -7,10 +7,10 @@ mechanism engine introduced by specs 0015 and 0017. The current
 NegotiateSurface is a two-party link exchange: each browser posts an
 offer, copies a URL, and waits for the partner. The W3 surface must
 become a real mechanism workbench: mechanism selection, legacy URL
-translation, engine counterpacket generation, leakage display, and
+translation, engine counterpacket generation, exposure display, and
 two-tab proof.
 
-Spec 0015 owns the weighted-Nash and privacy math. Spec 0017 owns the
+Spec 0015 owns the weighted-Nash and transcript-exposure math. Spec 0017 owns the
 property battery. Spec 0016 owns the web, URL, and end-to-end state
 contract.
 
@@ -20,7 +20,7 @@ contract.
 
 WHEN the web surface calls the bargaining engine, THE SYSTEM SHALL use
 a versioned TypeScript contract that carries the session state,
-party packets, mechanism id, privacy mode, leakage report reference,
+party packets, mechanism id, information mode, exposure report reference,
 and engine response in one typed payload.
 
 Acceptance:
@@ -38,12 +38,12 @@ mechanism selector whose listed mechanisms all execute real engine
 paths.
 
 Acceptance:
-- The selector includes bounded-leakage weighted-Nash, MPC
+- The selector includes transcript-exposure weighted-Nash, MPC
   weighted-Nash, ADMM, and centralized oracle once their engine paths
   land.
 - No selector option is a disabled placeholder.
 - Selecting a mechanism changes the engine response, run evidence, or
-  leakage report in a visible way.
+  exposure report in a visible way.
 - The selected mechanism is encoded in the share URL and restored on
   page load.
 
@@ -70,24 +70,24 @@ engine path, and return a counterpacket or accept decision without a
 backend.
 
 Acceptance:
-- Playwright covers the two-tab flow for bounded-leakage weighted-Nash.
+- Playwright covers the two-tab flow for transcript-exposure weighted-Nash.
 - The partner tab sees the mechanism response and can counter from it.
-- The final accepted deal records the mechanism id and privacy mode.
+- The final accepted deal records the mechanism id and information mode.
 - The flow works with copied URLs; BroadcastChannel sync is optional
   and cannot be the only proof path.
 
-### R-NEGOTIATE-005: leakage and participation report in the UI
+### R-NEGOTIATE-005: exposure and participation report in the UI
 
-WHEN a private mechanism runs, THE SYSTEM SHALL show the leakage and
+WHEN a disclosure-limited mechanism runs, THE SYSTEM SHALL show the exposure and
 participation report beside the proposed deal.
 
 Acceptance:
-- The report names the mechanism id, privacy mode, leakage epsilon or
+- The report names the mechanism id, information mode, exposure bound or
   cryptographic parameter, BATNA status, and no-worse-off status.
 - Reports are tied to the engine response, not manually duplicated in
   React state.
 - The report can be exported into the existing run-report path.
-- Tests cover the visible report for bounded-leakage and MPC modes.
+- Tests cover the visible report for transcript-exposure and MPC modes.
 
 ### R-NEGOTIATE-006: mobile and SDK parity
 

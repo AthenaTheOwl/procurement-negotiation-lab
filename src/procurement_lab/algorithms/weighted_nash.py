@@ -10,10 +10,10 @@ algorithms ship in this module:
   every party's utility function. Use this for the centralized-
   oracle-style comparison baseline.
 - ``WeightedNashBounded``: same objective, but solved through the
-  bounded-leakage iterative protocol (engine.privacy) when
+  transcript-exposure iterative protocol (engine.privacy) when
   ``information_mode=PRIVATE``. The aggregator never sees utility
   functions or values; parties exchange only ternary direction
-  vectors and bounded step proposals. Returns a LeakageReport with
+  vectors and bounded step proposals. Returns a transcript-exposure report with
   the run.
 
 Both share parameters from DEC-NASH-001 (NASH_QUANTIZATION_LEVELS,
@@ -23,7 +23,7 @@ for the TS engine mirror (DEC-NASH-001 W2 Codex lane T-NASH-009).
 
 The MPC mechanism (DEC-MPC-001, W5) registers under
 ``weighted_nash_mpc`` in a future module; this file ships the
-plaintext + bounded-leakage variants only.
+plaintext + transcript-exposure bounded variants only.
 """
 
 from __future__ import annotations
@@ -35,17 +35,17 @@ from dataclasses import dataclass
 from procurement_lab.engine.privacy import (
     PROTOCOL_VERSION,
     ProtocolOutcome,
-    run_bounded_leakage_protocol,
+    run_transcript_exposure_protocol,
 )
 from procurement_lab.engine.schemas import (
     AlgorithmRun,
     Convergence,
     InformationMode,
     IterationRecord,
-    LeakageReport,
     MechanismFailure,
     MechanismFailureReason,
     Scenario,
+    TranscriptExposureReport,
 )
 from procurement_lab.engine.utility import (
     build_ledger,
@@ -185,7 +185,7 @@ def _failure_run(
     reason: MechanismFailureReason,
     note: str,
     runtime_ms: float,
-    leakage_report: LeakageReport | None = None,
+    leakage_report: TranscriptExposureReport | None = None,
 ) -> AlgorithmRun:
     """Build an AlgorithmRun for a structured-failure case.
 
@@ -292,12 +292,12 @@ class WeightedNashPlaintext:
 
 
 class WeightedNashBounded:
-    """Weighted-Nash solver via the bounded-leakage protocol (DEC-NASH-002).
+    """Weighted-Nash solver via the transcript-exposure protocol.
 
     When ``information_mode=PRIVATE``, parties exchange only ternary
     direction vectors and bounded step proposals; the aggregator never
-    sees utility functions or values. Returns a LeakageReport with
-    the run.
+    sees utility functions or values. Returns transcript-exposure
+    accounting with the run. This is not a differential-privacy claim.
 
     For ``information_mode!=PRIVATE``, this algorithm falls back to
     plaintext behavior so the SDK can compare mechanisms in
@@ -332,7 +332,7 @@ class WeightedNashBounded:
                 runtime_ms=(time.perf_counter() - started) * 1000,
             )
         if information_mode != InformationMode.PRIVATE:
-            # Falling back to plaintext behavior; no leakage report.
+            # Falling back to plaintext behavior; no exposure report.
             run = self._plaintext.run(
                 scenario, information_mode=information_mode
             )
@@ -345,7 +345,7 @@ class WeightedNashBounded:
         initial = [upper / 2.0]
         run_id = f"run-wnash-{uuid.uuid4().hex[:12]}"
 
-        outcome: ProtocolOutcome = run_bounded_leakage_protocol(
+        outcome: ProtocolOutcome = run_transcript_exposure_protocol(
             scenario,
             weights=weights,
             initial_allocation=initial,
@@ -376,7 +376,7 @@ class WeightedNashBounded:
                 information_mode=information_mode,
                 reason=MechanismFailureReason.BATNA_FLOOR_UNREACHABLE,
                 note=(
-                    "bounded-leakage protocol converged but at least one "
+                    "transcript-exposure protocol converged but at least one "
                     "party falls below outside_option in the final allocation"
                 ),
                 runtime_ms=runtime_ms,

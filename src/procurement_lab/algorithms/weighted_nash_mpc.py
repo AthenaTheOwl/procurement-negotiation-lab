@@ -40,17 +40,18 @@ NASH_QUANTIZATION_LEVELS grid:
   every cumulative value below MPC_PRIME / 2 for the encoded ranges
   typical of the lab's golden fixtures.
 
-LeakageReport
--------------
+TranscriptExposureReport
+------------------------
 
 Reports ``protocol_version = "mpc-bgw/v1"``,
-``epsilon_measured = MPC_NEGLIGIBLE_BITS = 1e-9`` per DEC-MPC-001 with
-a ``sufficiency_note`` carrying the v1 protocol contract verbatim:
+``epsilon_measured = MPC_NEGLIGIBLE_BITS = 1e-9`` in the historical
+serialized field per DEC-MPC-001 with a ``sufficiency_note`` carrying
+the v1 protocol contract verbatim:
 the cryptographic IDEAL is a negligible function of the security
 parameter; the v1 implementation realizes that ideal up to the
 sign-revealing argmax pattern documented above. Consumers wanting an
 information-theoretic upper bound on bits leaked should use the
-bounded-leakage mechanism (DEC-NASH-002) instead.
+transcript-exposure mechanism (DEC-NASH-002) instead.
 
 References
 ----------
@@ -83,15 +84,15 @@ from procurement_lab.algorithms.weighted_nash import (
     _upper_bound,
 )
 from procurement_lab.engine.schemas import (
-    AggregateLeakage,
     AlgorithmRun,
     Convergence,
     InformationMode,
     IterationRecord,
-    LeakageReport,
     MechanismFailureReason,
-    PartyLeakage,
     Scenario,
+    AggregateTranscriptExposure,
+    TranscriptExposureParty,
+    TranscriptExposureReport,
 )
 from procurement_lab.engine.utility import build_ledger, evaluate_participant_utility
 
@@ -112,10 +113,10 @@ MPC_FIXED_POINT_SCALE: int = 1 << MPC_FIXED_POINT_BITS
 # because of fixed-point quantization.
 MPC_NUMERICAL_TOLERANCE: float = 1e-2
 
-# LeakageReport claim for the MPC mechanism. The cryptographic scheme's
-# actual leakage is a negligible function of the security parameter; we
+# TranscriptExposureReport claim for the MPC mechanism. The cryptographic
+# scheme's actual leakage is a negligible function of the security parameter; we
 # encode that as a tiny positive constant rather than zero so the
-# LeakageReport schema's ``ge=0`` constraint is satisfied and the
+# historical report schema's ``ge=0`` constraint is satisfied and the
 # bounded-vs-MPC comparison surface renders meaningfully. See DEC-MPC-001
 # for the "honest non-claim" rationale.
 MPC_NEGLIGIBLE_BITS: float = 1e-9
@@ -151,7 +152,7 @@ def decode_fixed_point(value: int, *, scale_bits: int = MPC_FIXED_POINT_BITS) ->
     multiplications the cumulative fixed-point factor is
     ``MPC_FIXED_POINT_BITS * (k + 1)``; callers that compose multiplications
     must track and pass the cumulative scale (the mechanism's main loop
-    does this explicitly so the LeakageReport-side invariants stay tight).
+    does this explicitly so the exposure-report invariants stay tight).
     """
     half = MPC_PRIME // 2
     signed = value - MPC_PRIME if value > half else value
@@ -279,7 +280,7 @@ def secure_compare_sign_revealing(
     secure comparison (which reveals nothing besides the final argmax),
     and stronger than a plaintext comparison (which would reveal each
     candidate's Nash-product magnitude). DEC-MPC-001 documents the
-    trade-off; the LeakageReport's ``sufficiency_note`` carries the
+    trade-off; the TranscriptExposureReport's ``sufficiency_note`` carries the
     contract verbatim.
     """
     diff_shares = [(x_shares[i] - y_shares[i]) % MPC_PRIME for i in range(2)]
@@ -301,9 +302,9 @@ def secure_compare_sign_revealing(
 
 @dataclass
 class _MPCRunBookkeeping:
-    """Per-run bookkeeping captured for the LeakageReport and transcript hash.
+    """Per-run bookkeeping captured for the exposure report and transcript hash.
 
-    Stored as the protocol runs so the post-run LeakageReport builder
+    Stored as the protocol runs so the post-run report builder
     has a faithful record of the rounds, triples consumed, and
     comparison-tree shape.
     """
@@ -336,8 +337,8 @@ def _build_leakage_report(
     run_id: str,
     seed: int,
     bookkeeping: _MPCRunBookkeeping,
-) -> LeakageReport:
-    """Build the per-run LeakageReport for the MPC mechanism.
+) -> TranscriptExposureReport:
+    """Build the per-run TranscriptExposureReport for the MPC mechanism.
 
     All parties carry the same ``epsilon_bound`` and ``epsilon_measured``
     values per DEC-MPC-001: the cryptographic IDEAL's negligible-bits
@@ -350,13 +351,13 @@ def _build_leakage_report(
         "to keep schema invariants satisfied. v1 implementation uses "
         "sign-revealing pairwise comparison inside the max-tree; the "
         "ordering of intermediate Nash products leaks to the transcript "
-        "while the magnitudes remain hidden. Use bounded-leakage "
+        "while the magnitudes remain hidden. Use the transcript-exposure "
         "(DEC-NASH-002) when an information-theoretic upper bound on "
         "bits leaked is the required guarantee."
     )
     msg_hash = bookkeeping.transcript_hash()
     per_party = [
-        PartyLeakage(
+            TranscriptExposureParty(
             party_id=p.id,
             epsilon_bound=MPC_NEGLIGIBLE_BITS,
             epsilon_measured=MPC_NEGLIGIBLE_BITS,
@@ -366,12 +367,12 @@ def _build_leakage_report(
         )
         for p in scenario.participants
     ]
-    aggregate = AggregateLeakage(
+    aggregate = AggregateTranscriptExposure(
         max_epsilon_measured=MPC_NEGLIGIBLE_BITS,
         max_epsilon_bound=MPC_NEGLIGIBLE_BITS,
         all_within_bound=True,
     )
-    return LeakageReport(
+    return TranscriptExposureReport(
         protocol_version=PROTOCOL_VERSION_MPC,
         run_id=run_id,
         seed=seed,
@@ -446,7 +447,7 @@ class WeightedNashMPC:
 
         if information_mode != InformationMode.PRIVATE:
             # Non-PRIVATE: fall back to plaintext for cross-mechanism
-            # comparisons. No LeakageReport in this branch — the
+            # comparisons. No exposure report in this branch — the
             # mechanism is operating under its plaintext-equivalent
             # contract.
             return self._plaintext.run(scenario, information_mode=information_mode)

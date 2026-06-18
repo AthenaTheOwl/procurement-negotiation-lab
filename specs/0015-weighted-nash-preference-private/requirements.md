@@ -1,14 +1,12 @@
-# requirements: weighted-Nash preference-private bargaining
+# requirements: weighted-Nash transcript-exposure bargaining
 
 ## Scope
 
-Spec 0015 closes the credibility gap on the lab's flagship intellectual
-claim. The repo's public framing names weighted-Nash bargaining and
-two-party preference privacy as core mechanisms; the engine today
-implements neither. This spec defines the product, protocol, and
-measurement requirements for a real weighted-Nash bargaining solver
-that operates under bounded-leakage preference privacy by default, with
-a cryptographic multi-party-computation mode available as a second
+Spec 0015 closes the credibility gap on the lab's flagship mechanism
+claim. This spec defines the product, protocol, and measurement
+requirements for a real weighted-Nash bargaining solver that can run
+without sending utility functions to the aggregator, with a
+cryptographic multi-party-computation mode available as a second
 mechanism.
 
 Spec 0015 is the math and protocol spec. The surface that consumes it
@@ -60,12 +58,12 @@ Acceptance:
 - Property test R-PROP-004 confirms that increasing a party's weight
   weakly improves that party's utility at the solution.
 
-### R-NASH-004: preference-private iteration protocol
+### R-NASH-004: transcript-exposure iteration protocol
 
-WHEN two or more parties participate, THE SYSTEM SHALL run a bounded-
-leakage iterative protocol that converges to the weighted-Nash
-allocation without revealing each party's full utility function to the
-other parties or to any centralized oracle.
+WHEN two or more parties participate, THE SYSTEM SHALL run an iterative
+protocol that converges to the weighted-Nash allocation without sending
+each party's full utility function to the other parties or to any
+centralized oracle.
 
 Acceptance:
 - The protocol lives in `src/procurement_lab/engine/privacy.py` and is
@@ -78,30 +76,31 @@ Acceptance:
 - The protocol is deterministic given its random seed; the seed is
   part of the per-run record.
 
-### R-NASH-005: leakage measurement
+### R-NASH-005: transcript-exposure measurement
 
-WHEN the preference-private protocol runs, THE SYSTEM SHALL produce a
-per-run leakage report quantifying how much each party's preferences
-could be inferred from the messages they sent.
+WHEN the transcript-exposure protocol runs, THE SYSTEM SHALL produce a
+per-run report quantifying an upper bound on how much each party's
+utility information could be inferred from the messages they sent.
 
 Acceptance:
-- The leakage report is a structured object with one entry per party.
-- Each entry includes an epsilon value (worst-case inference bound),
-  the protocol round count, and the message log hash.
-- The leakage report is part of the per-run record and is exposed in
+- The report is a structured object with one entry per party.
+- Each entry includes an exposure-bit bound (historically serialized as
+  `epsilon_*` for compatibility), the protocol round count, and the
+  message log hash.
+- The report is part of the per-run record and is exposed in
   the SDK return value and the UI participation report.
-- Property test R-PROP-006 confirms that the measured epsilon stays
+- Property test R-PROP-006 confirms that the measured exposure stays
   within the declared per-protocol bound.
 
-### R-NASH-006: leakage-report schema
+### R-NASH-006: transcript-exposure report schema
 
-WHEN any consumer reads a leakage report, THE SYSTEM SHALL provide it
-in a stable machine-readable form.
+WHEN any consumer reads a transcript-exposure report, THE SYSTEM SHALL
+provide it in a stable machine-readable form.
 
 Acceptance:
 - The schema lives in `src/procurement_lab/engine/schemas.py` as a
-  Pydantic model and is mirrored in JSON Schema under
-  `ops/schemas/leakage-report.schema.json`.
+  Pydantic model and is mirrored in JSON Schema under the historical
+  compatibility path `ops/schemas/leakage-report.schema.json`.
 - The schema is validated against by the run-evidence packet emitter
   (DEC-FACTORY-007 chain).
 - Spec 0017 R-PROP-006 references this schema for its invariant tests.
@@ -124,8 +123,8 @@ Acceptance:
 
 WHEN a session selects `privacy_mode=mpc`, THE SYSTEM SHALL run a
 secure-multi-party-computation protocol that returns the weighted-Nash
-allocation with cryptographic privacy guarantees, not iterative
-bounded leakage.
+allocation with a cryptographic protocol contract, not iterative
+transcript-exposure accounting.
 
 Acceptance:
 - The MPC mechanism lives in
@@ -133,17 +132,17 @@ Acceptance:
 - The MPC mechanism returns the same allocation as the plaintext
   weighted-Nash solver to within a documented numerical tolerance on
   the golden fixture suite.
-- The MPC mechanism reports an epsilon of zero (or the cryptographic
-  scheme's negligible-function parameter) in its leakage report.
+- The MPC mechanism reports the cryptographic scheme's negligible-
+  function parameter in its exposure report.
 - The mechanism is exposed through the SDK mechanism selector and the
   UI mechanism selector (spec 0016).
-- The MPC mechanism does not gate W2 ship of the bounded-leakage
+- The MPC mechanism does not gate W2 ship of the transcript-exposure
   mechanism; its W5 schedule is owned by DEC-MPC-001.
 
 ### R-NASH-009: mechanism selector exposed in SDK
 
 WHEN a developer calls the SDK, THE SYSTEM SHALL let the caller choose
-among bargaining mechanisms — bounded-leakage weighted-Nash, MPC
+among bargaining mechanisms — transcript-exposure weighted-Nash, MPC
 weighted-Nash, ADMM, centralized oracle, baseline alternatives —
 through a stable parameter.
 
@@ -155,18 +154,18 @@ Acceptance:
 - Each mechanism returns the same allocation schema, so callers can
   diff outputs without per-mechanism branching.
 
-### R-NASH-010: per-run record references mechanism + leakage
+### R-NASH-010: per-run record references mechanism + exposure
 
 WHEN a run completes, THE SYSTEM SHALL include the mechanism identifier
-and the leakage report (or its hash) in the per-run record consumed by
+and the exposure report (or its hash) in the per-run record consumed by
 the run-evidence packet emitter.
 
 Acceptance:
 - The run record adds `mechanism_id` (matching R-NASH-009 identifiers)
   and `leakage_report_ref` fields.
 - The event ledger contains a `mechanism.bargaining.completed` event
-  carrying the mechanism id and the leakage epsilon.
-- The replay-determinism gate covers runs that use bounded-leakage and
+  carrying the mechanism id and exposure summary.
+- The replay-determinism gate covers runs that use transcript-exposure and
   MPC mechanisms in addition to the existing oracle and ADMM runs.
 
 ## Out of scope

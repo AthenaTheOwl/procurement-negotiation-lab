@@ -193,12 +193,14 @@ class AlgorithmRun(BaseModel):
         default=None,
         description="oracle.global_utility - this.global_utility ($); None for the oracle itself",
     )
-    leakage_report: LeakageReport | None = Field(
+    leakage_report: TranscriptExposureReport | None = Field(
         default=None,
         description=(
-            "Per-run LeakageReport for preference-private mechanisms "
-            "(weighted_nash_bounded, weighted_nash_mpc). None for "
-            "mechanisms that reveal full preferences to the aggregator."
+            "Per-run transcript-exposure report for mechanisms that do "
+            "not send utility functions to the aggregator "
+            "(weighted_nash_bounded, weighted_nash_mpc). The field name "
+            "is retained for compatibility with earlier clients; it is "
+            "not a differential-privacy guarantee."
         ),
     )
     failure: MechanismFailure | None = Field(
@@ -209,6 +211,17 @@ class AlgorithmRun(BaseModel):
             "reason-code semantics."
         ),
     )
+
+    @property
+    def transcript_exposure_report(self) -> TranscriptExposureReport | None:
+        """Preferred alias for ``leakage_report``.
+
+        ``leakage_report`` remains the serialized field for backward
+        compatibility. New code should prefer this property in prose and
+        UI labels because the report measures transcript exposure, not a
+        privacy guarantee.
+        """
+        return self.leakage_report
 
 
 class MechanismFailureReason(StrEnum):
@@ -236,19 +249,24 @@ class MechanismFailure(BaseModel):
     note: str = Field(default="")
 
 
-class PartyLeakage(BaseModel):
-    """Per-party leakage accounting in a LeakageReport (DEC-NASH-002)."""
+class TranscriptExposureParty(BaseModel):
+    """Per-party transcript-exposure accounting (DEC-NASH-002).
+
+    The numeric fields keep their historical ``epsilon_*`` names for
+    schema compatibility. They are measured in bits of transcript
+    exposure, not differential-privacy epsilon.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     party_id: str
     epsilon_bound: float = Field(
         ge=0,
-        description="Declared per-protocol-version upper bound on bits of utility-function information that the transcript reveals about this party.",
+        description="Declared per-protocol-version upper bound on bits of utility-function information that the transcript reveals about this party; not a DP epsilon.",
     )
     epsilon_measured: float = Field(
         ge=0,
-        description="Measured per-run information-theoretic upper bound: round_count * (n_coords * log2(3) + log2(STEP_QUANTIZATION_LEVELS)).",
+        description="Measured per-run transcript-exposure upper bound in bits: round_count * (n_coords * log2(3) + log2(STEP_QUANTIZATION_LEVELS)).",
     )
     round_count: int = Field(ge=0)
     message_log_hash: str = Field(
@@ -259,12 +277,22 @@ class PartyLeakage(BaseModel):
     )
     sufficiency_note: str = Field(
         default="",
-        description="Human-readable note on the bound's looseness (e.g., 'information-theoretic upper bound; not a differential-privacy guarantee').",
+        description="Human-readable note on the bound's looseness (e.g., 'transcript-exposure upper bound; not a differential-privacy guarantee').",
     )
 
+    @property
+    def exposure_bits_bound(self) -> float:
+        """Preferred name for ``epsilon_bound``."""
+        return self.epsilon_bound
 
-class AggregateLeakage(BaseModel):
-    """Aggregate leakage across parties in a LeakageReport."""
+    @property
+    def exposure_bits_measured(self) -> float:
+        """Preferred name for ``epsilon_measured``."""
+        return self.epsilon_measured
+
+
+class AggregateTranscriptExposure(BaseModel):
+    """Aggregate transcript exposure across parties."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -272,31 +300,42 @@ class AggregateLeakage(BaseModel):
     max_epsilon_bound: float = Field(ge=0)
     all_within_bound: bool
 
+    @property
+    def max_exposure_bits_measured(self) -> float:
+        """Preferred name for ``max_epsilon_measured``."""
+        return self.max_epsilon_measured
 
-class LeakageReport(BaseModel):
-    """Per-run leakage report for preference-private bargaining (DEC-NASH-002).
+    @property
+    def max_exposure_bits_bound(self) -> float:
+        """Preferred name for ``max_epsilon_bound``."""
+        return self.max_epsilon_bound
 
-    Schema mirrored to JSON Schema at
+class TranscriptExposureReport(BaseModel):
+    """Per-run transcript-exposure report for weighted-Nash variants.
+
+    Schema mirrored to JSON Schema at the historical
     `ops/schemas/leakage-report.schema.json` for cross-repo consumers
-    (run-evidence packet emitter chain, DEC-FACTORY-007).
+    (run-evidence packet emitter chain, DEC-FACTORY-007). The file and
+    field names remain stable for compatibility; new prose should call
+    this transcript-exposure accounting, not a privacy guarantee.
     """
 
     model_config = ConfigDict(frozen=True)
 
     protocol_version: str = Field(
         min_length=1,
-        description="Protocol contract identifier. v1 today is 'bounded-leakage/v1' per DEC-NASH-002.",
+        description="Protocol contract identifier. v1 today is 'transcript-exposure/v1'; 'bounded-leakage/v1' remains accepted as a legacy identifier.",
     )
     run_id: str = Field(min_length=1)
     seed: int = Field(
         description="64-bit seed pinned for the protocol run; same seed + scenario + parameter file reproduces the message sequence.",
     )
     round_count: int = Field(ge=0)
-    per_party: list[PartyLeakage] = Field(min_length=1)
-    aggregate: AggregateLeakage
+    per_party: list[TranscriptExposureParty] = Field(min_length=1)
+    aggregate: AggregateTranscriptExposure
 
     @model_validator(mode="after")
-    def _aggregate_matches_per_party(self) -> LeakageReport:
+    def _aggregate_matches_per_party(self) -> TranscriptExposureReport:
         if not self.per_party:
             return self
         expected_max_measured = max(p.epsilon_measured for p in self.per_party)
@@ -320,3 +359,9 @@ class LeakageReport(BaseModel):
                 f"does not match per_party check ({expected_within})"
             )
         return self
+
+
+# Compatibility aliases for existing SDK users and serialized field names.
+PartyLeakage = TranscriptExposureParty
+AggregateLeakage = AggregateTranscriptExposure
+LeakageReport = TranscriptExposureReport

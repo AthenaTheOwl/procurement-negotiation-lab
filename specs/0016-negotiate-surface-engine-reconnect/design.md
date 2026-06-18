@@ -11,9 +11,9 @@ The contract has three layers:
 
 1. **Surface state** - session id, parties, current role, history, and
    selected mechanism.
-2. **Engine packet** - party packet, mechanism id, privacy mode, seed
+2. **Engine packet** - party packet, mechanism id, information mode, seed
    or determinism data when available, and prior engine response.
-3. **Evidence packet** - leakage report ref, participation report,
+3. **Evidence packet** - exposure report ref, participation report,
    run-report export ref, and browser proof metadata.
 
 The contract lives in the shared engine package so web, mobile, and
@@ -24,7 +24,7 @@ The first shared implementation is
 URL payload, functional mechanism list, v1 legacy translator, and
 `runSurfaceEngine`, which maps a link-exchanged negotiation state into
 the weighted-Nash engine and returns a typed engine response with
-leakage and participation reports.
+exposure and participation reports.
 
 ## URL versions
 
@@ -47,7 +47,7 @@ The selector reads the registered mechanism list from the engine
 contract. A mechanism appears only when its engine path exists. The
 visible W3 list starts with:
 
-1. bounded-leakage weighted-Nash
+1. transcript-exposure weighted-Nash
 2. plaintext weighted-Nash
 
 The selector stores the chosen mechanism in URL state and feeds it to
@@ -67,7 +67,7 @@ enhancement, not the acceptance gate.
 ## Report path
 
 Engine responses include a report object that the existing run-report
-path can export. The UI does not rebuild leakage or participation
+path can export. The UI does not rebuild exposure or participation
 status from display strings; it renders fields from the engine
 response.
 

@@ -103,6 +103,10 @@ export interface LeakageReport {
   aggregate: AggregateLeakage;
 }
 
+export type TranscriptExposureParty = PartyLeakage;
+export type AggregateTranscriptExposure = AggregateLeakage;
+export type TranscriptExposureReport = LeakageReport;
+
 export interface WeightedNashAlgorithmRun {
   scenario_id: string;
   algorithm: string;
@@ -147,7 +151,8 @@ export const TIE_BREAK_TOLERANCE = params.tie_break_tolerance;
 export const PLAINTEXT_NUMERICAL_TOLERANCE = params.plaintext_numerical_tolerance;
 export const PROTOCOL_NUMERICAL_TOLERANCE = params.protocol_numerical_tolerance;
 export const PROTOCOL_VERSION = params.protocol_version;
-export const LEAKAGE_SUFFICIENCY_NOTE = params.leakage_sufficiency_note;
+export const EXPOSURE_SUFFICIENCY_NOTE = params.exposure_sufficiency_note;
+export const LEAKAGE_SUFFICIENCY_NOTE = EXPOSURE_SUFFICIENCY_NOTE;
 
 const SHA256_K = [
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -468,7 +473,7 @@ export function runWeightedNashBounded(
   }
 
   const upperBound = upperBoundForScenario(scenario);
-  const outcome = runBoundedLeakageProtocol(scenario, {
+  const outcome = runTranscriptExposureProtocol(scenario, {
     weights: defaultWeights(scenario),
     initialAllocation: [upperBound / 2],
     upperBound,
@@ -488,7 +493,7 @@ export function runWeightedNashBounded(
       name: params.mechanism_identifiers.bounded_leakage,
       informationMode,
       reason: "batna_floor_unreachable",
-      note: "bounded-leakage protocol converged but at least one party falls below outside_option in the final allocation",
+      note: "transcript-exposure protocol converged but at least one party falls below outside_option in the final allocation",
       runtimeMs,
       leakageReport: outcome.leakage_report,
     });
@@ -516,7 +521,7 @@ export function runWeightedNashBounded(
   };
 }
 
-export function runBoundedLeakageProtocol(
+export function runTranscriptExposureProtocol(
   scenario: NashScenario,
   args: {
     weights: Record<string, number>;
@@ -567,8 +572,8 @@ export function runBoundedLeakageProtocol(
     }
   }
 
-  const epsilonBound = declaredEpsilonBound(roundsUsed, nCoords);
-  const perParty: PartyLeakage[] = scenario.participants.map((participant) => {
+  const epsilonBound = declaredExposureBitBound(roundsUsed, nCoords);
+  const perParty: TranscriptExposureParty[] = scenario.participants.map((participant) => {
     const log = perPartyLogs[participant.id] ?? [];
     const canonical = `[${log.map(protocolMessageCanonicalJson).join(",")}]`;
     return {
@@ -602,6 +607,19 @@ export function runBoundedLeakageProtocol(
   };
 }
 
+export function runBoundedLeakageProtocol(
+  scenario: NashScenario,
+  args: {
+    weights: Record<string, number>;
+    initialAllocation: number[];
+    upperBound: number;
+    runId: string;
+    seed?: number;
+  },
+): ProtocolOutcome {
+  return runTranscriptExposureProtocol(scenario, args);
+}
+
 export function stepSize(roundSeq: number, upperBound: number): number {
   return (
     params.step_eta_0
@@ -621,8 +639,12 @@ export function quantizeStep(raw: number, etaMax: number): number {
   return (binIndex / nIntervals) * 2 * etaMax - etaMax;
 }
 
-export function declaredEpsilonBound(roundCount: number, nCoords: number): number {
+export function declaredExposureBitBound(roundCount: number, nCoords: number): number {
   return roundCount * (nCoords * Math.log2(3) + Math.log2(params.step_quantization_levels));
+}
+
+export function declaredEpsilonBound(roundCount: number, nCoords: number): number {
+  return declaredExposureBitBound(roundCount, nCoords);
 }
 
 export function partyGradientDirection(

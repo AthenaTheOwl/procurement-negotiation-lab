@@ -1,8 +1,10 @@
-"""Bounded-leakage preference-private protocol (DEC-NASH-002).
+"""Transcript-exposure bounded weighted-Nash protocol (DEC-NASH-002).
 
-This module implements the privacy-preserving iterative protocol the
-weighted-Nash bargaining solver invokes when
-``information_mode=PRIVATE``. The protocol's contract:
+This module implements the iterative protocol the weighted-Nash
+bargaining solver invokes when ``information_mode=PRIVATE``. It is a
+disclosure-limiting protocol: parties do not send utility functions,
+utility values, or BATNAs to the aggregator. It is not a differential-
+privacy protocol and should not be described as one. The contract:
 
 - Each round every party transmits ONE ``ProtocolMessage``:
   - ``direction``: ternary vector ({-1, 0, +1} per allocation coordinate)
@@ -19,17 +21,18 @@ What is NEVER transmitted:
 - Per-allocation utility values
 - Party BATNAs (outside_option)
 
-Leakage measurement per party (DEC-NASH-002 formula):
-    epsilon_measured = round_count * (n_coords * log2(3) + log2(STEP_QUANTIZATION_LEVELS))
+Transcript-exposure measurement per party (DEC-NASH-002 formula):
+    exposure_bits_measured = round_count * (n_coords * log2(3) + log2(STEP_QUANTIZATION_LEVELS))
 
 The bound is an information-theoretic upper bound on the bits of
 utility-function information the transcript reveals about each party.
-It is loose; the ``sufficiency_note`` field in the LeakageReport makes
-this visible to the consumer.
+It is loose; the ``sufficiency_note`` field in the
+TranscriptExposureReport makes this visible to the consumer.
 
 This module owns the protocol logic; the weighted-Nash solver in
-``algorithms/weighted_nash.py`` uses it. The LeakageReport schema lives
-in ``engine/schemas.py``.
+``algorithms/weighted_nash.py`` uses it. The schema lives in
+``engine/schemas.py``. The file name stays ``privacy.py`` for import
+compatibility with earlier revisions.
 """
 
 from __future__ import annotations
@@ -40,18 +43,19 @@ import math
 from dataclasses import dataclass
 
 from procurement_lab.engine.schemas import (
-    AggregateLeakage,
-    LeakageReport,
-    PartyLeakage,
     Participant,
     Scenario,
+    AggregateTranscriptExposure,
+    TranscriptExposureParty,
+    TranscriptExposureReport,
 )
 from procurement_lab.engine.utility import evaluate_participant_utility
 
 
 # --- Protocol parameters (DEC-NASH-001 + DEC-NASH-002) ----------------------
 
-PROTOCOL_VERSION = "bounded-leakage/v1"
+PROTOCOL_VERSION = "transcript-exposure/v1"
+LEGACY_PROTOCOL_VERSION = "bounded-leakage/v1"
 STEP_QUANTIZATION_LEVELS = 32
 MAX_ROUNDS = 200
 CONVERGENCE_TOLERANCE = 1e-3
@@ -66,10 +70,11 @@ STEP_BETA = 0.5
 STEP_SCALE_FRACTION = 0.05  # initial step = 5% of upper_bound at t=0
                             # (multiplied by STEP_ETA_0)
 
-# Sufficiency note carried on every LeakageReport per DEC-NASH-002.
-LEAKAGE_SUFFICIENCY_NOTE = (
-    "information-theoretic upper bound; not a differential-privacy guarantee"
+# Sufficiency note carried on every TranscriptExposureReport per DEC-NASH-002.
+EXPOSURE_SUFFICIENCY_NOTE = (
+    "transcript-exposure bit upper bound; not a differential-privacy guarantee"
 )
+LEAKAGE_SUFFICIENCY_NOTE = EXPOSURE_SUFFICIENCY_NOTE
 
 
 def step_size(round_seq: int, upper_bound: float) -> float:
@@ -91,14 +96,15 @@ def step_size(round_seq: int, upper_bound: float) -> float:
     )
 
 
-def declared_epsilon_bound(round_count: int, n_coords: int) -> float:
-    """Per-protocol-version declared upper bound on transcript leakage.
+def declared_exposure_bit_bound(round_count: int, n_coords: int) -> float:
+    """Per-protocol-version declared upper bound on transcript exposure.
 
     The bound is the information-theoretic worst case: each round
     transmits at most ``n_coords * log2(3)`` bits via the ternary
     direction vector and ``log2(STEP_QUANTIZATION_LEVELS)`` bits via
-    the step_proposal. The bound is identical to ``epsilon_measured``
-    in this protocol version because every message uses the full
+    the step_proposal. The bound is identical to
+    ``exposure_bits_measured`` in this protocol version because every
+    message uses the full
     information budget; future protocol revisions can lower the bound
     while keeping the measurement, or vice versa.
     """
@@ -106,12 +112,17 @@ def declared_epsilon_bound(round_count: int, n_coords: int) -> float:
     return round_count * per_round
 
 
+def declared_epsilon_bound(round_count: int, n_coords: int) -> float:
+    """Compatibility alias for ``declared_exposure_bit_bound``."""
+    return declared_exposure_bit_bound(round_count, n_coords)
+
+
 # --- Protocol message ------------------------------------------------------
 
 
 @dataclass(frozen=True)
 class ProtocolMessage:
-    """One per-round per-party message in the bounded-leakage protocol.
+    """One per-round per-party message in the transcript-exposure protocol.
 
     Wire shape matches the DEC-NASH-002 contract: round_seq, party_id,
     direction (ternary), step_proposal (quantized), protocol_version.
@@ -153,7 +164,7 @@ def quantize_step(raw: float, eta_max: float) -> float:
 
     Maps the raw value (assumed bounded by ``[-eta_max, eta_max]``) to
     one of ``STEP_QUANTIZATION_LEVELS`` discrete points symmetric around
-    zero. The quantization is part of the DEC-NASH-002 leakage bound:
+    zero. The quantization is part of the DEC-NASH-002 exposure bound:
     each step_proposal carries at most ``log2(STEP_QUANTIZATION_LEVELS)``
     bits about the party's gradient magnitude.
     """
@@ -217,7 +228,7 @@ def party_step_proposal(
     (in allocation units). Direction is what carries the gradient
     sign; step magnitude is the bounded schedule. The proposal is
     quantized to ``STEP_QUANTIZATION_LEVELS`` levels symmetric around
-    zero before transmission so the leakage formula in DEC-NASH-002
+    zero before transmission so the exposure formula in DEC-NASH-002
     holds (``log2(STEP_QUANTIZATION_LEVELS)`` bits per step).
 
     The party still computes its local gradient magnitude (kept
@@ -261,16 +272,16 @@ def aggregate_next_candidate(
 
 @dataclass(frozen=True)
 class ProtocolOutcome:
-    """Result of running the bounded-leakage protocol on a scenario."""
+    """Result of running the transcript-exposure protocol on a scenario."""
 
     final_allocation: list[float]
     rounds_used: int
     converged: bool
-    leakage_report: LeakageReport
+    leakage_report: TranscriptExposureReport
     final_residual: float
 
 
-def run_bounded_leakage_protocol(
+def run_transcript_exposure_protocol(
     scenario: Scenario,
     *,
     weights: dict[str, float],
@@ -279,14 +290,14 @@ def run_bounded_leakage_protocol(
     run_id: str,
     seed: int = 0,
 ) -> ProtocolOutcome:
-    """Run the bounded-leakage protocol to convergence.
+    """Run the transcript-exposure protocol to convergence.
 
-    Returns the final allocation, a LeakageReport, and per-party
+    Returns the final allocation, a TranscriptExposureReport, and per-party
     message-log hashes. The protocol is deterministic given the seed
     and inputs (no random sampling — every transmitted bit is derived
     from the candidate and the party's utility).
 
-    The seed is recorded in the LeakageReport for the per-run record
+    The seed is recorded in the TranscriptExposureReport for the per-run record
     even though the v1 protocol does not currently use randomness; the
     field preserves the contract for future protocol revisions that
     add stochastic exploration.
@@ -337,35 +348,36 @@ def run_bounded_leakage_protocol(
             converged = True
             break
 
-    # Build LeakageReport per DEC-NASH-002.
-    eps_bound = declared_epsilon_bound(rounds_used, n_coords)
-    per_party_entries: list[PartyLeakage] = []
+    # Build TranscriptExposureReport per DEC-NASH-002.
+    exposure_bound = declared_exposure_bit_bound(rounds_used, n_coords)
+    per_party_entries: list[TranscriptExposureParty] = []
     for participant in scenario.participants:
         log = per_party_logs[participant.id]
         # Hash the message log in canonical form.
         canonical = "[" + ",".join(m.to_canonical_json() for m in log) + "]"
         log_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
         per_party_entries.append(
-            PartyLeakage(
+            TranscriptExposureParty(
                 party_id=participant.id,
-                epsilon_bound=eps_bound,
-                # epsilon_measured equals the bound in v1 because every
+                epsilon_bound=exposure_bound,
+                # epsilon_measured is the legacy serialized field name.
+                # It equals the exposure bound in v1 because every
                 # message uses the full information budget; future
                 # versions may lower the measurement.
-                epsilon_measured=eps_bound,
+                epsilon_measured=exposure_bound,
                 round_count=rounds_used,
                 message_log_hash=log_hash,
-                sufficiency_note=LEAKAGE_SUFFICIENCY_NOTE,
+                sufficiency_note=EXPOSURE_SUFFICIENCY_NOTE,
             )
         )
-    aggregate = AggregateLeakage(
+    aggregate = AggregateTranscriptExposure(
         max_epsilon_measured=max(p.epsilon_measured for p in per_party_entries),
         max_epsilon_bound=max(p.epsilon_bound for p in per_party_entries),
         all_within_bound=all(
             p.epsilon_measured <= p.epsilon_bound for p in per_party_entries
         ),
     )
-    report = LeakageReport(
+    report = TranscriptExposureReport(
         protocol_version=PROTOCOL_VERSION,
         run_id=run_id,
         seed=seed,
@@ -380,4 +392,24 @@ def run_bounded_leakage_protocol(
         converged=converged,
         leakage_report=report,
         final_residual=final_residual,
+    )
+
+
+def run_bounded_leakage_protocol(
+    scenario: Scenario,
+    *,
+    weights: dict[str, float],
+    initial_allocation: list[float],
+    upper_bound: float,
+    run_id: str,
+    seed: int = 0,
+) -> ProtocolOutcome:
+    """Compatibility alias for ``run_transcript_exposure_protocol``."""
+    return run_transcript_exposure_protocol(
+        scenario,
+        weights=weights,
+        initial_allocation=initial_allocation,
+        upper_bound=upper_bound,
+        run_id=run_id,
+        seed=seed,
     )

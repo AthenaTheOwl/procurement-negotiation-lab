@@ -20,10 +20,9 @@ Not FloPro-branded. Not an official Amazon example.
 - Tutorial pages that explain utility, residuals, risk scores, ADMM,
   oracle gaps, cost-benefit transfers, and the W0 reset toward
   weighted-Nash bargaining in plain English.
-- A mechanism-design workbench for AI-mediated coordination under
-  private information: weighted-Nash plaintext, bounded-leakage
-  weighted-Nash, v1 BGW MPC, oracle-gap metrics, leakage reports, and
-  property tests.
+- A mechanism-design workbench for simulated procurement coordination:
+  weighted-Nash plaintext, transcript-exposure weighted-Nash, v1 BGW
+  MPC, oracle-gap metrics, exposure reports, and property tests.
 - A native iOS and Android port (Expo) that mirrors the web learn flow.
 
 ## Where to start
@@ -37,7 +36,7 @@ Not FloPro-branded. Not an official Amazon example.
   ADMM, oracle gaps, and cost-benefit transfers in plain English.
 - Read [`docs/algorithms.md`](docs/algorithms.md) for the mechanism
   comparison: centralized oracle, ADMM-style coordination, simple
-  baselines, weighted-Nash plaintext, bounded-leakage weighted-Nash,
+  baselines, weighted-Nash plaintext, transcript-exposure weighted-Nash,
   and v1 MPC.
 - Read [`docs/factory.md`](docs/factory.md) for the factory subsystem:
   narrow MCP stdio over shell tools, spec tasks expanded into
@@ -53,7 +52,7 @@ eight roles, twelve tools, six policies, seven executable gate scripts.
 ## App surfaces
 
 - **PLAY:** a six-beat management simulator, `The Substrate Crunch`.
-- **LAB:** an authoring workbench for scenarios, canonical agents,
+- **LAB:** an authoring workbench for scenarios, canonical counterparties,
   mechanisms, information modes, and transfers.
 - **STUDY:** plain-English tutorial pages on utility, residuals, risk
   scores, ADMM, oracle gaps, and cost-benefit transfers.
@@ -68,7 +67,7 @@ eight roles, twelve tools, six policies, seven executable gate scripts.
 - When CPP/ADMM helps, when CPP+VCG/CBT or menu contracts are stronger,
   and when a simpler baseline is enough.
 - How more shared information can buy better joint utility.
-- How privacy exposure changes when agents reveal risk, capacity, cost,
+- How information exposure changes when counterparties reveal risk, capacity, cost,
   or forecast bands.
 - How cost-benefit transfers split surplus so every participant ends
   up no worse off.
@@ -89,12 +88,12 @@ From there you can:
 - Pick canonical buyer and supplier strategies such as JIT buyer,
   launch-protection buyer, truthful CPP responder, capacity guard,
   relationship supplier, and hard bargainer.
-- Tune agent behavior knobs for urgency, flexibility, truthfulness,
-  privacy preference, and risk aversion.
+- Tune behavior knobs for urgency, flexibility, truthfulness,
+  information-disclosure preference, and risk aversion.
 - Compare JIT baseline, centralized oracle, CPP/ADMM, CPP+VCG/CBT,
   menu-of-contracts, alternating best response, price-only
   coordination, consensus averaging, weighted-Nash plaintext,
-  bounded-leakage weighted-Nash, and MPC weighted-Nash.
+  transcript-exposure weighted-Nash, and MPC weighted-Nash.
 
 ## The factory subsystem
 
@@ -136,7 +135,7 @@ is the React/TypeScript app.
 The reusable mechanism logic is importable as `procurement_mechanism_sdk`.
 It wraps the deterministic Python engine instead of moving the deployed
 React/TypeScript simulator. The SDK includes the weighted-Nash
-plaintext, bounded-leakage, and MPC mechanism ids.
+plaintext, transcript-exposure, and MPC mechanism ids.
 
 ```python
 from procurement_mechanism_sdk import compare_mechanisms, sample_scenario
@@ -211,7 +210,7 @@ first.
   v1 reference mechanism for two-party correctness and contract tests;
   a serious cryptographic deployment would need MP-SPDZ or comparable
   audited infrastructure.
-- A production solver. Agents in the Domain Guild advise; deterministic
+- A production solver. Domain Guild roles advise; deterministic
   FloPro reference code decides anything consequential.
 
 ## Public boundary

@@ -91,17 +91,17 @@ Acceptance:
 - Infeasible scenarios are routed through the structured failure path
   and not asserted.
 
-### R-PROP-006: leakage-bound invariant
+### R-PROP-006: transcript-exposure-bound invariant
 
-WHEN the bounded-leakage preference-private protocol runs (per
-R-NASH-004), THE SYSTEM SHALL produce a leakage report whose measured
-epsilon is no greater than the declared per-protocol bound.
+WHEN the transcript-exposure protocol runs (per R-NASH-004), THE
+SYSTEM SHALL produce a report whose measured exposure is no greater
+than the declared per-protocol bound.
 
 Acceptance:
 - `tests/property/test_leakage_bound.py` generates scenarios under
   `information_mode=private` and runs the protocol end-to-end.
-- The test reads the LeakageReport (R-NASH-006 schema) and asserts
-  `measured_epsilon <= declared_bound` for every party.
+- The test reads the TranscriptExposureReport (R-NASH-006 schema) and
+  asserts `measured_exposure <= declared_bound` for every party.
 - The cryptographic MPC mechanism (R-NASH-008) is exercised in the
   same property file with the negligible-function parameter check.
 
@@ -176,7 +176,7 @@ Acceptance:
   (compiled and invoked via `node` subprocess).
 - The test asserts allocation equality within the tolerance documented
   in DEC-NASH-001 for non-protocol mechanisms and within the
-  protocol-tolerance for the iterative bounded-leakage protocol.
+  protocol-tolerance for the iterative transcript-exposure protocol.
 - The TS engine mirror is built as part of the test setup (no
   expectation that it is published).
 

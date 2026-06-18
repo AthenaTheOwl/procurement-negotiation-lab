@@ -9,7 +9,7 @@ decision: |
   procurement-negotiation-lab adds a Hypothesis-based property test
   battery at ``tests/property/`` that asserts the engine's documented
   mathematical claims (individual rationality, determinism,
-  monotonicity, budget-balance, leakage-bound, Pareto efficiency,
+  monotonicity, budget-balance, transcript-exposure bound, Pareto efficiency,
   infeasibility handling, numerical stability, TS-Python parity) hold
   across the input distribution, not only on the hand-picked scenarios
   in ``tests/test_algorithms.py``.
@@ -120,7 +120,7 @@ rationale: |
   false-positive miss on real scenarios that exceed the cap.
 
   The registry-driven mechanism coverage matters because spec 0015
-  adds two new mechanisms (weighted-Nash bounded-leakage and MPC) in
+  adds two new mechanisms (weighted-Nash transcript exposure and MPC) in
   W2 and W5. Hard-coded mechanism iteration in every property file
   would force a 10-file edit per new mechanism; the registry pattern
   reduces that to one-line registry entries.
@@ -166,7 +166,7 @@ systems_map: |
   by file edits.
 transferable_principle: |
   When a system claims an invariant (no-regret, monotonicity,
-  budget-balance, leakage-bound, Lipschitz stability), ship a property
+  budget-balance, transcript-exposure bound, Lipschitz stability), ship a property
   test that asserts the invariant across the input distribution. The
   test's job is to find the counterexample the author did not think
   of. Registry-driven dispatch keeps the battery cheap to extend as
@@ -186,7 +186,7 @@ adoption_ladder:
     registry. ``conftest.py`` sets the global seed and example cap.
     ``registry.py`` lists current mechanisms. The W1 ship.
   mid_adoption: |
-    Property files for leakage-bound, Pareto, infeasibility, numerical
+    Property files for transcript-exposure bound, Pareto, infeasibility, numerical
     stability, and TS-Python parity land alongside spec 0015's
     weighted-Nash + MPC implementations (W2-W5).
     ``engine-properties.yml`` CI job runs the full battery on every PR

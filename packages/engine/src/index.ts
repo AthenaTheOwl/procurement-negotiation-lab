@@ -186,6 +186,7 @@ export type { DecisionEvent, DecisionEventLog } from "./model/decisionEvent";
 export { FormulaError, compileFormula } from "./model/formula";
 export type { CompiledFormula } from "./model/formula";
 export {
+  EXPOSURE_SUFFICIENCY_NOTE,
   LEAKAGE_SUFFICIENCY_NOTE,
   NASH_QUANTIZATION_LEVELS,
   PLAINTEXT_NUMERICAL_TOLERANCE,
@@ -196,18 +197,21 @@ export {
   buildWeightedNashLedger,
   computeNashProduct,
   computeSha256,
+  declaredExposureBitBound,
   declaredEpsilonBound,
   evaluateParticipantUtility,
   partyGradientDirection,
   plaintextArgmax,
   quantizeStep,
   runBoundedLeakageProtocol,
+  runTranscriptExposureProtocol,
   runWeightedNashBounded,
   runWeightedNashPlaintext,
   stepSize,
 } from "./model/weightedNash";
 export type {
   AggregateLeakage,
+  AggregateTranscriptExposure,
   IterationRecord,
   LeakageReport,
   MechanismFailure,
@@ -221,6 +225,8 @@ export type {
   PartyLeakage,
   ProtocolMessage,
   ProtocolOutcome,
+  TranscriptExposureParty,
+  TranscriptExposureReport,
   UtilityLedger,
   WeightedNashAlgorithmRun,
   WeightedNashSolution,

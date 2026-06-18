@@ -1,10 +1,11 @@
-"""Property R-PROP-006: bounded-leakage protocol respects declared epsilon.
+"""Property R-PROP-006: transcript exposure stays within declared bound.
 
-For mechanisms claiming the leakage-bound property (currently
-``weighted_nash_bounded``; ``weighted_nash_mpc`` to follow in W5),
-the per-run LeakageReport must satisfy
-``epsilon_measured <= epsilon_bound`` for every party. The
-``aggregate.all_within_bound`` flag must agree.
+For mechanisms claiming the historical leakage-bound property
+(``weighted_nash_bounded`` and ``weighted_nash_mpc``), the per-run
+transcript-exposure report must satisfy
+``epsilon_measured <= epsilon_bound`` for every party. The serialized
+field names stay as compatibility names; the quantities are exposure
+bits, not DP epsilon. The ``aggregate.all_within_bound`` flag must agree.
 
 Per DEC-NASH-002: the bound is an information-theoretic upper bound
 on bits of utility-function information the transcript reveals. The
@@ -45,7 +46,7 @@ from tests.property.registry import (
 def test_leakage_measured_within_bound(
     entry: MechanismEntry, scenario: Scenario
 ) -> None:
-    """Every party's epsilon_measured stays within the declared bound."""
+    """Every party's measured exposure stays within the declared bound."""
     algorithm = entry.factory()
     run: AlgorithmRun = algorithm.run(
         scenario, information_mode=InformationMode.PRIVATE
@@ -63,8 +64,8 @@ def test_leakage_measured_within_bound(
     for party in report.per_party:
         assert party.epsilon_measured <= party.epsilon_bound + 1e-9, (
             f"mechanism {entry.name} party {party.party_id}: "
-            f"epsilon_measured ({party.epsilon_measured:.4f}) exceeds "
-            f"epsilon_bound ({party.epsilon_bound:.4f})"
+            f"exposure_bits_measured ({party.exposure_bits_measured:.4f}) exceeds "
+            f"exposure_bits_bound ({party.exposure_bits_bound:.4f})"
         )
 
     assert report.aggregate.all_within_bound, (
@@ -74,11 +75,11 @@ def test_leakage_measured_within_bound(
 
     # Cross-check the bound formula against the protocol contract. The
     # two mechanisms claiming PROP_LEAKAGE_BOUND use different bounds:
-    # - bounded-leakage/v1 (DEC-NASH-002): info-theoretic upper bound,
-    #   epsilon_bound = R * (N * log2(3) + log2(K))
+    # - transcript-exposure/v1 (DEC-NASH-002): info-theoretic upper bound,
+    #   exposure_bits_bound = R * (N * log2(3) + log2(K))
     # - mpc-bgw/v1 (DEC-MPC-001): cryptographic guarantee encoded as
     #   the constant MPC_NEGLIGIBLE_BITS independent of round count
-    if report.protocol_version.startswith("bounded-leakage/"):
+    if report.protocol_version.startswith(("transcript-exposure/", "bounded-leakage/")):
         from procurement_lab.engine.privacy import STEP_QUANTIZATION_LEVELS
 
         n_coords = 1  # v1: n_periods=1 + 1 product
@@ -90,7 +91,7 @@ def test_leakage_measured_within_bound(
         for party in report.per_party:
             assert abs(party.epsilon_bound - expected_bound) < 1e-6, (
                 f"mechanism {entry.name} party {party.party_id}: "
-                f"epsilon_bound ({party.epsilon_bound:.6f}) does not match "
+                f"exposure_bits_bound ({party.exposure_bits_bound:.6f}) does not match "
                 f"R * (N * log2(3) + log2(K)) = {expected_bound:.6f}"
             )
     elif report.protocol_version.startswith("mpc-bgw/"):
@@ -101,7 +102,7 @@ def test_leakage_measured_within_bound(
         for party in report.per_party:
             assert party.epsilon_bound == pytest.approx(MPC_NEGLIGIBLE_BITS), (
                 f"mechanism {entry.name} party {party.party_id}: "
-                f"epsilon_bound ({party.epsilon_bound}) does not match "
+                f"exposure_bits_bound ({party.exposure_bits_bound}) does not match "
                 f"MPC_NEGLIGIBLE_BITS ({MPC_NEGLIGIBLE_BITS})"
             )
     else:
@@ -121,7 +122,7 @@ def test_leakage_measured_within_bound(
 def test_message_log_hash_present_and_well_formed(
     entry: MechanismEntry, scenario: Scenario
 ) -> None:
-    """Every per-party LeakageReport entry carries a SHA-256 message log hash."""
+    """Every per-party exposure entry carries a SHA-256 message log hash."""
     algorithm = entry.factory()
     run: AlgorithmRun = algorithm.run(
         scenario, information_mode=InformationMode.PRIVATE

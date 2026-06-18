@@ -15,5 +15,5 @@ Built-in modes:
 - full-information oracle
 
 More information usually improves global utility in the fixed learning scenario.
-It also raises privacy exposure. The app should show both, because information
+It also raises information exposure. The app should show both, because information
 sharing is not free.

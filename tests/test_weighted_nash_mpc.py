@@ -7,8 +7,8 @@ Covers:
 - sign-revealing secure comparison
 - mechanism end-to-end: PRIVATE-mode run on golden fixture matches
   plaintext within ``MPC_NUMERICAL_TOLERANCE``
-- LeakageReport carries ``protocol_version = "mpc-bgw/v1"`` and
-  ``epsilon_measured = MPC_NEGLIGIBLE_BITS``
+- TranscriptExposureReport carries ``protocol_version = "mpc-bgw/v1"``
+  and the historical ``epsilon_measured = MPC_NEGLIGIBLE_BITS`` field
 - N>=3 returns ``MechanismFailure`` with the documented note
 - non-PRIVATE info modes fall back to plaintext-equivalent behavior
 """
@@ -165,6 +165,10 @@ def test_mpc_run_carries_leakage_report() -> None:
     assert lr.protocol_version == PROTOCOL_VERSION_MPC
     assert lr.aggregate.max_epsilon_measured == pytest.approx(MPC_NEGLIGIBLE_BITS)
     assert lr.aggregate.max_epsilon_bound == pytest.approx(MPC_NEGLIGIBLE_BITS)
+    assert lr.aggregate.max_exposure_bits_measured == pytest.approx(
+        MPC_NEGLIGIBLE_BITS
+    )
+    assert lr.aggregate.max_exposure_bits_bound == pytest.approx(MPC_NEGLIGIBLE_BITS)
     assert lr.aggregate.all_within_bound is True
     assert lr.round_count >= 1
     assert len(lr.per_party) == 2
@@ -230,7 +234,7 @@ def test_mpc_non_private_mode_falls_back_to_plaintext() -> None:
     fallback_run = WeightedNashMPC().run(
         scenario, information_mode=InformationMode.FULL_ORACLE
     )
-    # No LeakageReport in fallback mode because it's plaintext-equivalent.
+    # No exposure report in fallback mode because it's plaintext-equivalent.
     assert fallback_run.leakage_report is None
     assert (
         fallback_run.iterations[-1].quantities

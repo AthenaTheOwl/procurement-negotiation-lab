@@ -3,11 +3,11 @@
 The active roadmap is the W0 no-shortcuts reset. Specs 0015, 0016,
 and 0017 define the next product arc:
 
-- weighted-Nash bargaining and preference privacy in the engine
+- weighted-Nash bargaining and transcript-exposure accounting in the engine
 - NegotiateSurface reconnect with a real versioned URL adapter
 - property tests for the engine claims
 - `N >= 2` bargaining instead of a two-party ceiling
-- bounded-leakage privacy first, MPC privacy as a second mechanism
+- transcript-exposure accounting first, MPC as a second disclosure-limited mechanism
 
 The May roadmap for specs 0005-0008 is archived at
 `docs/archive/2026-05-product-expansion-roadmap.md`.
@@ -26,7 +26,7 @@ The May roadmap for specs 0005-0008 is archived at
 ## W1-W2
 
 - Build the property battery scaffold and first four invariants.
-- Implement bounded-leakage weighted-Nash in Python.
+- Implement transcript-exposure weighted-Nash in Python.
 - Mirror the TypeScript engine path for deployed-web parity.
 - Wire the property CI job.
 

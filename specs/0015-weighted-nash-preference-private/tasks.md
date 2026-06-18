@@ -1,29 +1,29 @@
-# tasks: weighted-Nash preference-private bargaining
+# tasks: weighted-Nash transcript-exposure bargaining
 
 ## W2 (Claude lead, Codex parity reviewer)
 
 - A1: Author DEC-NASH-001 — mechanism choice, quantization parameter,
   numerical tolerance.
-- A2: Author DEC-NASH-002 — leakage-bound derivation for the bounded-
-  leakage iterative protocol.
+- A2: Author DEC-NASH-002 — transcript-exposure derivation for the
+  iterative protocol.
 - A3: Implement `src/procurement_lab/engine/privacy.py` and the
-  LeakageReport Pydantic model + JSON Schema mirror.
+  TranscriptExposureReport Pydantic model + JSON Schema mirror.
 - A4: Implement `src/procurement_lab/algorithms/weighted_nash.py`
-  (plaintext reference + bounded-leakage iterative protocol).
+  (plaintext reference + transcript-exposure iterative protocol).
 - A5: Register the new mechanism identifiers in the algorithms
   registry and extend `compare_mechanisms` and the CLI demo.
 - A6: Extend the run-record schema with `mechanism_id` +
   `leakage_report_ref` and emit through the existing event-ledger
   chain.
 - A7: Author math chapters in `docs/algorithms.md` covering the
-  plaintext objective, the bounded-leakage protocol, and the leakage-
-  bound derivation referenced in DEC-NASH-002.
+  plaintext objective, the transcript-exposure protocol, and the
+  exposure-bound derivation referenced in DEC-NASH-002.
 
 ## W2 (Codex lead, Claude parity reviewer)
 
 - [x] B1: Implement the TypeScript engine mirror under
   `packages/engine/src/model/weightedNash.ts` so the deployed app can
-  run plaintext and bounded-leakage solvers client-side at parity with
+  run plaintext and transcript-exposure solvers client-side at parity with
   the Python implementation.
 - B2: Stand up the engine-properties CI workflow under
   `.github/workflows/engine-properties.yml` (defined in spec 0017

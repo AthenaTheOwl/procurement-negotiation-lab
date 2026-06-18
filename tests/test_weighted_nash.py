@@ -1,7 +1,7 @@
 """Unit tests for the weighted-Nash bargaining solver (spec 0015).
 
-Covers DEC-NASH-001 (mechanism parameters) and DEC-NASH-002 (bounded-
-leakage protocol). Property-level coverage lives in
+Covers DEC-NASH-001 (mechanism parameters) and DEC-NASH-002
+(transcript-exposure protocol). Property-level coverage lives in
 tests/property/test_leakage_bound.py and the per-mechanism property
 batteries.
 """
@@ -48,7 +48,7 @@ def test_plaintext_picks_allocation_at_or_below_capacity(scenario: Scenario) -> 
 
 
 def test_plaintext_no_leakage_report(scenario: Scenario) -> None:
-    """Plaintext does not produce a leakage report; bounded-leakage does."""
+    """Plaintext does not produce a transcript-exposure report."""
     run = WeightedNashPlaintext().run(scenario)
     assert run.leakage_report is None
 
@@ -69,9 +69,12 @@ def test_bounded_runs_with_private_mode(scenario: Scenario) -> None:
     assert run.failure is None
     assert run.leakage_report is not None
     assert run.leakage_report.protocol_version == PROTOCOL_VERSION
+    assert run.transcript_exposure_report is run.leakage_report
 
 
-def test_bounded_leakage_report_per_party_present(scenario: Scenario) -> None:
+def test_bounded_transcript_exposure_report_per_party_present(
+    scenario: Scenario,
+) -> None:
     run = WeightedNashBounded().run(
         scenario, information_mode=InformationMode.PRIVATE
     )
@@ -99,10 +102,10 @@ def test_bounded_falls_back_to_plaintext_on_non_private(scenario: Scenario) -> N
 
 
 def test_bounded_close_to_plaintext(scenario: Scenario) -> None:
-    """The bounded-leakage allocation should match plaintext within tolerance.
+    """The transcript-exposure allocation should match plaintext within tolerance.
 
     Per DEC-NASH-001: protocol_numerical_tolerance = 1e-3 on plaintext
-    versus bounded-leakage. The test uses a relative comparison on
+    versus the transcript-exposure path. The test uses a relative comparison on
     global utility because the absolute allocation may differ by a
     fraction of a unit while the utility is essentially identical.
     """
@@ -115,11 +118,11 @@ def test_bounded_close_to_plaintext(scenario: Scenario) -> None:
     relative_gap = abs(plaintext_util - bounded_util) / max(
         abs(plaintext_util), 1.0
     )
-    # 1% relative tolerance: bounded-leakage converges by gradient
+    # 1% relative tolerance: transcript exposure path converges by gradient
     # sign so its endpoint can differ from plaintext's grid by a
     # quantization step plus subgradient noise; 1% is conservative.
     assert relative_gap < 0.01, (
-        f"bounded-leakage global utility ({bounded_util:.4f}) deviates "
+        f"transcript-exposure global utility ({bounded_util:.4f}) deviates "
         f"from plaintext ({plaintext_util:.4f}) by {relative_gap:.4%}"
     )
 

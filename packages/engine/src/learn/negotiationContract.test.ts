@@ -150,7 +150,7 @@ describe("negotiation surface contract v2", () => {
     });
   });
 
-  it("runs bounded weighted-Nash and attaches leakage + participation reports", () => {
+  it("runs transcript-exposure weighted-Nash and attaches exposure + participation reports", () => {
     let state = newSurfaceState({ sessionId: "engine" });
     state = appendSurfaceRound(state, buyerRound);
     state = appendSurfaceRound(state, supplierRound);

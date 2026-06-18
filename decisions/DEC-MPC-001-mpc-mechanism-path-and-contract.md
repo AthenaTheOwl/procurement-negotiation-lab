@@ -39,8 +39,8 @@ decision: |
   cryptographic backend; until then, ``weighted_nash_mpc`` returns a
   ``MechanismFailure(reason="no_feasible_allocation",
   note="MPC mode supports N=2 only; N>=3 lands in a follow-up DEC")``
-  for multi-party scenarios. The bounded-leakage mechanism
-  (DEC-NASH-002) remains the privacy-preserving option for N>=3.
+  for multi-party scenarios. The transcript-exposure mechanism
+  (DEC-NASH-002) remains the disclosure-limited option for N>=3.
 
   ## Path rejected for v1: MP-SPDZ as default
 
@@ -50,14 +50,14 @@ decision: |
   follow-on DEC's choice when N>=3 MPC is the priority; until then,
   the pure-Python BGW path keeps the lab dependency-light.
 
-  ## Privacy guarantee
+  ## Cryptographic protocol contract
 
-  The MPC mechanism's LeakageReport (DEC-NASH-002 schema) reports:
+  The MPC mechanism's TranscriptExposureReport (DEC-NASH-002 schema) reports:
   - ``epsilon_measured = MPC_NEGLIGIBLE_BITS`` (set to 1e-9; the
     actual leakage is the cryptographic scheme's negligible function
     in the security parameter, which we encode as a tiny constant
-    instead of zero to keep the LeakageReport schema's ``ge=0``
-    constraint satisfied and the comparison with bounded-leakage
+    instead of zero to keep the report schema's ``ge=0``
+    constraint satisfied and the comparison with transcript-exposure
     meaningful).
   - ``epsilon_bound = MPC_NEGLIGIBLE_BITS`` (the protocol uses the
     full negligible budget by construction).
@@ -66,9 +66,9 @@ decision: |
   - ``sufficiency_note`` carries an explicit note that the leakage
     bound is the cryptographic scheme's negligible-function parameter,
     not an information-theoretic upper bound — distinct from the
-    bounded-leakage protocol's contract.
+    transcript-exposure protocol's contract.
 
-  Compared to bounded-leakage (DEC-NASH-002), MPC achieves
+  Compared to transcript exposure (DEC-NASH-002), MPC achieves
   ``epsilon ~ 0`` instead of ``epsilon = R * (N * log_2(3) +
   log_2(K))`` at the cost of (a) higher round count, (b) per-round
   cryptographic operations, (c) external dependencies if/when MP-SPDZ
@@ -78,10 +78,10 @@ decision: |
 
   The MPC mechanism's run record (per DEC-NASH-001 R-NASH-010) carries:
   - ``mechanism_id = "weighted_nash_mpc"``
-  - ``leakage_report_ref = sha256(canonical_json(LeakageReport))``
-  - Full LeakageReport stored at
+  - ``leakage_report_ref = sha256(canonical_json(TranscriptExposureReport))``
+  - Full TranscriptExposureReport stored at
     ``ops/leakage-reports/<run_id>.json`` (same path schema as
-    bounded-leakage).
+    transcript-exposure).
 
   ## Golden fixture parity contract
 
@@ -92,7 +92,7 @@ decision: |
   ``MPC_NUMERICAL_TOLERANCE = 1e-2`` (looser than plaintext-to-plaintext
   because of fixed-point quantization). The golden test asserts both:
   - MPC and plaintext final allocations match within tolerance
-  - MPC leakage report reports ``epsilon_measured <=
+  - MPC transcript-exposure report records ``epsilon_measured <=
     MPC_NEGLIGIBLE_BITS``
 
   ## Mechanism selector registration
@@ -121,22 +121,22 @@ alternatives:
       teachable from first principles and the code stays around
       ~500 LOC. The lab's audience benefits more from BGW's
       readability than from SPDZ's deployment-tier optimizations.
-  - label: skip MPC entirely; ship only bounded-leakage
+  - label: skip MPC entirely; ship only transcript-exposure
     rejected_because: |
       Spec 0015 R-NASH-008 names the cryptographic MPC mechanism as a
       hard requirement under "no shortcuts, no limitations". Shipping
-      only the bounded-leakage mechanism (DEC-NASH-002) leaves the lab
-      with one privacy-preserving option, not two. The comparison
-      view (bounded-leakage ITB upper bound vs MPC cryptographic
-      guarantee) is exactly the comparison the lab's audience benefits
+      only the transcript-exposure mechanism (DEC-NASH-002) leaves the lab
+      with one disclosure-limited option, not two. The comparison
+      view (transcript-exposure upper bound vs MPC cryptographic
+      contract) is exactly the comparison the lab's audience benefits
       from teaching. Skipping MPC means failing the spec's contract.
   - label: claim epsilon_measured = 0 instead of negligible_bits
     rejected_because: |
-      The LeakageReport schema constrains ``epsilon_measured`` to
+      The TranscriptExposureReport schema constrains ``epsilon_measured`` to
       ``>= 0``; technically zero is allowed. But the cryptographic
       scheme's actual leakage is a negligible function of the security
       parameter, not exactly zero. Encoding ``epsilon_measured = 0``
-      would overclaim the guarantee in the LeakageReport text record;
+      would overclaim the guarantee in the TranscriptExposureReport text record;
       the ``MPC_NEGLIGIBLE_BITS = 1e-9`` value keeps the bookkeeping
       honest while allowing the bounded-vs-MPC comparison view to
       render meaningfully (a 0-vs-1000-bits comparison looks like a
@@ -153,7 +153,7 @@ alternatives:
 rationale: |
   Spec 0015 R-NASH-008 is a hard requirement. The user's "no shortcuts,
   no limitations" direction during the 2026-06-01 reset pushes against
-  the obvious shortcut (ship only bounded-leakage). At the same time
+  the obvious shortcut (ship only transcript-exposure). At the same time
   the engineering reality is that deployment-tier MPC for N>=3 with
   ranks of LOC and external dependencies overshoots a teaching lab's
   scope.
@@ -162,18 +162,18 @@ rationale: |
   cryptographic-guarantee surface for the most common teaching
   scenario (buyer + supplier), with a clean N>=3 path documented as a
   follow-up DEC adopting MP-SPDZ when the priority shifts that way.
-  The bounded-leakage mechanism (DEC-NASH-002) remains the N>=3
-  privacy-preserving option until then.
+  The transcript-exposure mechanism (DEC-NASH-002) remains the N>=3
+  disclosure-limited option until then.
 
   The protocol contract (epsilon_measured = negligible, separate
   protocol_version, golden fixture parity at 1e-2 tolerance) is
-  explicit so consumers of the LeakageReport can distinguish bounded
+  explicit so consumers of the TranscriptExposureReport can distinguish bounded
   from MPC at the schema level without inspecting the mechanism
   identifier.
 
   Reversibility: dropping the MPC mechanism reverts to bounded-only
   behavior. Old golden fixtures + property tests for MPC become
-  no-ops; the bounded-leakage tests remain. Future MP-SPDZ adoption
+  no-ops; the transcript-exposure tests remain. Future MP-SPDZ adoption
   is additive — adds a second MPC mechanism identifier without
   removing the BGW path.
 evidence:
@@ -194,15 +194,15 @@ rollback: |
   ``tests/property/registry.py``. Drop
   ``tests/fixtures/scenarios/nash_mpc_*.json`` and the MPC parity
   test. The R-NASH-008 row stays in the spec_check allowlist (already
-  deferred). The bounded-leakage mechanism + plaintext mechanism stay
+  deferred). The transcript-exposure mechanism + plaintext mechanism stay
   untouched.
 owner: science.proof-gate-runner
 systems_map: |
-  Privacy-preserving mechanism design at multiple guarantee tiers —
-  one mechanism family with three implementations (plaintext, bounded-
-  leakage, MPC) gives the lab's audience three teachable comparison
-  points: full revelation, information-theoretic upper bound,
-  cryptographic guarantee. The LeakageReport schema lets consumers
+  Disclosure-limited mechanism design at multiple guarantee tiers —
+  one mechanism family with three implementations (plaintext,
+  transcript-exposure, MPC) gives the lab's audience three teachable
+  comparison points: full revelation, information-theoretic upper
+  bound, cryptographic contract. The TranscriptExposureReport schema lets consumers
   compare the three at the data level; the mechanism selector lets
   callers pick by use case. The DEC's "honest non-claim" pattern
   (negligible_bits instead of zero, sufficiency_note carrying the
@@ -225,8 +225,9 @@ falsification_test: |
   is the proof surface.
 adoption_ladder:
   minimum_viable: |
-    weighted_nash_mpc ships with pure-Python BGW for N=2; LeakageReport
-    correctly populated with epsilon_measured = MPC_NEGLIGIBLE_BITS;
+    weighted_nash_mpc ships with pure-Python BGW for N=2;
+    TranscriptExposureReport correctly populated with
+    epsilon_measured = MPC_NEGLIGIBLE_BITS;
     golden parity test green; W5 ship.
   mid_adoption: |
     SDK + CLI integration of MPC mechanism (Codex T-MPC-INT-001 +
@@ -237,12 +238,12 @@ adoption_ladder:
     weighted_nash_mpc grows a backend selector
     ("--mpc-backend bgw|mpspdz"); lab pedagogy includes both
     cryptographic options on the comparison surface; trace-to-eval-
-    harness packets include MPC LeakageReport via the run-evidence
+    harness packets include MPC TranscriptExposureReport via the run-evidence
     chain.
   monitoring_signals:
     - "MPC golden-parity test pass/fail trend on main"
     - "weighted_nash_mpc CI runtime trend vs the engine-properties cap"
-    - "MPC N=2 vs bounded-leakage N=2 allocation gap on shared fixtures"
+    - "MPC N=2 vs transcript-exposure N=2 allocation gap on shared fixtures"
     - "MechanismFailure rate on N>=3 MPC requests (signals demand for the MP-SPDZ follow-up DEC)"
 ---
 
@@ -251,9 +252,9 @@ adoption_ladder:
 procurement-negotiation-lab implements the cryptographic MPC weighted-
 Nash mechanism via a pure-Python BGW-style protocol scoped to N=2 for
 the W5 ship. N>=3 MPC defers to a follow-up DEC adopting MP-SPDZ as
-the cryptographic backend. The LeakageReport schema (DEC-NASH-002)
-extends to carry the MPC mechanism's cryptographic guarantee
-(``epsilon_measured = MPC_NEGLIGIBLE_BITS``, ``protocol_version =
+the cryptographic backend. The TranscriptExposureReport schema
+(DEC-NASH-002) extends to carry the MPC mechanism's cryptographic
+contract (``epsilon_measured = MPC_NEGLIGIBLE_BITS``, ``protocol_version =
 "mpc-bgw/v1"``, sufficiency_note encoding the contract).
 
 ## coverage
@@ -262,9 +263,9 @@ This DEC resolves the following requirements added to spec
 ``0015-weighted-nash-preference-private``:
 
 - ``R-NASH-008`` cryptographic MPC second mechanism: pure-Python BGW
-  for N=2 ships in W5; LeakageReport extends with the MPC contract;
+  for N=2 ships in W5; TranscriptExposureReport extends with the MPC contract;
   mechanism registers under ``weighted_nash_mpc``; golden fixture
   parity contract at 1e-2 tolerance.
 
-N>=3 MPC remains a follow-up DEC's scope; the bounded-leakage
-mechanism (DEC-NASH-002) is the N>=3 privacy-preserving option.
+N>=3 MPC remains a follow-up DEC's scope; the transcript-exposure
+mechanism (DEC-NASH-002) is the N>=3 disclosure-limited option.

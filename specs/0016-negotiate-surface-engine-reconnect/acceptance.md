@@ -17,10 +17,10 @@ the merge commit that closes the W3 reconnect.
 ### Surface
 
 - `npm.cmd run test --workspace=@lab/web -- NegotiateSurface` passes
-  with the mechanism selector, leakage report, and report-export
+  with the mechanism selector, exposure report, and report-export
   assertions.
 - `npm.cmd run test --workspace=@lab/web -- Level12` passes with the
-  weighted-Nash, BATNA, privacy-mode, and leakage-report learning
+  weighted-Nash, BATNA, information-mode, and exposure-report learning
   proof.
 - No mechanism selector entry is visible until its engine path exists.
 - The selected mechanism survives copy-link, page reload, and partner
@@ -30,16 +30,16 @@ the merge commit that closes the W3 reconnect.
 
 - Playwright opens two independent tabs and proves buyer to supplier
   to buyer flow by copied URLs.
-- The proof covers bounded-leakage weighted-Nash in W3.
+- The proof covers transcript-exposure weighted-Nash in W3.
 - The proof covers MPC mode in W5 after DEC-MPC-001 lands.
 - BroadcastChannel sync is not used as the only proof path.
 
 ### SDK and mobile parity
 
 - `python -m procurement_mechanism_sdk.demo --mechanism weighted_nash_bounded`
-  prints a deterministic allocation and leakage report.
+  prints a deterministic allocation and exposure report.
 - `python -m procurement_mechanism_sdk.demo --mechanism weighted_nash_mpc`
-  prints a deterministic allocation and cryptographic leakage report
+  prints a deterministic allocation and cryptographic exposure report
   after the W5 lane lands.
 - Mobile contract fixtures match the web contract fixtures or carry a
   documented adapter with equivalent fields.
