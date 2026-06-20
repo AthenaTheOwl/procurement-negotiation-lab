@@ -350,6 +350,7 @@ def _run_cli(
 
 _UNSUPPORTED_FLAG_MARKERS = (
     "unknown option",
+    "unexpected argument",
     "unrecognized option",
     "unrecognised option",
     "unknown argument",

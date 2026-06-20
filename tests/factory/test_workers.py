@@ -14,6 +14,7 @@ from scripts.factory.workers import (
     GateWorker,
     StubWorker,
     WorkerResult,
+    _looks_like_unsupported_flag,
     resolve_worker,
 )
 
@@ -217,3 +218,14 @@ def test_prompt_threshold_is_safe_under_windows_argv_limit() -> None:
     assert PROMPT_STDIN_THRESHOLD <= 6000
     # And large enough that short prompts (plans/reviews of a paragraph) stay in argv
     assert PROMPT_STDIN_THRESHOLD >= 2000
+
+
+def test_codex_unexpected_output_format_error_triggers_fallback() -> None:
+    """BUG-FAC-006 regression: current Codex says unexpected argument."""
+    stderr = """error: unexpected argument '--output-format' found
+
+  tip: a similar argument exists: '--output-schema'
+
+Usage: codex exec [OPTIONS] [PROMPT]
+"""
+    assert _looks_like_unsupported_flag(stderr) is True
