@@ -43,6 +43,7 @@ from .worktree import (
     commit_all,
     create_worktree,
     diff_stat,
+    has_uncommitted_changes,
     push_branch,
 )
 
@@ -464,7 +465,7 @@ def _emit_time_head_sha(worktree_path: Path | None) -> str | None:
         return None
     try:
         result = subprocess.run(  # noqa: S603
-            ["git", "-C", str(worktree_path), "rev-parse", "HEAD"],
+            ["git", "-C", str(worktree_path), "rev-parse", "HEAD"],  # noqa: S607
             capture_output=True,
             text=True,
             check=False,
@@ -496,6 +497,13 @@ def _format_gate_results(outcomes: list[GateOutcome]) -> str:
             head = outcome.stderr.strip().splitlines()[0][:140]
             lines.append(f"        stderr head: {head}")
     return "\n".join(lines)
+
+
+def _has_material_diff(worktree: WorktreeInfo) -> bool:
+    """Return True when the implementation produced committed or pending changes."""
+    return has_uncommitted_changes(worktree.path) or bool(
+        diff_stat(worktree.path, worktree.base_branch)
+    )
 
 
 def _gate_results_for_artifact(outcomes: list[GateOutcome]) -> str:
@@ -1150,7 +1158,22 @@ def _run_implement_loop(
         )
 
         store.update_task(task.id, current_step=f"gate (round {round_idx})")
-        if dry_run:
+        if not dry_run and not _has_material_diff(worktree):
+            gates_ok = False
+            outcomes = [
+                GateOutcome(
+                    name="implementation-diff",
+                    cmd="git status --porcelain && git diff --stat <base>...HEAD",
+                    ok=False,
+                    must_pass=True,
+                    stdout="",
+                    stderr=(
+                        "implementation produced no file changes relative to base; "
+                        "refusing to mark a no-op as done"
+                    ),
+                )
+            ]
+        elif dry_run:
             # Dry-run keeps the test surface deterministic and offline. We
             # still synthesize per-gate outcomes so the run-evidence ledger
             # carries gate.check.* events; downstream packet generators rely
@@ -1225,7 +1248,10 @@ def _run_implement_loop(
                 }
                 if not outcome.ok:
                     # gate.check.failed payload requires `reason` per schema.
-                    reason = outcome.stderr.strip().splitlines()[0] if outcome.stderr.strip() else f"gate {outcome.name} failed"
+                    if outcome.stderr.strip():
+                        reason = outcome.stderr.strip().splitlines()[0]
+                    else:
+                        reason = f"gate {outcome.name} failed"
                     payload["reason"] = reason[:280] or f"gate {outcome.name} failed"
                 evidence.emit(
                     _gate_check_event_type(outcome),

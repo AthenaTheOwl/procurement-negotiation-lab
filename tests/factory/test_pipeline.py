@@ -136,6 +136,37 @@ def test_pipeline_fails_gracefully_when_base_branch_missing(
         store.close()
 
 
+def test_pipeline_blocks_when_implementation_produces_no_diff(
+    tmp_repo: Path, tmp_path: Path
+) -> None:
+    """BUG-FAC-007: green gates alone must not mark a no-op implementation done."""
+    task = Task(
+        id="noop-implementation",
+        title="no-op implementation",
+        target_repo=str(tmp_repo),
+        goal="create factory-validation/2026-06-20.md",
+        base_branch="main",
+        gates=[GateSpec(cmd='python -c "exit(0)"', name="noop")],
+        review=ReviewSpec(reviewer="stub", max_patch_rounds=0),
+        pr=PRSpec(open=False),
+        planner="stub",
+        implementer="stub",
+    )
+    store = Store(tmp_path / "factory.db")
+    try:
+        result = run_pipeline(task, store=store, dry_run=False)
+        row = store.get_task(task.id)
+    finally:
+        store.close()
+
+    assert result.ok is False
+    assert result.final_status == "blocked"
+    assert result.summary == "exceeded max patch rounds"
+    assert row is not None
+    assert row.status == "blocked"
+    assert row.failure_reason == "gates failing after max patch rounds"
+
+
 def test_pipeline_dry_run_emits_run_evidence_files(
     tmp_repo: Path,
     tmp_path: Path,
