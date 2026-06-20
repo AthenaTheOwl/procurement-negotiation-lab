@@ -70,37 +70,108 @@ FACTORY_ACTOR_ID = "procurement-lab-factory"
 PLAN_PROMPT = """\
 You are the planning agent in a software-engineering factory.
 
-Goal:
+Your working directory IS {cwd}. The git branch is {branch} (from base
+{base_branch}). Risk level: {risk}.
+
+Use the Bash tool with `ls -la` and `cat` to see what files already exist
+in the working directory BEFORE planning. Then read the relevant existing
+content (scaffold READMEs, foundation specs, etc.) so your plan is grounded
+in what is actually there.
+
+GOAL (what to ship):
 {goal}
 
-Working directory: {cwd}
-Repo branch: {branch} (from base {base_branch}).
-Risk level: {risk}.
+Produce a numbered plan (5-12 steps). Format each step as:
 
-Produce a numbered plan (5-10 steps) that another agent will implement. Each
-step must be: small, testable, reversible. Name the files you'd touch.
-End with a one-paragraph summary of the riskiest decision in the plan.
+  N. <ACTION> <PATH> -- <one-sentence reason>
+
+where ACTION is one of:
+  CREATE   - new file at PATH that does not exist yet
+  EDIT     - modify an existing file at PATH
+  RUN      - execute a command (lint, test, build)
+
+End the plan with two explicit lists:
+
+  FILES TO CREATE:
+  - <path>
+  - <path>
+
+  FILES THAT MUST NOT BE MODIFIED:
+  - <every file outside the plan's CREATE/EDIT lists>
+
+This second list is a guard for the implementer. If the goal says "draft
+specs/0002-design/", do NOT include specs/0001-foundation/ files in the
+EDIT list -- they go in the MUST-NOT list.
+
+Finally, one paragraph naming the riskiest decision in the plan.
 """
 
-IMPLEMENT_PROMPT = """\
-You are the implementation agent. Carry out the plan below as edits to the
-working directory. After editing, do nothing else - the factory will run
-gates and review.
+IMPLEMENT_PROMPT_BASE = """\
+You are the implementation agent in a software-engineering factory. Your
+working directory IS {cwd}.
 
-Goal:
+USE YOUR FILE-EDITING TOOLS to make the changes:
+- Use the Write tool to CREATE new files at the exact paths in
+  "FILES TO CREATE".
+- Use the Edit tool to MODIFY existing files only when the plan lists them
+  explicitly.
+- Use the Bash tool for RUN steps (lint, test, build).
+- DO NOT touch any file in the plan's "FILES THAT MUST NOT BE MODIFIED"
+  list. This is the most common failure mode -- agents drift into editing
+  the scaffold's existing specs instead of creating new ones.
+
+After making the edits, verify your own work:
+- Run `ls -la <directory>` to confirm each "FILES TO CREATE" file exists.
+- If a CREATE file is missing, retry the Write call. Do not stop until
+  every CREATE file is on disk.
+- Print a short summary in this exact shape:
+
+    CREATED:
+    - <path>
+    - <path>
+    EDITED:
+    - <path>
+    SKIPPED:
+    - <path: reason>
+
+GOAL (what to ship):
 {goal}
-
-Plan from the planner:
-{plan}
 
 Constraints:
 - Stay within {cwd}.
-- Do not run package installs unless the plan calls for it.
-- Do not push or open PRs.
+- Do not run `pip install`, `npm install`, or `uv sync` unless the plan
+  has a RUN step that calls for it.
+- Do not push, open PRs, or invoke `gh` -- the factory does that.
+- If you cannot complete a CREATE step (e.g. missing data, tool not
+  available), STOP and write a single-line ERROR: <reason> to stdout so
+  the review step can see it; do not silently skip.
+"""
+
+IMPLEMENT_PROMPT = IMPLEMENT_PROMPT_BASE + """
+
+PLAN (from the planner):
+{plan}
+"""
+
+# Patch-round prompt: keeps every piece of the round-0 prompt (working dir,
+# tool guidance, anti-pattern warnings, verification checklist) PLUS adds
+# the reviewer's findings. Without the full context the agent has nothing
+# to ground its patch in and tends to no-op or re-introduce the same bugs.
+IMPLEMENT_PATCH_PROMPT = IMPLEMENT_PROMPT_BASE + """
+
+ORIGINAL PLAN (from the planner):
+{plan}
+
+PRIOR REVIEW FINDINGS to address in this round:
+{findings}
+
+Apply patches that address each finding. If a finding is wrong or already
+resolved, write a one-line note in your output naming the finding and the
+reason -- but the default action is to fix.
 """
 
 REVIEW_PROMPT = """\
-You are the review agent. The implementer has edited the worktree at {cwd}.
+You are the review agent. The implementer edited the worktree at {cwd}.
 
 Diff summary against base {base_branch}:
 {diff_stat}
@@ -111,16 +182,55 @@ Gate results:
 Original goal:
 {goal}
 
-Task: read the diff and report findings in this exact shape:
+Use Bash to run `git status --porcelain` and `git diff --stat HEAD` if you
+need more detail than the diff summary above.
 
-  STATUS: CLEAN | NEEDS_PATCH | REJECT
+Task: read the changes against the goal and the gate results, then report
+in this EXACT shape. The FIRST LINE of your reply MUST be one of:
+
+  STATUS: CLEAN
+  STATUS: NEEDS_PATCH
+  STATUS: REJECT
+
+Followed by:
+
   FINDINGS:
   - <bullet 1>
   - <bullet 2>
 
-Be terse. "CLEAN" means the diff is shippable. "NEEDS_PATCH" means the
-implementer should fix the findings and resubmit. "REJECT" means the plan
-itself was wrong - the factory will stop and surface to a human.
+If you write prose instead of the structured header, the parser falls
+back to NEEDS_PATCH and the factory burns a patch round. Output the
+literal `STATUS: <verdict>` line FIRST, then your analysis.
+
+Verdict rules (apply them strictly; the factory respects your verdict):
+
+- "CLEAN" -- the artifact is shippable. Use this when:
+    * every must-pass gate passed, AND
+    * the diff matches the goal, AND
+    * no files outside scope were modified, AND
+    * any remaining issues are polish (typos, prose improvements, minor
+      consistency nits, deferred-to-v0.2 ideas).
+  Polish findings are encouraged but DO NOT block. List them under
+  FINDINGS so the operator sees them, but still return CLEAN.
+
+- "NEEDS_PATCH" -- ONLY when something materially blocks shipping:
+    * a required file is missing (gate `*-exists` failed),
+    * a test fails or a build error appears,
+    * a scaffold file was modified outside the plan's EDIT list,
+    * a security or safety issue (committed secret, unsafe `eval`, etc.),
+    * an internal contradiction so severe that a downstream implementer
+      could not act on the artifact without guessing.
+  Do NOT use NEEDS_PATCH for nice-to-have stylistic improvements,
+  alternative phrasings, or speculative future-version concerns.
+
+- "REJECT" -- the plan itself is wrong; the factory stops.
+
+Be terse. The factory caps patch rounds; spending all of them on polish
+prevents the actual blocking issues from being caught. Bias toward CLEAN
+when gates pass.
+
+If CLEAN, list 1-2 things you actually checked by reading the diff (not
+vague affirmations) -- this prevents rubber-stamping.
 """
 
 
@@ -993,9 +1103,11 @@ def _run_implement_loop(
                 goal=task.goal, plan=plan_text, cwd=worktree.path
             )
             if round_idx == 0
-            else (
-                "The reviewer flagged issues. Address them and update the worktree.\n\n"
-                f"Findings:\n{last_review}"
+            else IMPLEMENT_PATCH_PROMPT.format(
+                goal=task.goal,
+                plan=plan_text,
+                cwd=worktree.path,
+                findings=last_review,
             )
         )
         impl_result = (
@@ -1194,6 +1306,87 @@ def _run_implement_loop(
     return last_review, last_outcomes
 
 
+def _parse_prose_verdict(text: str) -> Literal["CLEAN", "NEEDS_PATCH", "REJECT"] | None:
+    """Fallback: recognize obvious prose verdicts when the strict STATUS: line is absent.
+
+    Reviewers who write paragraphs of analysis often forget the structured
+    header. Without this fallback the parser defaults to NEEDS_PATCH and
+    the patch loop burns rounds on already-shippable work. (BUG-FAC-005)
+
+    Only fires when ``_combined_review_status`` would otherwise default
+    to NEEDS_PATCH. Conservative: requires unambiguous reject/approve
+    language, ignores ambiguous "looks good but" prose.
+    """
+    lower = text.lower()
+    # REJECT signals (check first — strongest)
+    reject_markers = [
+        "verdict: reject",
+        "verdict — reject",
+        "reject the plan",
+        "the plan itself is wrong",
+        "reject this",
+    ]
+    if any(m in lower for m in reject_markers):
+        return "REJECT"
+    # CLEAN signals: prose like "approve", "ship it", "looks good", "no blocking"
+    approve_markers = [
+        "approve with",  # "approve with the two issues above addressed"
+        "verdict: approve",
+        "approve.",
+        "ship it",
+        "ship as is",
+        "ship as-is",
+        "ship-ready",
+        "ship ready",
+        "no blocking",
+        "non-blocking",
+        "ready to ship",
+        "ready to merge",
+        "merge as-is",
+        "merge as is",
+        "lgtm",
+        "looks good to me",
+    ]
+    if any(m in lower for m in approve_markers):
+        return "CLEAN"
+    # NEEDS_PATCH signals: explicit prose
+    patch_markers = [
+        "needs changes",
+        "needs fixes",
+        "needs rework",
+        "blocking issue",
+        "blocking issues",
+        "must fix before",
+    ]
+    if any(m in lower for m in patch_markers):
+        return "NEEDS_PATCH"
+    return None
+
+
+def _has_blocking_signals(text: str) -> bool:
+    """Heuristic: reviewer's prose names a hard blocker.
+
+    Only used as the safe-default tilt when no STATUS line and no prose
+    verdict markers fire. Conservative: requires explicit blocker language,
+    not vague unease.
+    """
+    lower = text.lower()
+    blockers = [
+        "must fix before",
+        "blocking issue",
+        "blocking issues",
+        "do not merge",
+        "do not ship",
+        "security vulnerability",
+        "committed secret",
+        "build fails",
+        "test failure",
+        "tests fail",
+        "schema violation",
+    ]
+    return any(b in lower for b in blockers)
+
+
 def _combined_review_status(review: str) -> Literal["CLEAN", "NEEDS_PATCH", "REJECT"]:
     """Conservative aggregation for one or more review transcripts."""
     upper = review.upper()
@@ -1202,6 +1395,17 @@ def _combined_review_status(review: str) -> Literal["CLEAN", "NEEDS_PATCH", "REJ
     if "STATUS: NEEDS_PATCH" in upper or "STATUS:NEEDS_PATCH" in upper:
         return "NEEDS_PATCH"
     if "STATUS: CLEAN" in upper or "STATUS:CLEAN" in upper:
+        return "CLEAN"
+    # BUG-FAC-005 fallback: reviewer wrote prose instead of structured header.
+    prose = _parse_prose_verdict(review)
+    if prose is not None:
+        return prose
+    # Safe-default tilt: by the time this function fires, must-pass gates have
+    # already passed (the pipeline only invokes reviewers after gates clear).
+    # If the reviewer's prose does NOT explicitly name a blocker, trust the
+    # gates and ship CLEAN. Reviewer findings still land in the artifact for
+    # operator follow-up; they just don't burn patch rounds.
+    if not _has_blocking_signals(review):
         return "CLEAN"
     return "NEEDS_PATCH"
 

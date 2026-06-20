@@ -257,3 +257,80 @@ def test_attribute_failure_uses_most_recent_trace_when_omitted(
     assert report.trace_id == "new"
     assert report.symptom_kind == "review.needs_patch"
     store.close()
+
+
+# ----- BUG-FAC-005 fix: prose-verdict fallback in review parser -------
+
+
+def test_parse_prose_verdict_recognizes_approve() -> None:
+    """Reviewer wrote prose instead of STATUS: line — extract CLEAN verdict."""
+    from scripts.factory.pipeline import _parse_prose_verdict
+
+    text = (
+        "## Verdict\n\nApprove with the two issues above addressed. The design "
+        "is internally consistent..."
+    )
+    assert _parse_prose_verdict(text) == "CLEAN"
+
+
+def test_parse_prose_verdict_recognizes_reject() -> None:
+    from scripts.factory.pipeline import _parse_prose_verdict
+
+    assert _parse_prose_verdict("The plan itself is wrong; suggest a rewrite.") == "REJECT"
+
+
+def test_parse_prose_verdict_returns_none_for_ambiguous() -> None:
+    from scripts.factory.pipeline import _parse_prose_verdict
+
+    assert _parse_prose_verdict("Looks pretty good overall, some thoughts:") is None
+
+
+def test_combined_review_status_uses_prose_fallback() -> None:
+    """When no STATUS: line is present, the prose fallback fires."""
+    from scripts.factory.pipeline import _combined_review_status
+
+    review = "## Verdict\n\nApprove with minor notes. Ready to ship."
+    assert _combined_review_status(review) == "CLEAN"
+
+
+def test_combined_review_status_prefers_structured_line() -> None:
+    """A structured STATUS: line wins over prose hints."""
+    from scripts.factory.pipeline import _combined_review_status
+
+    review = "STATUS: NEEDS_PATCH\nFINDINGS:\n- Approve... wait, no, needs work."
+    assert _combined_review_status(review) == "NEEDS_PATCH"
+
+
+def test_combined_review_status_defaults_to_clean_when_no_blockers() -> None:
+    """Reviewer wrote prose with no STATUS line and no blocker language.
+    Since gates have already passed by the time the reviewer fires, default
+    to CLEAN. Reviewer findings still land in the artifact.
+    """
+    from scripts.factory.pipeline import _combined_review_status
+
+    review = (
+        "The design is consistent. A few minor polish notes:\n"
+        "- The regex on identity could be tighter.\n"
+        "- Consider naming the singleton chain case explicitly.\n"
+        "Otherwise it reads well."
+    )
+    assert _combined_review_status(review) == "CLEAN"
+
+
+def test_combined_review_status_blocker_signal_returns_needs_patch() -> None:
+    """When reviewer prose contains an explicit blocker, hold the gate."""
+    from scripts.factory.pipeline import _combined_review_status
+
+    review = (
+        "The design is well-organized but there is a blocking issue: a "
+        "committed secret in `.env.example` must fix before merge."
+    )
+    assert _combined_review_status(review) == "NEEDS_PATCH"
+
+
+def test_combined_review_status_recognizes_ship_ready_prose() -> None:
+    """'ship-ready' / 'ship ready' must parse as CLEAN."""
+    from scripts.factory.pipeline import _combined_review_status
+
+    assert _combined_review_status("Net: ship-ready after fixing two small notes.") == "CLEAN"
+    assert _combined_review_status("Overall ship ready.") == "CLEAN"
