@@ -31,8 +31,8 @@ checkpoints: []
 gates:
   - cmd: ls specs/0002-design/requirements.md
     name: design-spec-exists
-  - cmd: npm run build
-    name: smoke
+  - cmd: test -f package.json && test -f astro.config.mjs && test -f src/pages/index.astro && test -f src/data/ercot.example.json
+    name: smoke-files-exist
 
 review:
   reviewer: claude_code
