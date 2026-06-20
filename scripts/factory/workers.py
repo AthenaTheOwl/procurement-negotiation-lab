@@ -387,6 +387,17 @@ def _always_populated_synthetic_metadata(label: str) -> dict[str, Any]:
     }
 
 
+# Threshold above which prompts go via stdin instead of argv. Windows
+# subprocess has a ~8191-char cmd-line limit, so we keep a safety margin
+# below that for the rest of the argv. (FAC-003)
+PROMPT_STDIN_THRESHOLD = 4000
+
+# Default tool allowlist for headless claude --print invocations. (FAC-002)
+# Without these, claude runs in default-deny mode and cannot write to the
+# repo, so the implement/plan/review steps return text-only and gates fail.
+CLAUDE_HEADLESS_TOOLS = "Edit Write Read Bash Glob Grep MultiEdit"
+
+
 class ClaudeCodeWorker(Worker):
     """Invokes the `claude` CLI in non-interactive print mode.
 
@@ -396,6 +407,11 @@ class ClaudeCodeWorker(Worker):
     the installed CLI does not recognize ``--output-format``; the fallback
     still synthesizes a tagged thread_id/run_id pair via ``_run_cli`` so
     the WorkerResult.metadata contract holds.
+
+    FAC-002 fix: passes ``--permission-mode acceptEdits`` plus
+    ``--allowedTools`` so headless invocations can actually edit the repo.
+    FAC-003 fix: when the prompt exceeds PROMPT_STDIN_THRESHOLD characters,
+    pipes it via stdin instead of argv to avoid Windows cmd-line overflow.
     """
 
     name = "claude_code"
@@ -404,6 +420,24 @@ class ClaudeCodeWorker(Worker):
     def available() -> bool:
         return _cli_available("claude")
 
+    def _argv_and_stdin(
+        self, prompt: str, *, with_json: bool
+    ) -> tuple[list[str], str | None]:
+        base = [
+            "claude",
+            "--print",
+            "--permission-mode",
+            "acceptEdits",
+            "--allowedTools",
+            CLAUDE_HEADLESS_TOOLS,
+        ]
+        if with_json:
+            base += ["--output-format", "json"]
+        if len(prompt) > PROMPT_STDIN_THRESHOLD:
+            return base, prompt
+        base.append(prompt)
+        return base, None
+
     def run(self, prompt: str, *, cwd: Path, timeout: int = 1800) -> WorkerResult:
         if not self.available():
             return WorkerResult(
@@ -411,12 +445,24 @@ class ClaudeCodeWorker(Worker):
                 stderr="claude CLI not on PATH; install Claude Code first",
                 metadata=_always_populated_synthetic_metadata("claude"),
             )
-        argv = ["claude", "--print", "--output-format", "json", prompt]
-        first = _run_cli(argv, cwd=cwd, timeout=timeout, label="claude")
+        argv, stdin_payload = self._argv_and_stdin(prompt, with_json=True)
+        first = _run_cli(
+            argv,
+            cwd=cwd,
+            timeout=timeout,
+            label="claude",
+            prompt_for_stdin=stdin_payload,
+        )
         if first.ok or not _looks_like_unsupported_flag(first.stderr):
             return first
-        fallback_argv = ["claude", "--print", prompt]
-        return _run_cli(fallback_argv, cwd=cwd, timeout=timeout, label="claude")
+        fallback_argv, fallback_stdin = self._argv_and_stdin(prompt, with_json=False)
+        return _run_cli(
+            fallback_argv,
+            cwd=cwd,
+            timeout=timeout,
+            label="claude",
+            prompt_for_stdin=fallback_stdin,
+        )
 
 
 class CodexWorker(Worker):
@@ -426,6 +472,12 @@ class CodexWorker(Worker):
     CLI emits structured metadata. Falls back to ``codex exec "<prompt>"``
     on older CLIs that do not yet support the flag. The fallback still
     synthesizes a tagged ID pair via ``_run_cli``.
+
+    FAC-002 fix: passes ``--sandbox workspace-write`` so headless codex
+    can write files within the worktree.
+    FAC-003 fix: when the prompt exceeds PROMPT_STDIN_THRESHOLD characters,
+    pipes it via stdin (using codex's ``-`` argv convention) instead of
+    inlining via argv. Avoids Windows cmd-line overflow.
     """
 
     name = "codex"
@@ -434,6 +486,18 @@ class CodexWorker(Worker):
     def available() -> bool:
         return _cli_available("codex")
 
+    def _argv_and_stdin(
+        self, prompt: str, *, with_json: bool
+    ) -> tuple[list[str], str | None]:
+        base = ["codex", "exec", "--sandbox", "workspace-write", "--skip-git-repo-check"]
+        if with_json:
+            base += ["--output-format", "json"]
+        if len(prompt) > PROMPT_STDIN_THRESHOLD:
+            base.append("-")
+            return base, prompt
+        base.append(prompt)
+        return base, None
+
     def run(self, prompt: str, *, cwd: Path, timeout: int = 1800) -> WorkerResult:
         if not self.available():
             return WorkerResult(
@@ -441,12 +505,20 @@ class CodexWorker(Worker):
                 stderr="codex CLI not on PATH; install Codex CLI first",
                 metadata=_always_populated_synthetic_metadata("codex"),
             )
-        argv = ["codex", "exec", "--output-format", "json", prompt]
-        first = _run_cli(argv, cwd=cwd, timeout=timeout, label="codex")
+        argv, stdin_payload = self._argv_and_stdin(prompt, with_json=True)
+        first = _run_cli(
+            argv, cwd=cwd, timeout=timeout, label="codex", prompt_for_stdin=stdin_payload
+        )
         if first.ok or not _looks_like_unsupported_flag(first.stderr):
             return first
-        fallback_argv = ["codex", "exec", prompt]
-        return _run_cli(fallback_argv, cwd=cwd, timeout=timeout, label="codex")
+        fallback_argv, fallback_stdin = self._argv_and_stdin(prompt, with_json=False)
+        return _run_cli(
+            fallback_argv,
+            cwd=cwd,
+            timeout=timeout,
+            label="codex",
+            prompt_for_stdin=fallback_stdin,
+        )
 
 
 # --- gate worker ---------------------------------------------------------

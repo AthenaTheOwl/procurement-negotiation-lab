@@ -153,3 +153,67 @@ def test_gate_worker_aggregate_respects_must_pass(tmp_path: Path) -> None:
     ok, outcomes = GateWorker().run_gates(gates, cwd=tmp_path)
     assert ok is True
     assert outcomes[0].ok is False and outcomes[0].must_pass is False
+
+
+# ----- FAC-002/003 fix tests: headless tool perms + stdin-for-long-prompts ----
+
+
+def test_claude_argv_includes_permission_mode_and_tools(tmp_path: Path) -> None:
+    """FAC-002 regression: ClaudeCodeWorker must pass tool perms in headless mode."""
+    worker = ClaudeCodeWorker()
+    argv, stdin = worker._argv_and_stdin("short prompt", with_json=True)
+    assert "--permission-mode" in argv
+    assert "acceptEdits" in argv
+    assert "--allowedTools" in argv
+    # The tool allowlist comes from CLAUDE_HEADLESS_TOOLS as one space-separated string
+    tools_idx = argv.index("--allowedTools")
+    assert "Edit" in argv[tools_idx + 1]
+    assert "Write" in argv[tools_idx + 1]
+    assert stdin is None  # short prompt stays in argv
+
+
+def test_claude_long_prompt_routes_via_stdin(tmp_path: Path) -> None:
+    """FAC-003 regression: long prompts go via stdin so argv stays under Windows limit."""
+    from scripts.factory.workers import PROMPT_STDIN_THRESHOLD
+
+    worker = ClaudeCodeWorker()
+    long_prompt = "x" * (PROMPT_STDIN_THRESHOLD + 100)
+    argv, stdin = worker._argv_and_stdin(long_prompt, with_json=True)
+    assert stdin == long_prompt
+    # The long prompt MUST NOT appear in argv
+    assert all(long_prompt not in piece for piece in argv)
+
+
+def test_codex_argv_includes_workspace_write_sandbox(tmp_path: Path) -> None:
+    """FAC-002 regression for codex: headless codex needs workspace-write sandbox."""
+    worker = CodexWorker()
+    argv, stdin = worker._argv_and_stdin("short prompt", with_json=True)
+    assert "--sandbox" in argv
+    assert "workspace-write" in argv
+    assert "--skip-git-repo-check" in argv
+    assert stdin is None
+
+
+def test_codex_long_prompt_routes_via_stdin_with_dash_argv(tmp_path: Path) -> None:
+    """FAC-003 regression: codex uses `-` argv convention to read from stdin."""
+    from scripts.factory.workers import PROMPT_STDIN_THRESHOLD
+
+    worker = CodexWorker()
+    long_prompt = "y" * (PROMPT_STDIN_THRESHOLD + 100)
+    argv, stdin = worker._argv_and_stdin(long_prompt, with_json=True)
+    assert stdin == long_prompt
+    # Codex stdin convention: `-` as the prompt argv slot
+    assert argv[-1] == "-"
+    # The long prompt MUST NOT appear in argv
+    assert all(long_prompt not in piece for piece in argv)
+
+
+def test_prompt_threshold_is_safe_under_windows_argv_limit() -> None:
+    """The threshold + remaining argv must stay well under Windows ~8191 limit."""
+    from scripts.factory.workers import PROMPT_STDIN_THRESHOLD
+
+    # Claude full argv around the prompt: program + 8 flags ≈ 200 chars headroom
+    # Codex: similar. 4000-char threshold leaves 4000+ chars of headroom.
+    assert PROMPT_STDIN_THRESHOLD <= 6000
+    # And large enough that short prompts (plans/reviews of a paragraph) stay in argv
+    assert PROMPT_STDIN_THRESHOLD >= 2000
