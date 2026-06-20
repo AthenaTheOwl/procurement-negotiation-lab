@@ -259,6 +259,12 @@ def _run_cli(
     label: str = "cli",
 ) -> WorkerResult:
     start = time.monotonic()
+    # Windows-friendly: subprocess.run([bare-name]) with shell=False does NOT
+    # honor PATHEXT, so npm-installed CLIs (claude.cmd, codex.cmd) fail with
+    # WinError 2. shutil.which resolves the full path including extension.
+    resolved = shutil.which(argv[0])
+    if resolved is not None:
+        argv = [resolved, *argv[1:]]
     try:
         result = subprocess.run(  # noqa: S603 - argv is constructed, never shell-interpreted
             argv,
