@@ -1,0 +1,64 @@
+id: pilot-grid-test-matrix
+title: "grid-silicon phase 3: test matrix"
+target_repo: e:/claude_code/random-apps/grid-silicon
+base_branch: main
+
+phase: test
+persona: tester
+
+goal: |
+  Phase 2 landed src/ + tests/ + CLI. Phase 3 expands the test surface:
+
+  - tests/unit/ already exists from phase 2.
+  - Add tests/integration/test_end_to_end.py:
+      Run the CLI dry-run against the committed sample ERCOT fixture and
+      assert reports/2026-05.jsonl matches a golden file.
+  - Add tests/interface/test_record_schema.py:
+      Validate parsed records against the Pydantic schemas; no fields
+      drift.
+  - Add tests/chaos/test_partial_ercot_response.py (advisory):
+      Truncated HTML fixture → parser raises a typed error; reconcile
+      skips the bad row.
+  - Add tests/edge/test_no_data_for_month.py (advisory):
+      Empty fixture → CLI exits 0 with zero rows.
+
+  Update README.md: how to run tests per tier, and a one-paragraph
+  "what this v0.1 does and does NOT do."
+
+risk: medium
+
+checkpoints:
+  - pre_pr
+
+gates:
+  - cmd: python -m uv run ruff check tests
+    name: lint
+
+test_matrix:
+  - tier: unit
+    cmd: python -m uv run pytest tests/unit -q
+    blocking: true
+  - tier: integration
+    cmd: python -m uv run pytest tests/integration -q
+    blocking: true
+  - tier: interface
+    cmd: python -m uv run pytest tests/interface -q
+    blocking: true
+  - tier: chaos
+    cmd: python -m uv run pytest tests/chaos -q
+    blocking: false
+  - tier: edge
+    cmd: python -m uv run pytest tests/edge -q
+    blocking: false
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 2
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: codex

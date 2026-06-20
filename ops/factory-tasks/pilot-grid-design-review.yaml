@@ -1,0 +1,65 @@
+id: pilot-grid-design-review
+title: "grid-silicon phase 1: design review"
+target_repo: e:/claude_code/random-apps/grid-silicon
+base_branch: main
+
+phase: design
+persona: architect
+
+goal: |
+  Grid-silicon is a scaffold targeting a phantom-vs-real GW capacity engine
+  for US data centers. The scaffold's specs/0001-foundation/ names the
+  ambition but no code. v0.1 must narrow to ERCOT-only, monthly cadence,
+  ONE first deliverable: one row in a "phantom-vs-real" report.
+
+  Read specs/0001-foundation/. Then DRAFT specs/0002-design/ with:
+
+  - requirements.md   — 8-14 R-GRDS-* requirements for v0.1, scoped to ERCOT
+                         GIS queue + ERCOT generation interconnection report.
+                         NAME the data sources by URL.
+  - design.md         — blocks: ercot-fetcher, queue-parser, real-capacity-
+                         reconciler, report-writer. INTERFACES between blocks.
+                         Failure modes per block (data missing, ERCOT site
+                         changes, parser drift).
+  - tasks.md          — 10-15 checkbox tasks for first 2 impl PRs.
+  - acceptance.md     — `python -m grid_silicon ingest --iso ercot --month
+                         2026-05 --dry-run` succeeds; one phantom-vs-real
+                         row written.
+
+  Then SELF-REVIEW using both prompts at:
+    - e:/claude_code/random-apps/procurement-negotiation-lab/scripts/factory/prompts/review-architecture.md
+    - e:/claude_code/random-apps/procurement-negotiation-lab/scripts/factory/prompts/review-security.md
+
+  Combined verdict + 1-6 findings. Tag each finding with the lens. Special
+  attention: ERCOT data fetching policy (rate limits, ToS, user-agent),
+  cache strategy, what happens when ERCOT publishes corrected numbers
+  after we ingested.
+
+risk: low
+
+checkpoints:
+  # diff_review is the real pause point. design_panel is reserved for v2-full
+  # but not wired in v2-lite (it would be a no-op marker).
+  - diff_review
+
+gates:
+  - cmd: test -f specs/0002-design/requirements.md
+    name: design-requirements-exists
+  - cmd: test -f specs/0002-design/design.md
+    name: design-design-exists
+  - cmd: test -f specs/0002-design/tasks.md
+    name: design-tasks-exists
+  - cmd: test -f specs/0002-design/acceptance.md
+    name: design-acceptance-exists
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 2
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: claude_code

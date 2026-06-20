@@ -1,0 +1,59 @@
+id: pilot-pvp-test-matrix
+title: "promotion-vs-pip phase 3: test matrix"
+target_repo: e:/claude_code/random-apps/promotion-vs-pip
+base_branch: main
+
+phase: test
+persona: tester
+
+goal: |
+  Phase 2 landed cards/ + scripts/ + rules/. Phase 3 expands the test
+  surface for a paper-prototype repo. Tests are about content discipline
+  and rendering invariants, not gameplay simulation.
+
+  - tests/unit/ already covers card schema + render (from phase 2).
+  - Add scripts/tests/test_card_count.js:
+      Total card count = 36. Per-deck counts match design spec.
+  - Add scripts/tests/test_no_employer_names.js (interface):
+      Every card YAML's title + effect text is regex-scanned for banned
+      tokens (Amazon, AWS, Azure, Google, Microsoft, Apple, names of
+      specific real executives). Test fails if any hit.
+  - Add scripts/tests/test_render_print_size.js (edge, advisory):
+      Generated HTML's CSS specifies 2.5x3.5" card dimensions exactly.
+  - Add a playtest-log/2026-06-21-template.md placeholder file:
+      Headings: setup, attendees, what-broke, what-worked, edits-for-next.
+      First real playtest will fill this in.
+
+  Update README with: how to render a deck for print, how to run the test
+  matrix, where to log a playtest session.
+
+risk: low
+
+checkpoints: []
+
+gates:
+  - cmd: node --version
+    name: node-installed
+
+test_matrix:
+  - tier: unit
+    cmd: node --test scripts/
+    blocking: true
+  - tier: interface
+    cmd: node scripts/tests/test_no_employer_names.js
+    blocking: true
+  - tier: edge
+    cmd: node scripts/tests/test_render_print_size.js
+    blocking: false
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 2
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: claude_code

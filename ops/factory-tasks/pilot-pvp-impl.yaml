@@ -1,0 +1,61 @@
+id: pilot-pvp-impl
+title: "promotion-vs-pip phase 2: implementation"
+target_repo: e:/claude_code/random-apps/promotion-vs-pip
+base_branch: main
+
+phase: impl
+persona: developer
+
+goal: |
+  Phase 1 produced specs/0002-design/. Implement the v0.1 36-card prototype:
+
+  - cards/meetings.yaml         — 6 Meeting cards (round frames)
+  - cards/proposals.yaml        — 18 Proposal cards
+  - cards/policies.yaml         — 6 Policy cards (persistent rule tweaks)
+  - cards/exposures.yaml        — 6 Exposure cards (callouts)
+  - rules/v0.md                 — 1-2 page game rules; 60-min target
+  - scripts/render_cards.js     — node script: reads YAMLs, emits print.html
+  - scripts/render_cards.test.js — node test: HTML contains 36 card divs
+  - scripts/validate_cards.js   — schema check on YAMLs
+  - scripts/validate_cards.test.js
+  - templates/card.html         — template a renderer fills per card
+  - styles/cards.css            — print-friendly 2.5x3.5"
+  - package.json                — node 20+, ajv for schema, no deps beyond
+                                   minimum
+  - .nvmrc                      — 20
+  - print.example.html          — committed sample render
+
+  Voice for card text: deadpan corporate-satire. Banned: any reference to
+  Amazon, AWS, specific managers, specific employees, real internal
+  initiatives, specific OKR/CEO/CFO/CIO names. Tone is industry-generic.
+
+  Scope discipline: ONE deck. NO digital playable engine. NO scoring engine.
+  Defer everything else to later specs.
+
+risk: medium
+
+checkpoints: []
+
+gates:
+  - cmd: node --version
+    name: node-installed
+  - cmd: node scripts/validate_cards.js
+    name: card-schema
+  - cmd: node --test scripts/
+    name: node-tests
+  - cmd: node scripts/render_cards.js --out /tmp/pvp-print.html
+    name: render-smoke
+  - cmd: test -s /tmp/pvp-print.html
+    name: render-output-nonempty
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 3
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: claude_code

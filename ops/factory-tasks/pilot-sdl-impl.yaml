@@ -1,0 +1,56 @@
+id: pilot-sdl-impl
+title: "source-decay-ledger phase 2: implementation"
+target_repo: e:/claude_code/random-apps/source-decay-ledger
+base_branch: main
+
+phase: impl
+persona: developer
+
+goal: |
+  Phase 1 (pilot-sdl-design-review) produced specs/0002-design/. Implement
+  the v0.1 it describes:
+
+  - src/source_decay_ledger/__init__.py
+  - src/source_decay_ledger/registry.py     — read ai-field-brief source YAML
+  - src/source_decay_ledger/score.py        — compute decay signal per source
+  - src/source_decay_ledger/ledger.py       — append typed row to ledger
+  - src/source_decay_ledger/cli.py          — `--week`, `--dry-run` flags
+  - tests/test_registry.py                  — fixture-driven
+  - tests/test_score.py
+  - tests/test_ledger.py
+  - tests/test_cli.py                       — invokes CLI via subprocess
+  - pyproject.toml                          — uv + pytest + ruff + minimal deps
+  - .python-version                         — 3.11
+  - data/sample_registry.yaml               — fixture used by tests
+  - data/ledger.example.jsonl               — one example row
+
+  Scope discipline: ONE weekly run, ONE typed-row format, ONE CLI command.
+  Defer any "this should also do X" features to a later spec.
+
+  Voice: README updates lowercase, no marketing words.
+
+risk: medium
+
+checkpoints: []
+
+gates:
+  - cmd: python -m uv sync --frozen
+    name: deps
+  - cmd: python -m uv run ruff check src tests
+    name: lint
+  - cmd: python -m uv run pytest tests/ -q
+    name: pytest
+  - cmd: python -m uv run python -m source_decay_ledger --week 2026-W25 --dry-run
+    name: cli-smoke
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 3
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: codex

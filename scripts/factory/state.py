@@ -54,6 +54,10 @@ MIGRATIONS: list[tuple[str, str]] = [
     ("tasks", "last_run_id TEXT"),
     ("tasks", "resume_from_round INTEGER"),
     ("events", "trace_id TEXT"),
+    # v2-lite: phase + persona tracked at task level so attribution can group
+    # events into SDLC phases. Defaults stay null for pre-v2 tasks.
+    ("tasks", "phase TEXT"),
+    ("tasks", "persona TEXT"),
 ]
 
 
@@ -77,6 +81,9 @@ class TaskRow:
     resume_from_round: int | None
     created_at: str
     updated_at: str
+    # v2-lite. Nullable for backward-compat with rows written by pre-v2 versions.
+    phase: str | None = None
+    persona: str | None = None
 
 
 @dataclass

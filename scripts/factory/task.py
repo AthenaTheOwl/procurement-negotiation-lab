@@ -10,9 +10,20 @@ import yaml
 
 Risk = Literal["low", "medium", "high"]
 ReviewerChoice = Literal["claude_code", "codex", "stub", "none"]
-Checkpoint = Literal["plan_review", "diff_review", "pre_pr"]
-VALID_CHECKPOINTS: frozenset[str] = frozenset(("plan_review", "diff_review", "pre_pr"))
+Checkpoint = Literal["plan_review", "diff_review", "pre_pr", "design_panel"]
+VALID_CHECKPOINTS: frozenset[str] = frozenset(
+    ("plan_review", "diff_review", "pre_pr", "design_panel")
+)
 VALID_REVIEWERS: frozenset[str] = frozenset(("claude_code", "codex", "stub", "none"))
+
+# v2-lite: phase + persona + multi-tier tests.
+# Phase names a stage in the SDLC pipeline. Persona names which prompt-template
+# the worker should adopt. Both default to backward-compatible values.
+Phase = Literal["vision", "design", "impl", "test", "deploy"]
+VALID_PHASES: frozenset[str] = frozenset(("vision", "design", "impl", "test", "deploy"))
+VALID_TIERS: frozenset[str] = frozenset(
+    ("unit", "integration", "interface", "chaos", "edge", "functional")
+)
 
 
 @dataclass
@@ -21,9 +32,40 @@ class GateSpec:
     name: str | None = None
     must_pass: bool = True
     cwd: str | None = None
+    # v2-lite: optional tier label so attribution can group test-matrix gates.
+    # Empty string means "not a tiered gate" (existing behavior). When set the
+    # gate's display name is normalized to "tier:<tier>:<short-name>".
+    tier: str = ""
 
     def display_name(self) -> str:
         return self.name or self.cmd
+
+
+@dataclass
+class MatrixEntry:
+    """One row in the multi-tier test matrix. Converts to a GateSpec at load.
+
+    Named MatrixEntry (not MatrixEntry) so pytest does not try to collect
+    it as a test class. The YAML key remains `test_matrix`.
+    """
+
+    tier: str
+    cmd: str
+    blocking: bool = True
+    name: str | None = None
+    cwd: str | None = None
+
+    def to_gate(self) -> GateSpec:
+        gate_name = self.name or f"tier:{self.tier}"
+        if not gate_name.startswith("tier:"):
+            gate_name = f"tier:{self.tier}:{gate_name}"
+        return GateSpec(
+            cmd=self.cmd,
+            name=gate_name,
+            must_pass=self.blocking,
+            cwd=self.cwd,
+            tier=self.tier,
+        )
 
 
 @dataclass
@@ -55,12 +97,20 @@ class Task:
     planner: str = "claude_code"
     implementer: str = "codex"
     checkpoints: list[str] = field(default_factory=list)
+    # v2-lite additions. Defaults preserve pre-v2 behavior.
+    phase: str = "impl"
+    persona: str = "default"
+    test_matrix: list[MatrixEntry] = field(default_factory=list)
 
     def repo_path(self) -> Path:
         return Path(self.target_repo).expanduser().resolve()
 
     def has_checkpoint(self, name: str) -> bool:
         return name in self.checkpoints
+
+    def all_gates(self) -> list[GateSpec]:
+        """Gates plus test-matrix entries converted to GateSpec. Pipeline reads this."""
+        return list(self.gates) + [entry.to_gate() for entry in self.test_matrix]
 
 
 def load_task(path: str | Path) -> Task:
@@ -125,6 +175,39 @@ def load_task(path: str | Path) -> Task:
                 f"unknown checkpoint {entry!r}; expected one of {sorted(VALID_CHECKPOINTS)}"
             )
         checkpoints.append(entry)
+
+    phase = raw.get("phase", "impl")
+    if phase not in VALID_PHASES:
+        raise ValueError(
+            f"unknown phase {phase!r}; expected one of {sorted(VALID_PHASES)}"
+        )
+    persona = raw.get("persona", "default")
+    if not isinstance(persona, str) or not persona:
+        raise ValueError("persona must be a non-empty string")
+
+    matrix_raw = raw.get("test_matrix") or []
+    test_matrix: list[MatrixEntry] = []
+    for entry in matrix_raw:
+        if not isinstance(entry, dict):
+            raise ValueError(f"test_matrix entry must be a mapping: {entry!r}")
+        tier = entry.get("tier")
+        cmd = entry.get("cmd")
+        if not tier or not cmd:
+            raise ValueError(f"test_matrix entry requires tier+cmd: {entry!r}")
+        if tier not in VALID_TIERS:
+            raise ValueError(
+                f"unknown test tier {tier!r}; expected one of {sorted(VALID_TIERS)}"
+            )
+        test_matrix.append(
+            MatrixEntry(
+                tier=tier,
+                cmd=cmd,
+                blocking=bool(entry.get("blocking", True)),
+                name=entry.get("name"),
+                cwd=entry.get("cwd"),
+            )
+        )
+
     return Task(
         id=raw["id"],
         title=raw["title"],
@@ -138,4 +221,7 @@ def load_task(path: str | Path) -> Task:
         planner=raw.get("planner", "claude_code"),
         implementer=raw.get("implementer", "codex"),
         checkpoints=checkpoints,
+        phase=phase,
+        persona=persona,
+        test_matrix=test_matrix,
     )

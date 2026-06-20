@@ -1,0 +1,63 @@
+id: pilot-sdl-test-matrix
+title: "source-decay-ledger phase 3: test matrix"
+target_repo: e:/claude_code/random-apps/source-decay-ledger
+base_branch: main
+
+phase: test
+persona: tester
+
+goal: |
+  Phase 2 (pilot-sdl-impl) landed src/ + tests/ + CLI. Phase 3 expands
+  the test surface across tiers:
+
+  - tests/unit/ already covers registry/score/ledger/cli (from phase 2).
+  - Add tests/integration/test_end_to_end.py:
+      Run the CLI dry-run against a 3-source registry fixture and assert
+      the ledger output matches a golden file.
+  - Add tests/interface/test_ledger_schema.py:
+      Validate every example row against the JSON Schema for the ledger.
+  - Add tests/chaos/test_missing_source.py (advisory):
+      Run with a registry containing one source that 404s; assert the CLI
+      logs the failure and continues.
+  - Add tests/edge/test_empty_registry.py (advisory):
+      Empty registry → CLI exits 0 with no rows written.
+
+  Update README.md with a "how to run the tests" section: pytest invocations
+  per tier.
+
+risk: medium
+
+checkpoints: []
+
+gates:
+  - cmd: python -m uv run ruff check tests
+    name: lint
+
+test_matrix:
+  - tier: unit
+    cmd: python -m uv run pytest tests/unit -q
+    blocking: true
+  - tier: integration
+    cmd: python -m uv run pytest tests/integration -q
+    blocking: true
+  - tier: interface
+    cmd: python -m uv run pytest tests/interface -q
+    blocking: true
+  - tier: chaos
+    cmd: python -m uv run pytest tests/chaos -q
+    blocking: false
+  - tier: edge
+    cmd: python -m uv run pytest tests/edge -q
+    blocking: false
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 2
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: codex

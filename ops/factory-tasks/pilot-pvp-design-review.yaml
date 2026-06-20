@@ -1,0 +1,67 @@
+id: pilot-pvp-design-review
+title: "promotion-vs-pip phase 1: design review"
+target_repo: e:/claude_code/random-apps/promotion-vs-pip
+base_branch: main
+
+phase: design
+persona: architect
+
+goal: |
+  Promotion-vs-pip is a scaffold for a Brechtian corporate-satire deckbuilder
+  (cards + rules + render scripts). The scaffold names the ambition (36-card
+  print-and-play prototype). v0.1 must produce a playable paper prototype
+  WITHOUT a digital game engine — cards rendered as printable HTML, rules
+  authored as markdown, one playtest session possible from the repo alone.
+
+  Read specs/0001-foundation/. Then DRAFT specs/0002-design/ with:
+
+  - requirements.md   — 6-12 R-PVP-* requirements for v0.1.
+                         The 36-card cut: 6 Meetings + 18 Proposals + 6
+                         Policies + 6 Exposures. Cards in YAML. Render to
+                         one HTML page sized for 2.5x3.5" print.
+  - design.md         — blocks: card-yaml-schema, renderer, rules-doc,
+                         playtest-log template. Interfaces between blocks.
+                         What goes on a card (title, type, cost, effect,
+                         alienation prompt).
+  - tasks.md          — 8-12 checkbox tasks for first 2 impl PRs.
+  - acceptance.md     — `node scripts/render_cards.js` produces a single
+                         valid HTML file with 36 card divs; rules/v0.md
+                         describes a 60-minute first session.
+
+  Then SELF-REVIEW using both prompts at:
+    - e:/claude_code/random-apps/procurement-negotiation-lab/scripts/factory/prompts/review-architecture.md
+    - e:/claude_code/random-apps/procurement-negotiation-lab/scripts/factory/prompts/review-security.md
+
+  Combined verdict + 1-6 findings, tagged by lens.
+
+  Special attention from architecture lens: separability of card data from
+  render logic so future iterations can swap rendering (web, print, app).
+  Special attention from security lens: this is a public repo about
+  corporate satire — flag any language that could read as a vendetta against
+  a specific employer or named individual.
+
+risk: low
+
+checkpoints: []
+
+gates:
+  - cmd: test -f specs/0002-design/requirements.md
+    name: design-requirements-exists
+  - cmd: test -f specs/0002-design/design.md
+    name: design-design-exists
+  - cmd: test -f specs/0002-design/tasks.md
+    name: design-tasks-exists
+  - cmd: test -f specs/0002-design/acceptance.md
+    name: design-acceptance-exists
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 2
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: claude_code

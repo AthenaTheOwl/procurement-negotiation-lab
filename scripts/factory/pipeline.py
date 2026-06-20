@@ -283,7 +283,9 @@ def _finalize_run_record(
     # store, so omitting it here does not lose evidence.
     prompt_text = task.goal
     workers = list(KNOWN_WORKERS)
-    gate_names = [g.display_name() for g in task.gates]
+    # v2-lite: include test_matrix gates in the snapshot so the pipeline.start
+    # hash matches the final Run hash (same method on both sides).
+    gate_names = [g.display_name() for g in task.all_gates()]
     evidence_fields = build_run_evidence_fields(
         prompt_text=prompt_text,
         system_prompt=None,
@@ -465,6 +467,10 @@ def _record_worker_event(
         "run_id": result.run_id,
         "model": result.metadata.get("model"),
         "duration_ms": result.metadata.get("duration_ms"),
+        # v2-lite: phase + persona on every worker event so attribution can
+        # group events by SDLC stage without re-reading the task row.
+        "phase": getattr(task, "phase", None),
+        "persona": getattr(task, "persona", None),
     }
     if artifact_ref is not None:
         payload["artifact"] = artifact_ref
@@ -549,10 +555,20 @@ def run_pipeline(
             "risk": task.risk,
             "resume_from": resume_from,
             "comment": resume_comment,
+            # v2-lite: persisted on the pipeline.start event for run-evidence
+            # consumers that don't want to JOIN against the tasks table.
+            "phase": getattr(task, "phase", None),
+            "persona": getattr(task, "persona", None),
+            "test_matrix_size": len(getattr(task, "test_matrix", []) or []),
         },
         trace_id=trace_id,
     )
-    store.update_task(task.id, trace_id=trace_id)
+    store.update_task(
+        task.id,
+        trace_id=trace_id,
+        phase=getattr(task, "phase", None),
+        persona=getattr(task, "persona", None),
+    )
 
     # --- worktree ---
     worktree, error = _resolve_worktree(
@@ -591,7 +607,7 @@ def run_pipeline(
         prompt_text=task.goal,
         system_prompt=None,
         workers=list(KNOWN_WORKERS),
-        gates=[g.display_name() for g in task.gates],
+        gates=[g.display_name() for g in task.all_gates()],
         worktree_path=evidence.worktree_path,
         gate_events=[],
     )
@@ -1037,10 +1053,12 @@ def _run_implement_loop(
                     stdout="[dry-run gate stub]",
                     stderr="",
                 )
-                for g in task.gates
+                for g in task.all_gates()
             ]
         else:
-            gates_ok, outcomes = gate_runner.run_gates(task.gates, cwd=worktree.path)
+            gates_ok, outcomes = gate_runner.run_gates(
+                task.all_gates(), cwd=worktree.path
+            )
         for outcome in outcomes:
             artifacts.write(
                 task.id,
@@ -1054,6 +1072,10 @@ def _run_implement_loop(
             {
                 "round": round_idx,
                 "ok": gates_ok,
+                # v2-lite: phase + persona on gate events so attribution can
+                # group gate failures into their owning SDLC phase.
+                "phase": getattr(task, "phase", None),
+                "persona": getattr(task, "persona", None),
                 "outcomes": [
                     {"name": o.name, "ok": o.ok, "must_pass": o.must_pass}
                     for o in outcomes
@@ -1061,6 +1083,24 @@ def _run_implement_loop(
             },
             trace_id=trace_id,
         )
+        # v2-lite: when gates fail, also emit a dedicated symptom event so
+        # attribution.SYMPTOM_KINDS catches it. The pipeline already retries
+        # via the review loop; this event documents the symptom for the
+        # ledger, not a control-flow change.
+        if not gates_ok:
+            store.append_event(
+                task.id,
+                "gates.failed",
+                {
+                    "round": round_idx,
+                    "phase": getattr(task, "phase", None),
+                    "persona": getattr(task, "persona", None),
+                    "failing_gates": [
+                        o.name for o in outcomes if not o.ok and o.must_pass
+                    ],
+                },
+                trace_id=trace_id,
+            )
         if evidence is not None:
             for outcome in outcomes:
                 payload: dict[str, Any] = {

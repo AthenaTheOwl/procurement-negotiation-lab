@@ -1,0 +1,64 @@
+id: pilot-grid-impl
+title: "grid-silicon phase 2: implementation"
+target_repo: e:/claude_code/random-apps/grid-silicon
+base_branch: main
+
+phase: impl
+persona: developer
+
+goal: |
+  Phase 1 produced specs/0002-design/. Implement v0.1:
+
+  - src/grid_silicon/__init__.py
+  - src/grid_silicon/ercot.py        — fetcher: ERCOT GIS + interconnection
+                                        report. Rate-limited (sleep between
+                                        requests). User-agent set per spec.
+                                        Cached responses under data/cache/.
+  - src/grid_silicon/parse.py        — parse downloaded ERCOT files into
+                                        typed records (Pydantic models).
+  - src/grid_silicon/reconcile.py    — phantom-vs-real logic per design spec.
+  - src/grid_silicon/report.py       — write one row to reports/<month>.jsonl.
+  - src/grid_silicon/cli.py          — `ingest --iso ercot --month YYYY-MM`,
+                                        `--dry-run` flag.
+  - tests/test_parse.py              — fixture-driven (committed sample HTML)
+  - tests/test_reconcile.py
+  - tests/test_cli.py
+  - pyproject.toml                   — uv, pydantic, httpx, beautifulsoup4
+  - .python-version                  — 3.11
+  - data/sample_ercot_gis.html       — small fixture for tests
+  - data/cache/.gitkeep
+  - reports/.gitkeep
+
+  Scope discipline: ERCOT ONLY. No PJM/CAISO/MISO. ONE month. ONE phantom-
+  vs-real row. Defer everything else.
+
+  If ERCOT data fetching is blocked (rate-limit, ToS unclear, captcha),
+  STOP and emit a NEEDS_PATCH explaining what was blocked. Do NOT scrape
+  evasively. Do NOT hardcode credentials.
+
+risk: high
+
+checkpoints:
+  - diff_review
+
+gates:
+  - cmd: python -m uv sync --frozen
+    name: deps
+  - cmd: python -m uv run ruff check src tests
+    name: lint
+  - cmd: python -m uv run pytest tests/ -q
+    name: pytest
+  - cmd: python -m uv run python -m grid_silicon ingest --iso ercot --month 2026-05 --dry-run
+    name: cli-smoke
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 3
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: codex

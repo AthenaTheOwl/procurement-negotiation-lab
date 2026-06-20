@@ -1,0 +1,59 @@
+id: pilot-sdl-design-review
+title: "source-decay-ledger phase 1: design review"
+target_repo: e:/claude_code/random-apps/source-decay-ledger
+base_branch: main
+
+phase: design
+persona: architect
+
+goal: |
+  Source-decay-ledger is a scaffold. It has README + LICENSE + AGENTS.md +
+  specs/0001-foundation/{requirements,design,tasks,acceptance}.md +
+  docs/first-pr.md. No code yet.
+
+  Read specs/0001-foundation/ in the target repo. Then DRAFT
+  specs/0002-design/ with these 4 files:
+
+  - requirements.md   — 6-12 numbered R-SDL-* requirements for v0.1 that
+                         narrows the scaffold's scope to ONE first deliverable:
+                         a single weekly typed-ledger row produced from the
+                         existing ai-field-brief source registry.
+  - design.md         — block decomposition: registry-reader, signal-scorer,
+                         ledger-writer, CLI surface. Name interfaces.
+  - tasks.md          — 8-12 checkbox tasks ordered for the first 2 impl PRs.
+  - acceptance.md     — `python -m source_decay_ledger --week 2026-W25
+                         --dry-run` succeeds; one synthetic ledger row written.
+
+  Then SELF-REVIEW using both prompts at:
+    - e:/claude_code/random-apps/procurement-negotiation-lab/scripts/factory/prompts/review-architecture.md
+    - e:/claude_code/random-apps/procurement-negotiation-lab/scripts/factory/prompts/review-security.md
+
+  Output a combined verdict ({CLEAN, NEEDS_PATCH, REJECT}) + 1-6 findings
+  cited by file:line. Use BOTH lenses. Tag each finding with the lens that
+  found it. Voice: lowercase, plain assertion, no marketing words.
+
+risk: low
+
+checkpoints: []
+
+gates:
+  - cmd: test -f specs/0002-design/requirements.md
+    name: design-requirements-exists
+  - cmd: test -f specs/0002-design/design.md
+    name: design-design-exists
+  - cmd: test -f specs/0002-design/tasks.md
+    name: design-tasks-exists
+  - cmd: test -f specs/0002-design/acceptance.md
+    name: design-acceptance-exists
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 2
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: claude_code
