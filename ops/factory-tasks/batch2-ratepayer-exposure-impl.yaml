@@ -1,0 +1,47 @@
+id: batch2-ratepayer-exposure-impl
+title: "ratepayer-exposure phase 2: impl"
+target_repo: e:/claude_code/random-apps/ratepayer-exposure
+base_branch: main
+
+phase: impl
+persona: developer
+
+goal: |
+  Phase 1 (batch2-ratepayer-exposure-design) produced specs/0002-design/. Implement
+  the v0.1 it describes. Files to create:
+
+  package.json (astro + typescript) + src/lib/bill_delta.ts + src/lib/bill_delta.test.ts + src/pages/{calculator,methodology}.astro + decisions/DEC-001-assumption-charter.md + eval/sanity_bounds.py
+
+  Discipline:
+  - ONE shippable artifact. Defer everything bigger to spec 0003+.
+  - No marketing words. Lowercase headings in any README updates.
+  - No API keys committed, no `.env` files with real values.
+  - For data fixtures: small (<10KB), synthetic or clearly-public.
+  - Tests must actually exercise the code, not just import-smoke.
+
+  If a needed library isn't standard:
+  - Python: prefer stdlib; otherwise pin in pyproject.toml.
+  - Node/Astro: prefer npm-installable, no preview-only packages.
+
+  When the impl is done, ensure all gates listed below pass locally.
+
+risk: medium
+checkpoints: []
+
+gates:
+  - cmd: ls specs/0002-design/requirements.md
+    name: design-spec-exists
+  - cmd: npm run build && python eval/sanity_bounds.py
+    name: smoke
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 3
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: claude_code

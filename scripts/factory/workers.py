@@ -271,6 +271,10 @@ def _run_cli(
             cwd=str(cwd),
             capture_output=True,
             text=True,
+            # FAC-004: force utf-8 so non-cp1252 chars from CLIs (em-dashes,
+            # smart quotes, etc.) don't crash the _readerthread on Windows.
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout,
             input=prompt_for_stdin,
             check=False,

@@ -1,0 +1,57 @@
+id: batch2-ratepayer-exposure-test
+title: "ratepayer-exposure phase 3: test matrix"
+target_repo: e:/claude_code/random-apps/ratepayer-exposure
+base_branch: main
+
+phase: test
+persona: tester
+
+goal: |
+  Phase 2 landed src/ + tests/ + an entry point. Phase 3 expands the
+  test surface:
+
+  - tests/unit (already present from phase 2): ensure all pass
+  - tests/integration (new): one end-to-end test exercising the full
+    v0.1 path on a fixture
+  - tests/interface (new): schema or contract validation
+  - tests/edge (advisory): boundary cases
+  - Update README with "how to run tests"
+
+  No new src/ code in this phase; tests + docs only.
+
+risk: low
+checkpoints: []
+
+gates:
+  - cmd: ls tests
+    name: tests-dir-exists
+
+test_matrix:
+  - tier: unit
+    cmd: |
+      if [ -f pyproject.toml ]; then python -m uv run pytest tests/unit tests/ -q 2>/dev/null || python -m uv run pytest tests/ -q; else npm test; fi
+    blocking: true
+  - tier: integration
+    cmd: |
+      if [ -f pyproject.toml ]; then python -m uv run pytest tests/integration -q 2>/dev/null || echo "no integration tests yet"; else npm test --if-present -- --grep integration 2>/dev/null || echo "no integration tests yet"; fi
+    blocking: false
+  - tier: interface
+    cmd: |
+      if [ -f pyproject.toml ]; then python -m uv run pytest tests/interface -q 2>/dev/null || echo "no interface tests yet"; else echo "no interface tests yet"; fi
+    blocking: false
+  - tier: edge
+    cmd: |
+      if [ -f pyproject.toml ]; then python -m uv run pytest tests/edge -q 2>/dev/null || echo "no edge tests yet"; else echo "no edge tests yet"; fi
+    blocking: false
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 2
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: claude_code

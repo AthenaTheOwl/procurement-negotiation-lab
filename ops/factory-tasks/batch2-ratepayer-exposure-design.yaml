@@ -1,0 +1,56 @@
+id: batch2-ratepayer-exposure-design
+title: "ratepayer-exposure phase 1: design review"
+target_repo: e:/claude_code/random-apps/ratepayer-exposure
+base_branch: main
+
+phase: design
+persona: architect
+
+goal: |
+  Read this repo's specs/0001-foundation/ files (requirements, design,
+  tasks, acceptance) plus README.md and AGENTS.md. Then DRAFT
+  specs/0002-design/{requirements,design,tasks,acceptance}.md narrowing
+  scope to v0.1 = "Astro page with a client-side ZIP-code calculator computing 2026-2030 bill-delta from a documented formula + sanity-bounds gate + methodology page.".
+
+  Each design file should:
+  - requirements.md: 8-12 R-RPE-V1-NNN requirements that the v0.1
+    impl phase can ship. Carry over the relevant R-RPE-NNN from
+    spec 0001 and refine; defer anything bigger to spec 0003+.
+  - design.md: block decomposition + interfaces + failure-modes-per-block
+    + an explicit "out of scope for v0.1" list.
+  - tasks.md: 10-15 checkbox tasks ordered for the next 1-2 PRs.
+  - acceptance.md: concrete CLI/build commands the v0.1 must pass on a
+    fresh clone.
+
+  Then SELF-REVIEW using both prompts at:
+  - e:/claude_code/random-apps/procurement-negotiation-lab/scripts/factory/prompts/review-architecture.md
+  - e:/claude_code/random-apps/procurement-negotiation-lab/scripts/factory/prompts/review-security.md
+
+  Combined verdict {CLEAN, NEEDS_PATCH, REJECT} + 1-6 findings tagged
+  by lens. Voice: lowercase, plain assertion, no marketing words
+  (no "leverage", "demonstrates", "synergy", "robust", "best-in-class").
+
+risk: low
+checkpoints: []
+
+gates:
+  - cmd: test -f specs/0002-design/requirements.md
+    name: design-requirements-exists
+  - cmd: test -f specs/0002-design/design.md
+    name: design-design-exists
+  - cmd: test -f specs/0002-design/tasks.md
+    name: design-tasks-exists
+  - cmd: test -f specs/0002-design/acceptance.md
+    name: design-acceptance-exists
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 2
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: claude_code

@@ -1,0 +1,47 @@
+id: batch2-puc-docket-rag-impl
+title: "puc-docket-rag phase 2: impl"
+target_repo: e:/claude_code/random-apps/puc-docket-rag
+base_branch: main
+
+phase: impl
+persona: developer
+
+goal: |
+  Phase 1 (batch2-puc-docket-rag-design) produced specs/0002-design/. Implement
+  the v0.1 it describes. Files to create:
+
+  pyproject.toml + src/pdr/{__init__,ingest,chunk,index,extract,search,cli}.py + data/fixtures/va-example-docket.pdf or .txt + tests/test_chunk.py + tests/test_search.py + decisions/DEC-001-citation-faithfulness-contract.md
+
+  Discipline:
+  - ONE shippable artifact. Defer everything bigger to spec 0003+.
+  - No marketing words. Lowercase headings in any README updates.
+  - No API keys committed, no `.env` files with real values.
+  - For data fixtures: small (<10KB), synthetic or clearly-public.
+  - Tests must actually exercise the code, not just import-smoke.
+
+  If a needed library isn't standard:
+  - Python: prefer stdlib; otherwise pin in pyproject.toml.
+  - Node/Astro: prefer npm-installable, no preview-only packages.
+
+  When the impl is done, ensure all gates listed below pass locally.
+
+risk: medium
+checkpoints: []
+
+gates:
+  - cmd: ls specs/0002-design/requirements.md
+    name: design-spec-exists
+  - cmd: python -m uv run python -m pdr search --query 'cost allocation' --k 3
+    name: smoke
+
+review:
+  reviewer: claude_code
+  max_patch_rounds: 3
+
+pr:
+  open: false
+  base: main
+  draft: true
+
+planner: claude_code
+implementer: claude_code
