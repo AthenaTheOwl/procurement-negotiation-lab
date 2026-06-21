@@ -28,13 +28,13 @@
   "inputs": [
     {
       "kind": "task",
-      "ref": "repo://procurement-negotiation-lab@fa7b9b4cd9156487b8022bfd55e595f210742c3e/ops/factory-tasks/pilot-fam-binding-constraint.yaml"
+      "ref": "repo://procurement-negotiation-lab@44eacc079b82175dad8dad77f902fe342c5a0566/ops/factory-tasks/pilot-fam-binding-constraint.yaml"
     }
   ],
   "outputs": [],
   "prompt_snapshot_hash": "f1fb8a5e1c18fe1c830bd706d48623aa0c8fd668dbc620bb9dbfc30bb0fa9a57",
   "runtime": "procurement-lab-factory",
-  "sandbox_image_ref": "repo://procurement-negotiation-lab@PENDING/",
+  "sandbox_image_ref": "repo://procurement-negotiation-lab@44eacc079b82175dad8dad77f902fe342c5a0566/",
   "spec_id": "E:\\claude_code\\random-apps\\procurement-negotiation-lab\\ops\\factory-tasks\\pilot-fam-binding-constraint.yaml",
   "started_at": "2026-06-21T14:55:48Z",
   "status": "done",
