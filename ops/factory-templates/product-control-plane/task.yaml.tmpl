@@ -7,6 +7,19 @@ goal: |
   outputs. It has a clear product brief, system map, specs/0002-design
   ledger, runnable Python CLI, tests, a methodology doc, and one checked-in
   ledger row representing the first scoring/calibration run.
+
+  Python packaging convention (REQUIRED — `python -m uv sync` + tests
+  silently break otherwise):
+  - In `pyproject.toml`, declare dev deps under `[dependency-groups]`,
+    NOT `[project.optional-dependencies]`. uv installs dependency-groups
+    automatically; optional-dependencies need an explicit `--extra` flag
+    and won't reach the venv on a plain `uv sync`.
+  - Add `[tool.uv]` with `package = true` so the project itself is
+    editable-installed into the venv. Without it, `python -m uv run
+    pytest` falls back to the system python and `from {SLUG} import X`
+    raises ModuleNotFoundError even though the package exists on disk.
+  - Build backend can be hatchling or setuptools — either works once
+    the two uv blocks above are present.
 active: true
 template: product-control-plane
 product_vision: "Turns a periodic question about a portfolio repo's outputs into a typed score plus a memo a human acts on."
@@ -26,6 +39,9 @@ gates:
     cmd: python -c "from pathlib import Path; ledger=Path('data/ledger'); raise SystemExit(0 if ledger.exists() and any(ledger.glob('*.jsonl')) else 'missing data/ledger/*.jsonl')"
   - name: methodology-has-revisit-section
     cmd: python -c "from pathlib import Path; text=Path('docs/METHODOLOGY.md').read_text(encoding='utf-8'); raise SystemExit(0 if '## What revisits this' in text else 'METHODOLOGY.md missing revisit section')"
+  - name: pyproject-uv-conventions
+    must_pass: false
+    cmd: python -c "from pathlib import Path; t=Path('pyproject.toml').read_text(encoding='utf-8'); flags=[]; ('[project.optional-dependencies]' in t and 'dev' in t.split('[project.optional-dependencies]')[1].split('[')[0]) and flags.append('dev deps under [project.optional-dependencies] -- uv will NOT auto-install; move to [dependency-groups]'); ('hatchling' in t and '[tool.uv]' not in t) and flags.append('hatchling backend without [tool.uv] package=true -- uv may not editable-install the project, breaking pytest imports'); raise SystemExit('pyproject convention warnings: '+'; '.join(flags) if flags else 0)"
 review:
   reviewer: claude_code
   reviewers:

@@ -167,10 +167,14 @@ After the 2-repo pilot (R-FAM-V1-050), fill the 4 evidence rows below per R-FAM-
 
 **Decision: GO to batch 3 with TWO required template fixes first** (one-pager spec 0019 addendum, ~30 min of operator work):
 
-1. **Template fix A** (Codex Lane A continuation): landed. `--new-task` now rewrites `python -m {SLUG}` slots to the underscore package form and prefixes relative `target_repo` values with `E:/claude_code/random-apps/`.
-2. **Template fix B** (Claude Lane B continuation, ~20 min): regenerate both `task.yaml.tmpl` files so pyproject-template work goes into `[dependency-groups]` + `[tool.uv] package = true`. Update the prompt's implementer-guidance to mention this convention explicitly.
+1. **Template fix A** (Codex Lane A continuation): landed (`3ba1daa`). `--new-task` now rewrites `python -m {SLUG}` slots to the underscore package form and prefixes relative `target_repo` values with `E:/claude_code/random-apps/`. 177 factory tests pass.
+2. **Template fix B** (Claude Lane B continuation): landed. Both `task.yaml.tmpl` files now carry an explicit "Python packaging convention (REQUIRED)" block in the goal that names `[dependency-groups]` + `[tool.uv] package = true` and explains the silent-fail mode. A new advisory `pyproject-uv-conventions` gate fires when EITHER pattern is wrong (dev deps under `[project.optional-dependencies]`, OR hatchling backend without `[tool.uv]`). Validated against 3 cases:
+   - `binding-constraint` (setuptools, no dev deps): clean
+   - `brief-calibration` (hatchling + `[tool.uv]` + dependency-groups): clean
+   - synthetic pre-fix shape (hatchling + optional-dependencies-dev + no `[tool.uv]`): fires both warnings
+   Gate is advisory (`must_pass: false`) — it surfaces the issue in the run-record without blocking the pipeline, since the goal-text guidance is the primary fix and not every repo will hit both patterns.
 
-After fixes land: batch 3 fires on the 5 repos Codex queued (or has queued) per the operator's pre-pilot suggestion. Re-evaluate after batch 3 lands.
+After fixes land: batch 3 fires on the 5 repos Codex has queued (or chooses) per the operator's pre-pilot suggestion. Re-evaluate after batch 3 lands.
 
 ## References
 
