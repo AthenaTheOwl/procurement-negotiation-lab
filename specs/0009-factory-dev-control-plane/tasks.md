@@ -125,7 +125,7 @@
   PENDING placeholder to the sample-containing SHA; idempotent.
   *(R-FACTORY-RUN-EVIDENCE-018)*
 - [x] **I5**: Regenerate the committed sample under the new emitter
-  (sample id changes to `run-7b662d3f68b1`) and finalize its
+  (sample id changes to `run-960d6b107160`) and finalize its
   sandbox_image_ref to the regeneration commit's SHA.
   *(R-FACTORY-RUN-EVIDENCE-015, R-FACTORY-RUN-EVIDENCE-018)*
 - [x] **I6**: Add tests for the URI helpers (`resolve_uri`,
@@ -156,7 +156,7 @@
   `jq -r .sandbox_image_ref ... | sed -E ...`, check the recorded
   SHA out (with `fetch-depth: 0` on the initial checkout), restore
   the finalized Run record into the worktree, and run
-  `python scripts/replay_run.py --run-id run-7b662d3f68b1`.
+  `python scripts/replay_run.py --run-id run-960d6b107160`.
   *(R-FACTORY-RUN-EVIDENCE-021)*
 - [x] **J4**: Confirm no contract gate carries
   `continue-on-error: true`, no `if: ${{ failure() }}` shape, no
@@ -171,7 +171,7 @@
 ## Pass K - replay-determinism test fixture (DEC-FACTORY-012)
 
 - [x] **K1**: Add `tests/factory/test_replay_determinism.py` that
-  replays the canonical sample `run-7b662d3f68b1` `RERUNS` times
+  replays the canonical sample `run-960d6b107160` `RERUNS` times
   (default 3, override via `RERUNS` env var) at the recorded
   sandbox SHA, canonicalizes the three replay-equivalence fields
   per replay report, SHA-256 hashes the canonical bytes, and
@@ -253,7 +253,7 @@
 - [x] **M1**: Add `tests/factory/test_chaos_run_evidence.py`. The
   suite defines `test_canonical_sample_validates_clean` as a
   positive guard plus seven mutation tests (M1..M7) that copy the
-  canonical sample `run-7b662d3f68b1` into `tmp_path`, apply one
+  canonical sample `run-960d6b107160` into `tmp_path`, apply one
   targeted mutation each, point the validator's
   `EVENT_LEDGER_DIR` and `RUN_RECORDS_DIR` constants at the temp
   dir via `monkeypatch.setattr`, and assert

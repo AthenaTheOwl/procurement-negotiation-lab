@@ -273,7 +273,7 @@ Original conditional GO had two paths:
 1. Fix factory then use it
 2. Continue direct-build with v2-lite as metadata
 
-User picked path 1. Result: **path 1 works** but required substantial engineering. The factory now handles all 5 CLI/encoding/prompt-parsing edge cases, has engineered prompts, has a tolerant parser, scales to ~5 parallel repos.
+User picked path 1. Result: **path 1 works** but required real engineering. The factory now handles all 5 CLI/encoding/prompt-parsing edge cases, has engineered prompts, has a tolerant parser, scales to ~5 parallel repos.
 
 It STILL has 2 known gate-design issues (smoke gates too literal; test phase install gap). Both are YAML-template issues, not factory bugs.
 
@@ -308,7 +308,7 @@ It STILL has 2 known gate-design issues (smoke gates too literal; test phase ins
 2. **Sandbox hook hardening** — when factory tests create temp git repos as fixtures, they inherit any operator-level `.security-hooks/pre-commit` (e.g., Codex's environment has one calling `dirname` unavailable in the shell). Fixture-creation paths should `git init` with `--template=` pointing at an empty hooks dir, OR set `core.hooksPath=/dev/null` immediately after init. Codex's sandbox showed 14 errors traceable to this in addition to the 1 fixture-hash failure.
 3. **Test-count claim**: full factory suite is 150 passed / 1 failed (Claude shell) and 134 passed / 3 failed / 14 errored (Codex sandbox before hardening). Both have the same single real failure (replay fixture); Codex's extras are env-induced.
 
-These are scoped tightly enough to be a single follow-up PR rather than a v2-full spec 0019.
+These are scoped tightly enough to be a single follow-up PR, not a v2-full spec 0019.
 
 ## References
 

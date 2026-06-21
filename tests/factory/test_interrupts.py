@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -12,31 +11,13 @@ from scripts.factory.pipeline import reject_task, run_pipeline
 from scripts.factory.state import Store
 from scripts.factory.task import GateSpec, PRSpec, ReviewSpec, Task
 
-
-def _init_repo(path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["git", "init", "-b", "main", str(path)], check=True, capture_output=True)
-    subprocess.run(
-        ["git", "-C", str(path), "config", "user.email", "factory@test.local"],
-        check=True,
-        capture_output=True,
-    )
-    subprocess.run(
-        ["git", "-C", str(path), "config", "user.name", "factory-test"],
-        check=True,
-        capture_output=True,
-    )
-    (path / "README.md").write_text("seed\n", encoding="utf-8")
-    subprocess.run(["git", "-C", str(path), "add", "-A"], check=True, capture_output=True)
-    subprocess.run(
-        ["git", "-C", str(path), "commit", "-m", "seed"], check=True, capture_output=True
-    )
+from .conftest import init_git_repo
 
 
 @pytest.fixture
 def tmp_repo(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
-    _init_repo(repo)
+    init_git_repo(repo)
     return repo
 
 

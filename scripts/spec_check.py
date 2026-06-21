@@ -95,7 +95,7 @@ REQUIRED_WORKFLOW_PROOFS = {
         "trace_to_eval evidence validate",
         "scripts/replay_run.py",
         "fetch-depth: 0",
-        "run-7b662d3f68b1",
+        "run-960d6b107160",
         "replay-determinism",
         "tests/factory/test_replay_determinism.py",
         "RERUNS",
@@ -138,9 +138,7 @@ REQUIRED_AGENT_PROTOCOL = [
 
 def active_specs() -> list[Path]:
     return sorted(
-        path
-        for path in SPECS_ROOT.iterdir()
-        if path.is_dir() and re.match(r"^\d{4}-", path.name)
+        path for path in SPECS_ROOT.iterdir() if path.is_dir() and re.match(r"^\d{4}-", path.name)
     )
 
 
@@ -230,13 +228,9 @@ def check_local_protocol() -> None:
         )
 
     agents = read(ROOT / "AGENTS.md")
-    missing_agent_rules = [
-        needle for needle in REQUIRED_AGENT_PROTOCOL if needle not in agents
-    ]
+    missing_agent_rules = [needle for needle in REQUIRED_AGENT_PROTOCOL if needle not in agents]
     if missing_agent_rules:
-        raise SystemExit(
-            "AGENTS.md missing execution protocol:\n" + "\n".join(missing_agent_rules)
-        )
+        raise SystemExit("AGENTS.md missing execution protocol:\n" + "\n".join(missing_agent_rules))
 
 
 def parse_dec_requirement(text: str) -> str | None:
@@ -300,8 +294,7 @@ def collect_allowlist_key(key: str) -> set[str]:
         data = yaml.safe_load(ALLOWLIST_PATH.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
         print(
-            f"spec_check: failed to parse "
-            f"{ALLOWLIST_PATH.relative_to(ROOT).as_posix()}: {exc}",
+            f"spec_check: failed to parse {ALLOWLIST_PATH.relative_to(ROOT).as_posix()}: {exc}",
             file=sys.stderr,
         )
         return set()
@@ -383,17 +376,14 @@ def check_owner_role_coverage(specs: list[Path]) -> None:
 
     roles_deferred = collect_roles_deferred()
     missing = [
-        rid
-        for rid in sorted(all_ids)
-        if not all_owners.get(rid) and rid not in roles_deferred
+        rid for rid in sorted(all_ids) if not all_owners.get(rid) and rid not in roles_deferred
     ]
     if missing:
         names = "\n".join(missing)
         raise SystemExit(
             "traceability: no owner_role token for the following requirement(s) "
             "(add `owner_role: <role-id>` to the traceability row, or list "
-            "the id under `roles_deferred` in decisions/.spec-check-allowlist.yaml):\n"
-            + names
+            "the id under `roles_deferred` in decisions/.spec-check-allowlist.yaml):\n" + names
         )
 
 

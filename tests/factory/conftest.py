@@ -12,6 +12,7 @@ returned ``LedgerDirs`` mapping).
 
 from __future__ import annotations
 
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -28,6 +29,44 @@ class LedgerDirs:
     records: Path
     defects: Path
     handoffs: Path
+
+
+def init_git_repo(
+    path: Path,
+    *,
+    user_email: str = "factory@test.local",
+    user_name: str = "factory-test",
+) -> None:
+    """Create a seed git repo with hooks disabled for factory tests.
+
+    Tests exercise the factory's own hook and gate behavior. Temporary
+    repos must not inherit local/global hook paths from a developer
+    workstation, so each repo gets an empty private hooks directory.
+    """
+    path.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-b", "main", str(path)], check=True, capture_output=True)
+    hooks_dir = path / ".git" / "disabled-hooks"
+    hooks_dir.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        ["git", "-C", str(path), "config", "core.hooksPath", str(hooks_dir)],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(path), "config", "user.email", user_email],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(path), "config", "user.name", user_name],
+        check=True,
+        capture_output=True,
+    )
+    (path / "README.md").write_text("seed\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(path), "add", "-A"], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(path), "commit", "-m", "seed"], check=True, capture_output=True
+    )
 
 
 @pytest.fixture(autouse=True)

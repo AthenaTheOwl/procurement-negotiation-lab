@@ -28,7 +28,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CANONICAL_SAMPLE: run-7b662d3f68b1
+  CANONICAL_SAMPLE: run-960d6b107160
 
 jobs:
   run-evidence-gates:

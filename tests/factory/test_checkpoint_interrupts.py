@@ -15,7 +15,6 @@ store; nothing here requires a real Claude or Codex CLI.
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -25,31 +24,13 @@ from scripts.factory.pipeline import reject_task, run_pipeline
 from scripts.factory.state import Store
 from scripts.factory.task import GateSpec, PRSpec, ReviewSpec, Task
 
-
-def _init_repo(path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["git", "init", "-b", "main", str(path)], check=True, capture_output=True)
-    subprocess.run(
-        ["git", "-C", str(path), "config", "user.email", "factory@test.local"],
-        check=True,
-        capture_output=True,
-    )
-    subprocess.run(
-        ["git", "-C", str(path), "config", "user.name", "factory-test"],
-        check=True,
-        capture_output=True,
-    )
-    (path / "README.md").write_text("seed\n", encoding="utf-8")
-    subprocess.run(["git", "-C", str(path), "add", "-A"], check=True, capture_output=True)
-    subprocess.run(
-        ["git", "-C", str(path), "commit", "-m", "seed"], check=True, capture_output=True
-    )
+from .conftest import init_git_repo
 
 
 @pytest.fixture
 def tmp_repo(tmp_path: Path) -> Path:
     repo = tmp_path / "repo"
-    _init_repo(repo)
+    init_git_repo(repo)
     return repo
 
 
@@ -69,9 +50,7 @@ def _make_task(repo: Path, task_id: str, checkpoints: list[str]) -> Task:
     )
 
 
-def test_plan_review_pause_emits_checkpoint_paused_event(
-    tmp_repo: Path, tmp_path: Path
-) -> None:
+def test_plan_review_pause_emits_checkpoint_paused_event(tmp_repo: Path, tmp_path: Path) -> None:
     """Pause at plan_review writes a checkpoint.paused event and parks the row."""
     task = _make_task(tmp_repo, "pin-plan-pause", ["plan_review"])
     store = Store(tmp_path / "f.db")
@@ -125,9 +104,7 @@ def test_plan_review_resume_emits_checkpoint_resumed_then_proceeds(
         store.close()
 
 
-def test_diff_review_pause_then_resume_proceeds_to_done(
-    tmp_repo: Path, tmp_path: Path
-) -> None:
+def test_diff_review_pause_then_resume_proceeds_to_done(tmp_repo: Path, tmp_path: Path) -> None:
     """The diff_review checkpoint pauses, then resume continues to done."""
     task = _make_task(tmp_repo, "pin-diff", ["diff_review"])
     store = Store(tmp_path / "f.db")
@@ -158,9 +135,7 @@ def test_diff_review_pause_then_resume_proceeds_to_done(
         store.close()
 
 
-def test_reject_at_checkpoint_marks_task_rejected(
-    tmp_repo: Path, tmp_path: Path
-) -> None:
+def test_reject_at_checkpoint_marks_task_rejected(tmp_repo: Path, tmp_path: Path) -> None:
     """A reject call on a paused task records the rejection comment."""
     task = _make_task(tmp_repo, "pin-reject", ["plan_review"])
     store = Store(tmp_path / "f.db")

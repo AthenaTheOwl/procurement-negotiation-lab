@@ -11,7 +11,7 @@ decision: |
   fixture at ``tests/factory/test_replay_determinism.py`` and wires it
   into ``.github/workflows/run-evidence-gates.yml`` as a dedicated
   ``replay-determinism`` job. The fixture replays the canonical
-  sample ``run-7b662d3f68b1`` ``RERUNS`` times (default 3, override
+  sample ``run-960d6b107160`` ``RERUNS`` times (default 3, override
   via the ``RERUNS`` env var), canonicalizes the three replay-
   equivalence fields recorded under
   ``field_comparison.<field>.fresh`` on every replay report, and
@@ -142,9 +142,9 @@ evidence:
   - kind: doc
     ref: scripts/replay_run.py
   - kind: run
-    ref: ops/run-records/run-7b662d3f68b1.json
+    ref: ops/run-records/run-960d6b107160.json
   - kind: artifact
-    ref: ops/event-ledger/run-7b662d3f68b1.jsonl
+    ref: ops/event-ledger/run-960d6b107160.jsonl
 rollback: |
   Delete ``tests/factory/test_replay_determinism.py``, drop the
   ``replay-determinism`` job from
@@ -199,7 +199,7 @@ The procurement-negotiation-lab installs a replay-determinism test
 fixture at ``tests/factory/test_replay_determinism.py`` and wires it
 into the ``run-evidence-gates`` workflow as a dedicated
 ``replay-determinism`` job. The fixture replays the canonical sample
-``run-7b662d3f68b1`` ``RERUNS`` times (default 3), canonicalizes the
+``run-960d6b107160`` ``RERUNS`` times (default 3), canonicalizes the
 three replay-equivalence fields per replay report, SHA-256 hashes the
 canonical bytes, and fails when the hashes diverge. On failure the
 test writes a failure bundle to ``artifacts/failbundles/`` carrying
@@ -261,8 +261,8 @@ reverts the gate. No new pyproject deps, no new scripts.
   ``replay-determinism`` job that runs the fixture under ``uv``.
 - ``scripts/replay_run.py`` is the replay command the fixture
   invokes.
-- ``ops/run-records/run-7b662d3f68b1.json`` plus
-  ``ops/event-ledger/run-7b662d3f68b1.jsonl`` are the canonical
+- ``ops/run-records/run-960d6b107160.json`` plus
+  ``ops/event-ledger/run-960d6b107160.jsonl`` are the canonical
   sample the fixture replays.
 
 ## rollback

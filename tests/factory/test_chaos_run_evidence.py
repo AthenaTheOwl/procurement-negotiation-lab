@@ -1,8 +1,8 @@
 """Chaos test suite for ``scripts/validate_run_evidence.py``.
 
 Pattern: starts from the committed canonical sample
-(``ops/run-records/run-7b662d3f68b1.json`` + the matching ledger at
-``ops/event-ledger/run-7b662d3f68b1.jsonl``), copies both into a
+(``ops/run-records/run-960d6b107160.json`` + the matching ledger at
+``ops/event-ledger/run-960d6b107160.jsonl``), copies both into a
 per-test temp dir, applies a single targeted mutation, points the
 validator's module-level path constants at the temp dir, then asserts
 ``validate_run_evidence.main()`` exits non-zero and that stderr names the
@@ -47,7 +47,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_PATH = REPO_ROOT / "scripts"
-CANONICAL_RUN_ID = "run-7b662d3f68b1"
+CANONICAL_RUN_ID = "run-960d6b107160"
 CANONICAL_RECORD = REPO_ROOT / "ops" / "run-records" / f"{CANONICAL_RUN_ID}.json"
 CANONICAL_LEDGER = REPO_ROOT / "ops" / "event-ledger" / f"{CANONICAL_RUN_ID}.jsonl"
 
@@ -92,9 +92,7 @@ def _write_record(path: Path, run: dict[str, Any]) -> None:
 
 
 @pytest.fixture
-def chaos_lab(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> tuple[Any, Path, Path]:
+def chaos_lab(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> tuple[Any, Path, Path]:
     """Stage a fresh copy of the canonical sample under ``tmp_path``.
 
     Returns ``(module, record_path, ledger_path)`` so each test can
@@ -128,8 +126,7 @@ def test_canonical_sample_validates_clean(chaos_lab) -> None:  # type: ignore[no
     """
     module, _, _ = chaos_lab
     assert module.main() == 0, (
-        "canonical sample does not validate clean; chaos tests would be "
-        "testing the wrong baseline"
+        "canonical sample does not validate clean; chaos tests would be testing the wrong baseline"
     )
 
 
@@ -148,9 +145,7 @@ def test_M1_prompt_snapshot_hash_mutation_is_caught(  # type: ignore[no-untyped-
     run = _read_canonical_record()
     run["prompt_snapshot_hash"] = "f" * 64
     _write_record(record_path, run)
-    assert module.main() != 0, (
-        "M1: validator did not catch a mutated Run.prompt_snapshot_hash"
-    )
+    assert module.main() != 0, "M1: validator did not catch a mutated Run.prompt_snapshot_hash"
     err = capsys.readouterr().err
     assert "prompt_snapshot_hash" in err
     assert "does not match" in err
@@ -197,13 +192,10 @@ def test_M3_phantom_gate_in_gates_passed_is_caught(  # type: ignore[no-untyped-d
     run = _read_canonical_record()
     summary = run["gate_results_summary"]
     assert isinstance(summary, dict)
-    summary["gates_passed"] = sorted(
-        list(summary.get("gates_passed", [])) + ["phantom_gate"]
-    )
+    summary["gates_passed"] = sorted(list(summary.get("gates_passed", [])) + ["phantom_gate"])
     _write_record(record_path, run)
     assert module.main() != 0, (
-        "M3: validator did not catch a phantom gate in "
-        "gate_results_summary.gates_passed"
+        "M3: validator did not catch a phantom gate in gate_results_summary.gates_passed"
     )
     err = capsys.readouterr().err
     assert "gate_results_summary" in err
@@ -225,13 +217,11 @@ def test_M4_missing_terminal_evidence_event_is_caught(  # type: ignore[no-untype
     events = _read_canonical_events()
     trimmed = [e for e in events if e.get("type") != "gate.run.evidence_recorded"]
     assert len(trimmed) < len(events), (
-        "M4 precondition: the canonical sample must carry a "
-        "gate.run.evidence_recorded event"
+        "M4 precondition: the canonical sample must carry a gate.run.evidence_recorded event"
     )
     _write_jsonl(ledger_path, trimmed)
     assert module.main() != 0, (
-        "M4: validator did not catch a missing gate.run.evidence_recorded "
-        "event"
+        "M4: validator did not catch a missing gate.run.evidence_recorded event"
     )
     err = capsys.readouterr().err
     assert "gate.run.evidence_recorded" in err
@@ -259,14 +249,10 @@ def test_M5_pipeline_start_missing_prompt_hash_is_caught(  # type: ignore[no-unt
             assert isinstance(payload, dict)
             payload.pop("prompt_snapshot_hash", None)
             mutated = True
-    assert mutated, (
-        "M5 precondition: the canonical sample must carry a "
-        "pipeline.start event"
-    )
+    assert mutated, "M5 precondition: the canonical sample must carry a pipeline.start event"
     _write_jsonl(ledger_path, events)
     assert module.main() != 0, (
-        "M5: validator did not catch a pipeline.start payload missing "
-        "prompt_snapshot_hash"
+        "M5: validator did not catch a pipeline.start payload missing prompt_snapshot_hash"
     )
     err = capsys.readouterr().err
     assert "prompt_snapshot_hash" in err
@@ -299,8 +285,7 @@ def test_M6_fields_populated_claims_unpopulated_field_is_caught(  # type: ignore
             payload["fields_populated"] = sorted(populated)
             mutated = True
     assert mutated, (
-        "M6 precondition: the canonical sample must carry a "
-        "gate.run.evidence_recorded event"
+        "M6 precondition: the canonical sample must carry a gate.run.evidence_recorded event"
     )
     _write_jsonl(ledger_path, events)
     assert module.main() != 0, (
@@ -329,8 +314,6 @@ def test_M7_done_run_missing_sandbox_image_ref_is_caught(  # type: ignore[no-unt
     )
     run.pop("sandbox_image_ref")
     _write_record(record_path, run)
-    assert module.main() != 0, (
-        "M7: validator did not catch a done Run missing sandbox_image_ref"
-    )
+    assert module.main() != 0, "M7: validator did not catch a done Run missing sandbox_image_ref"
     err = capsys.readouterr().err
     assert "sandbox_image_ref" in err

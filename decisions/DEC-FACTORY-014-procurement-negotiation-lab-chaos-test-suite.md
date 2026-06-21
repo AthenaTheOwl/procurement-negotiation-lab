@@ -9,7 +9,7 @@ amends: DEC-FACTORY-013-factory-thread-id-capture-and-timestamp-fix
 decision: |
   procurement-negotiation-lab installs a chaos test suite at
   ``tests/factory/test_chaos_run_evidence.py`` that copies the canonical
-  sample ``run-7b662d3f68b1`` (Run record + ledger) into a temp dir,
+  sample ``run-960d6b107160`` (Run record + ledger) into a temp dir,
   applies one targeted mutation per test from a seven-class catalog
   (M1..M7), points ``scripts/validate_run_evidence.py`` at the temp
   dir via its module-level ``EVENT_LEDGER_DIR`` /
@@ -156,9 +156,9 @@ evidence:
   - kind: doc
     ref: tests/factory/test_chaos_run_evidence.py
   - kind: doc
-    ref: ops/run-records/run-7b662d3f68b1.json
+    ref: ops/run-records/run-960d6b107160.json
   - kind: doc
-    ref: ops/event-ledger/run-7b662d3f68b1.jsonl
+    ref: ops/event-ledger/run-960d6b107160.jsonl
 rollback: |
   Drop ``tests/factory/test_chaos_run_evidence.py``. Drop the
   ``chaos-validation`` job from
@@ -216,7 +216,7 @@ procurement-negotiation-lab installs a chaos test suite at
 ``tests/factory/test_chaos_run_evidence.py`` that covers seven
 mutation classes (M1..M7) verifying that
 ``scripts/validate_run_evidence.py`` catches each mutation. Every
-test copies the canonical sample ``run-7b662d3f68b1`` into a temp
+test copies the canonical sample ``run-960d6b107160`` into a temp
 dir, applies one targeted mutation, points the validator at the
 temp dir via its module-level path constants, and asserts the
 validator exits non-zero with stderr that names the specific check.
@@ -282,8 +282,8 @@ canonical-sample changes. The rollback is purely additive-revert.
 - ``scripts/validate_run_evidence.py`` carries the branches the
   chaos suite catches.
 - ``tests/factory/test_chaos_run_evidence.py`` is the new suite.
-- ``ops/run-records/run-7b662d3f68b1.json`` and
-  ``ops/event-ledger/run-7b662d3f68b1.jsonl`` are the canonical
+- ``ops/run-records/run-960d6b107160.json`` and
+  ``ops/event-ledger/run-960d6b107160.jsonl`` are the canonical
   sample inputs the suite copies.
 
 ## rollback

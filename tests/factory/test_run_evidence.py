@@ -36,6 +36,8 @@ from procurement_lab.run_evidence import (
     resolve_uri,
 )
 
+from .conftest import init_git_repo
+
 
 def test_canonicalize_prompt_is_stable_across_calls() -> None:
     a = canonicalize_prompt("hello", "be terse")
@@ -56,12 +58,8 @@ def test_canonicalize_prompt_distinguishes_inputs() -> None:
 
 
 def test_canonicalize_tool_surface_is_order_insensitive() -> None:
-    a = canonicalize_tool_surface(
-        ["claude_code", "codex", "stub"], ["pytest", "voice_lint"]
-    )
-    b = canonicalize_tool_surface(
-        ["stub", "codex", "claude_code"], ["voice_lint", "pytest"]
-    )
+    a = canonicalize_tool_surface(["claude_code", "codex", "stub"], ["pytest", "voice_lint"])
+    b = canonicalize_tool_surface(["stub", "codex", "claude_code"], ["voice_lint", "pytest"])
     assert a == b
 
 
@@ -279,42 +277,14 @@ def test_derive_sandbox_image_ref_returns_none_for_missing_path(
 def test_derive_sandbox_image_ref_includes_head_sha_for_real_repo(
     tmp_path: Path,
 ) -> None:
-    import subprocess as _subprocess
-
     repo = tmp_path / "repo"
-    repo.mkdir()
-    _subprocess.run(
-        ["git", "init", "-b", "main", str(repo)],
-        capture_output=True,
-        check=True,
-    )
-    _subprocess.run(
-        ["git", "-C", str(repo), "config", "user.email", "factory@test.local"],
-        capture_output=True,
-        check=True,
-    )
-    _subprocess.run(
-        ["git", "-C", str(repo), "config", "user.name", "factory-test"],
-        capture_output=True,
-        check=True,
-    )
-    (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
-    _subprocess.run(
-        ["git", "-C", str(repo), "add", "-A"], capture_output=True, check=True
-    )
-    _subprocess.run(
-        ["git", "-C", str(repo), "commit", "-m", "seed"],
-        capture_output=True,
-        check=True,
-    )
+    init_git_repo(repo)
     ref = derive_sandbox_image_ref(repo)
     assert ref is not None
     # Post-DEC-FACTORY-010: the emitter writes a repo:// URI pinned at the
     # repo root (empty path component, trailing slash required by grammar).
     assert ref.startswith(f"repo://{REPO_NAME}@")
-    assert re.match(
-        r"^repo://procurement-negotiation-lab@[0-9a-f]{40}/$", ref
-    )
+    assert re.match(r"^repo://procurement-negotiation-lab@[0-9a-f]{40}/$", ref)
 
 
 # ----------------------------------------------------------------- DEC-FACTORY-010 URI scheme tests
@@ -328,8 +298,7 @@ def test_build_repo_uri_with_path() -> None:
     sha = "a" * 40
     uri = build_repo_uri(sha, "ops/factory-tasks/example.yaml")
     assert uri == (
-        "repo://procurement-negotiation-lab@" + ("a" * 40)
-        + "/ops/factory-tasks/example.yaml"
+        "repo://procurement-negotiation-lab@" + ("a" * 40) + "/ops/factory-tasks/example.yaml"
     )
 
 

@@ -414,7 +414,7 @@ the product-side gates locked by athena-site DEC-CDCP-015:
    `trace-to-eval-harness` as a sibling at
    `${{ github.workspace }}/trace-to-eval-harness`, pip-install it,
    and run `python -m trace_to_eval evidence from-cdcp-events
-   ops/event-ledger/run-7b662d3f68b1.jsonl --out /tmp/packet.json
+   ops/event-ledger/run-960d6b107160.jsonl --out /tmp/packet.json
    --portfolio-root ${{ github.workspace }}`. Exit 0 required.
 2. `packet-validation`: `python -m trace_to_eval evidence validate
    /tmp/packet.json`. Exit 0 required.
@@ -437,7 +437,7 @@ WHEN the `run-evidence-gates` workflow reaches the replay-smoke gate,
 THE SYSTEM SHALL:
 
 1. Save the HEAD-finalized canonical Run record at
-   `ops/run-records/run-7b662d3f68b1.json` to `/tmp/run-record-finalized.json`.
+   `ops/run-records/run-960d6b107160.json` to `/tmp/run-record-finalized.json`.
 2. Extract the 40-char sandbox SHA from the Run record's
    `sandbox_image_ref` repo:// URI via `jq -r .sandbox_image_ref ...`
    piped through a `sed -E 's|^repo://[^@]+@([a-f0-9]{40})/.*|\1|'`
@@ -447,9 +447,9 @@ THE SYSTEM SHALL:
    on the initial checkout).
 4. Restore the finalized Run record into the worktree by copying
    `/tmp/run-record-finalized.json` back to
-   `ops/run-records/run-7b662d3f68b1.json` (the recorded SHA is the
+   `ops/run-records/run-960d6b107160.json` (the recorded SHA is the
    PENDING-emit commit per the DEC-FACTORY-010 two-pass flow).
-5. Run `python scripts/replay_run.py --run-id run-7b662d3f68b1`.
+5. Run `python scripts/replay_run.py --run-id run-960d6b107160`.
    Exit 0 (replay_equivalent: true) required.
 
 Acceptance:
@@ -483,7 +483,7 @@ Acceptance:
 ### R-FACTORY-RUN-EVIDENCE-023: replay-determinism test fixture exists
 
 WHEN the procurement-negotiation-lab repo carries a canonical
-sample Run record at `ops/run-records/run-7b662d3f68b1.json`,
+sample Run record at `ops/run-records/run-960d6b107160.json`,
 THE SYSTEM SHALL ship a replay-determinism test fixture at
 `tests/factory/test_replay_determinism.py` that replays the
 canonical sample `RERUNS` times (default 3, override via the
@@ -498,7 +498,7 @@ Acceptance:
 - The fixture extracts the sandbox SHA from the canonical Run
   record's `sandbox_image_ref`, checks the recorded SHA out,
   restores the finalized Run record into the worktree, and runs
-  `scripts/replay_run.py --run-id run-7b662d3f68b1` `RERUNS`
+  `scripts/replay_run.py --run-id run-960d6b107160` `RERUNS`
   times via `subprocess.run`.
 - The canonical-field whitelist is exactly
   `recomputed_prompt_snapshot_hash`,
@@ -643,7 +643,7 @@ Acceptance:
 ### R-FACTORY-RUN-EVIDENCE-029: chaos test suite covers required-for-done + cross-checks
 
 WHEN `tests/factory/test_chaos_run_evidence.py` runs against the
-canonical sample `run-7b662d3f68b1`, THE SYSTEM SHALL exercise at
+canonical sample `run-960d6b107160`, THE SYSTEM SHALL exercise at
 least seven mutation classes (M1..M7) that each target one validator
 branch in `scripts/validate_run_evidence.py`. Every mutation MUST be
 applied on a temp-dir copy of the canonical sample so the committed
@@ -662,8 +662,8 @@ Acceptance:
   type) that fired.
 - The fixture redirects `EVENT_LEDGER_DIR` and `RUN_RECORDS_DIR` to
   a `tmp_path` copy of the canonical sample; the committed
-  `ops/run-records/run-7b662d3f68b1.json` and
-  `ops/event-ledger/run-7b662d3f68b1.jsonl` are read-only inputs.
+  `ops/run-records/run-960d6b107160.json` and
+  `ops/event-ledger/run-960d6b107160.jsonl` are read-only inputs.
 
 ### R-FACTORY-RUN-EVIDENCE-030: chaos suite catches typed-payload regressions
 

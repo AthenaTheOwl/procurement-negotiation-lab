@@ -146,9 +146,9 @@ evidence:
   - kind: doc
     ref: scripts/finalize_sandbox_ref.py
   - kind: run
-    ref: ops/run-records/run-7b662d3f68b1.json
+    ref: ops/run-records/run-960d6b107160.json
   - kind: artifact
-    ref: ops/event-ledger/run-7b662d3f68b1.jsonl
+    ref: ops/event-ledger/run-960d6b107160.jsonl
 rollback: |
   Revert the four engineering commits (emitter migration, validator +
   replay resolver, regenerated sample, finalize) in reverse order.
@@ -224,8 +224,8 @@ HEAD-strict gate is satisfiable on first emit.
   carry the consumer-side ``resolve_uri`` helper.
 - ``scripts/finalize_sandbox_ref.py`` is the post-commit step that
   rewrites the PENDING placeholder.
-- ``ops/run-records/run-7b662d3f68b1.json`` and
-  ``ops/event-ledger/run-7b662d3f68b1.jsonl`` are the regenerated
+- ``ops/run-records/run-960d6b107160.json`` and
+  ``ops/event-ledger/run-960d6b107160.jsonl`` are the regenerated
   sample written under the new contract.
 
 ## rollback

@@ -56,7 +56,7 @@ from typing import Any
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-CANONICAL_RUN_ID = "run-7b662d3f68b1"
+CANONICAL_RUN_ID = "run-960d6b107160"
 RUN_RECORD_PATH = REPO_ROOT / "ops" / "run-records" / f"{CANONICAL_RUN_ID}.json"
 REPLAY_RECORDS_DIR = REPO_ROOT / "ops" / "replay-records" / CANONICAL_RUN_ID
 EVENT_LEDGER_DIR = REPO_ROOT / "ops" / "event-ledger"
@@ -106,24 +106,17 @@ def _extract_sandbox_sha(run_record: dict[str, Any]) -> str:
         raise ValueError("Run record has no sandbox_image_ref")
     if "@PENDING" in sandbox:
         raise ValueError(
-            "sandbox_image_ref is PENDING; finalize before running "
-            "the determinism test"
+            "sandbox_image_ref is PENDING; finalize before running the determinism test"
         )
-    uri_match = re.match(
-        r"^repo://[a-z][a-z0-9-]*@(?P<sha>[a-f0-9]{40})/", sandbox
-    )
+    uri_match = re.match(r"^repo://[a-z][a-z0-9-]*@(?P<sha>[a-f0-9]{40})/", sandbox)
     if uri_match:
         return uri_match.group("sha")
     # Legacy form: ``<worktree>@<sha>``.
     if "@" not in sandbox:
-        raise ValueError(
-            "sandbox_image_ref has no @<sha> suffix; cannot extract SHA"
-        )
+        raise ValueError("sandbox_image_ref has no @<sha> suffix; cannot extract SHA")
     sha = sandbox.rsplit("@", 1)[-1].strip().rstrip("/")
     if len(sha) != 40 or not all(c in "0123456789abcdef" for c in sha):
-        raise ValueError(
-            f"sandbox_image_ref suffix is not a 40-char hex SHA: {sha!r}"
-        )
+        raise ValueError(f"sandbox_image_ref suffix is not a 40-char hex SHA: {sha!r}")
     return sha
 
 
@@ -138,12 +131,8 @@ def _canonicalize_gate_results(value: Any) -> dict[str, Any]:
         return {"all_passed": False, "gates_failed": [], "gates_passed": []}
     return {
         "all_passed": bool(value.get("all_passed", False)),
-        "gates_failed": sorted(
-            str(g) for g in value.get("gates_failed", []) or []
-        ),
-        "gates_passed": sorted(
-            str(g) for g in value.get("gates_passed", []) or []
-        ),
+        "gates_failed": sorted(str(g) for g in value.get("gates_failed", []) or []),
+        "gates_passed": sorted(str(g) for g in value.get("gates_passed", []) or []),
     }
 
 
@@ -161,17 +150,13 @@ def _canonicalize_replay_record(report: dict[str, Any]) -> dict[str, Any]:
     return {
         "recomputed_prompt_snapshot_hash": prompt.get("fresh"),
         "recomputed_tool_schemas_snapshot_hash": tools.get("fresh"),
-        "recomputed_gate_results_summary": _canonicalize_gate_results(
-            gates.get("fresh")
-        ),
+        "recomputed_gate_results_summary": _canonicalize_gate_results(gates.get("fresh")),
     }
 
 
 def _hash_canonical(canonical: dict[str, Any]) -> str:
     """SHA-256 over the canonical JSON encoding."""
-    encoded = json.dumps(
-        canonical, sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
+    encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
 
 
@@ -230,22 +215,18 @@ def replay_artifact_cleaner():  # type: ignore[no-untyped-def]
     anything new on teardown so the working tree stays clean.
     """
     before_reports = _snapshot_existing(REPLAY_RECORDS_DIR, "*.json")
-    before_ledgers = _snapshot_existing(
-        EVENT_LEDGER_DIR, f"replay-{CANONICAL_RUN_ID}-*.jsonl"
-    )
+    before_ledgers = _snapshot_existing(EVENT_LEDGER_DIR, f"replay-{CANONICAL_RUN_ID}-*.jsonl")
     try:
         yield
     finally:
         after_reports = _snapshot_existing(REPLAY_RECORDS_DIR, "*.json")
-        after_ledgers = _snapshot_existing(
-            EVENT_LEDGER_DIR, f"replay-{CANONICAL_RUN_ID}-*.jsonl"
-        )
-        for path in (after_reports - before_reports):
+        after_ledgers = _snapshot_existing(EVENT_LEDGER_DIR, f"replay-{CANONICAL_RUN_ID}-*.jsonl")
+        for path in after_reports - before_reports:
             try:
                 path.unlink()
             except OSError:
                 pass
-        for path in (after_ledgers - before_ledgers):
+        for path in after_ledgers - before_ledgers:
             try:
                 path.unlink()
             except OSError:
@@ -285,9 +266,7 @@ def test_canonical_sample_replay_is_deterministic(  # type: ignore[no-untyped-de
         # Filter to tracked-file modifications (lines starting with " M",
         # "M ", "A ", "D ", etc.). Untracked files (lines starting with
         # "??") do not block the checkout.
-        tracked_changes = [
-            line for line in dirty.splitlines() if not line.startswith("??")
-        ]
+        tracked_changes = [line for line in dirty.splitlines() if not line.startswith("??")]
         if tracked_changes:
             pytest.skip(
                 "working tree has tracked modifications that would "
@@ -333,8 +312,7 @@ def test_canonical_sample_replay_is_deterministic(  # type: ignore[no-untyped-de
         new_reports = sorted(after - before)
         if len(new_reports) != 1:
             pytest.fail(
-                f"expected exactly one fresh replay report, got "
-                f"{[p.name for p in new_reports]}"
+                f"expected exactly one fresh replay report, got {[p.name for p in new_reports]}"
             )
         report = json.loads(new_reports[0].read_text(encoding="utf-8"))
         canonical = _canonicalize_replay_record(report)
@@ -349,21 +327,17 @@ def test_canonical_sample_replay_is_deterministic(  # type: ignore[no-untyped-de
     # canonical traces + the unique hash set + the canonical sample id.
     first_idx = 0
     second_idx = next(
-        i
-        for i in range(1, len(canonical_hashes))
-        if canonical_hashes[i] != canonical_hashes[0]
+        i for i in range(1, len(canonical_hashes)) if canonical_hashes[i] != canonical_hashes[0]
     )
     FAILBUNDLE_DIR.mkdir(parents=True, exist_ok=True)
     trace_0_path = FAILBUNDLE_DIR / "trace_0.json"
     trace_1_path = FAILBUNDLE_DIR / "trace_1.json"
     trace_0_path.write_text(
-        json.dumps(canonical_traces[first_idx], indent=2, sort_keys=True)
-        + "\n",
+        json.dumps(canonical_traces[first_idx], indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     trace_1_path.write_text(
-        json.dumps(canonical_traces[second_idx], indent=2, sort_keys=True)
-        + "\n",
+        json.dumps(canonical_traces[second_idx], indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     bundle_path = FAILBUNDLE_DIR / "determinism_failure.json"
@@ -379,9 +353,7 @@ def test_canonical_sample_replay_is_deterministic(  # type: ignore[no-untyped-de
         ],
         "hashes_per_rerun": canonical_hashes,
     }
-    bundle_path.write_text(
-        json.dumps(bundle, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    bundle_path.write_text(json.dumps(bundle, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     pytest.fail(
         f"replay determinism check failed: {len(unique_hashes)} unique "
         f"hashes across {rerun_count} reruns of {CANONICAL_RUN_ID}. "

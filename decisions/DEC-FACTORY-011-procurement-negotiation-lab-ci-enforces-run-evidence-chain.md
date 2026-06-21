@@ -16,7 +16,7 @@ decision: |
   1. ``packet-generation-from-canonical-sample`` checks the
      ``AthenaTheOwl/trace-to-eval-harness`` repo out as a sibling, <!-- voice_lint:allow banned-harness -->
      pip-installs it, and runs ``python -m trace_to_eval evidence
-     from-cdcp-events ops/event-ledger/run-7b662d3f68b1.jsonl --out
+     from-cdcp-events ops/event-ledger/run-960d6b107160.jsonl --out
      /tmp/packet.json --portfolio-root <workspace>`` against the
      canonical ledger. The ``--portfolio-root`` flag points at the
      GitHub workspace so trace-to-eval can resolve ``repo://`` URIs
@@ -25,11 +25,11 @@ decision: |
      validate /tmp/packet.json`` against the trace-to-eval v2-1
      run-evidence schema.
   3. ``replay-smoke`` extracts the 40-char sandbox SHA from
-     ``ops/run-records/run-7b662d3f68b1.json``'s ``sandbox_image_ref``
+     ``ops/run-records/run-960d6b107160.json``'s ``sandbox_image_ref``
      repo:// URI, checks that SHA out, restores the HEAD-finalized Run
      record into the worktree (because the recorded SHA is the
      PENDING-emit commit per the DEC-FACTORY-010 two-pass flow), and
-     runs ``python scripts/replay_run.py --run-id run-7b662d3f68b1``.
+     runs ``python scripts/replay_run.py --run-id run-960d6b107160``.
      A non-equivalent replay or a missing SHA exits the gate red.
 
   The existing ``tests.yml`` workflow already enforces the universal
@@ -40,7 +40,7 @@ decision: |
   shape. No path filters hide gate failures. No ``--no-verify`` bypass
   is configured anywhere in the workflow.
 
-  The canonical sample for replay smoke is ``run-7b662d3f68b1``; the
+  The canonical sample for replay smoke is ``run-960d6b107160``; the
   workflow has only one matrix slot because the lab carries one
   finalized sample at a time.
 alternatives:
@@ -120,9 +120,9 @@ evidence:
   - kind: doc
     ref: scripts/validate_run_evidence.py
   - kind: run
-    ref: ops/run-records/run-7b662d3f68b1.json
+    ref: ops/run-records/run-960d6b107160.json
   - kind: artifact
-    ref: ops/event-ledger/run-7b662d3f68b1.jsonl
+    ref: ops/event-ledger/run-960d6b107160.jsonl
 rollback: |
   Delete ``.github/workflows/run-evidence-gates.yml``, drop the
   ``R-FACTORY-RUN-EVIDENCE-019..022`` rows from
@@ -196,8 +196,8 @@ the workflow with no other state to clean up.
   runner).
 - ``scripts/replay_run.py`` and ``scripts/validate_run_evidence.py``
   are the in-repo gate scripts the workflows invoke.
-- ``ops/run-records/run-7b662d3f68b1.json`` and
-  ``ops/event-ledger/run-7b662d3f68b1.jsonl`` are the canonical
+- ``ops/run-records/run-960d6b107160.json`` and
+  ``ops/event-ledger/run-960d6b107160.jsonl`` are the canonical
   sample the new workflow targets.
 
 ## rollback

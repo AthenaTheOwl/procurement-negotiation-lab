@@ -5,30 +5,11 @@ Covers: R-FACTORY-005.
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 
 from scripts.factory.router import route_tasks
 
-
-def _init_repo(path: Path) -> None:
-    path.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["git", "init", "-b", "main", str(path)], check=True, capture_output=True)
-    subprocess.run(
-        ["git", "-C", str(path), "config", "user.email", "router@test.local"],
-        check=True,
-        capture_output=True,
-    )
-    subprocess.run(
-        ["git", "-C", str(path), "config", "user.name", "router-test"],
-        check=True,
-        capture_output=True,
-    )
-    (path / "README.md").write_text("seed\n", encoding="utf-8")
-    subprocess.run(["git", "-C", str(path), "add", "-A"], check=True, capture_output=True)
-    subprocess.run(
-        ["git", "-C", str(path), "commit", "-m", "seed"], check=True, capture_output=True
-    )
+from .conftest import init_git_repo
 
 
 def _task(path: Path, task_id: str, repo: Path) -> Path:
@@ -51,7 +32,7 @@ gates: []
 
 def test_route_tasks_threadpool_dry_run(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
-    _init_repo(repo)
+    init_git_repo(repo, user_email="router@test.local", user_name="router-test")
     first = _task(tmp_path / "one.yaml", "one", repo)
     second = _task(tmp_path / "two.yaml", "two", repo)
 
