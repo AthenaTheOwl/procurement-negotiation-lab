@@ -28,8 +28,10 @@ from procurement_lab.run_evidence import (
 )
 
 from .artifacts import ArtifactStore
+from .contract import ContractViolation, validate_contract
 from .state import Store
 from .task import Task
+from .triage import Triage, classify_terminal_state
 from .workers import (
     GateOutcome,
     GateWorker,
@@ -245,6 +247,7 @@ class PipelineResult:
     summary: str
     awaiting_checkpoint: str | None = None
     trace_id: str | None = None
+    triage: Triage | None = None
 
 
 # ------------------------------------------------------------------ run-evidence ledger
@@ -332,6 +335,7 @@ def _persist_run_evidence(
     spec_path: str | None,
     final_status: str,
     plan_text: str,
+    triage: Triage | None = None,
 ) -> None:
     """Build the Run record, write it, and emit gate.run.evidence_recorded.
 
@@ -345,6 +349,7 @@ def _persist_run_evidence(
         spec_path=spec_path,
         final_status=final_status,
         plan_text=plan_text,
+        triage=triage,
     )
     emit_run(run, evidence.record_path)
     populated = [
@@ -372,6 +377,7 @@ def _finalize_run_record(
     spec_path: str | None,
     final_status: str,
     plan_text: str,
+    triage: Triage | None = None,
 ) -> dict[str, Any]:
     """Assemble the final Run record dict, populate replay-equivalence fields."""
     status: str = final_status
@@ -414,6 +420,16 @@ def _finalize_run_record(
         # sample-containing commit after that commit lands.
         inputs.append({"kind": "task", "ref": _input_ref_for(spec_path, evidence)})
 
+    run_events: list[dict[str, Any]] = []
+    if triage is not None:
+        run_events.append(
+            {
+                "timestamp": finished_at,
+                "kind": "terminal_triage",
+                "payload": {"triage": triage, "final_status": final_status},
+            }
+        )
+
     run: dict[str, Any] = {
         "id": evidence.run_id,
         "spec_id": evidence.spec_id,
@@ -425,10 +441,9 @@ def _finalize_run_record(
         "status": run_status,
         "inputs": inputs,
         # Full event timeline lives in the JSONL ledger keyed by
-        # ops/event-ledger/<run_id>.jsonl. We leave Run.events empty by
-        # design so the source-of-truth ledger remains the single place to
-        # query the event stream.
-        "events": [],
+        # ops/event-ledger/<run_id>.jsonl. Run.events carries only compact
+        # record-local annotations such as terminal triage.
+        "events": run_events,
         "outputs": [],
     }
     run.update(evidence_fields.fields)
@@ -497,6 +512,69 @@ def _format_gate_results(outcomes: list[GateOutcome]) -> str:
             head = outcome.stderr.strip().splitlines()[0][:140]
             lines.append(f"        stderr head: {head}")
     return "\n".join(lines)
+
+
+def _task_has_contract_gates(task: Task) -> bool:
+    return bool(task.active or task.expected_artifacts or task.module_map)
+
+
+def _run_contract_gates(task: Task, repo_root: Path) -> list[GateOutcome]:
+    """Convert active-MVP contract checks into ordinary gate outcomes."""
+    violations = validate_contract(
+        repo_root,
+        active=task.active,
+        artifacts=task.expected_artifacts,
+        modules=task.module_map,
+    )
+    if violations:
+        return [_violation_to_outcome(violation) for violation in violations]
+
+    outcomes: list[GateOutcome] = []
+    if task.active:
+        outcomes.append(
+            GateOutcome(
+                name="contract:active-repo-files",
+                cmd="factory contract active-repo-files",
+                ok=True,
+                must_pass=True,
+                stdout="PRODUCT_BRIEF.md, SYSTEM_MAP.md, and STATUS.md present",
+                stderr="",
+            )
+        )
+    if task.expected_artifacts:
+        outcomes.append(
+            GateOutcome(
+                name="contract:expected-artifacts",
+                cmd="factory contract expected-artifacts",
+                ok=True,
+                must_pass=True,
+                stdout="expected artifacts present",
+                stderr="",
+            )
+        )
+    if task.module_map:
+        outcomes.append(
+            GateOutcome(
+                name="contract:module-map",
+                cmd="factory contract module-map",
+                ok=True,
+                must_pass=True,
+                stdout="module sources present",
+                stderr="",
+            )
+        )
+    return outcomes
+
+
+def _violation_to_outcome(violation: ContractViolation) -> GateOutcome:
+    return GateOutcome(
+        name=violation.gate_name(),
+        cmd="factory contract",
+        ok=False,
+        must_pass=violation.required,
+        stdout="",
+        stderr=violation.message,
+    )
 
 
 def _has_material_diff(worktree: WorktreeInfo) -> bool:
@@ -910,32 +988,48 @@ def run_pipeline(
             evidence=evidence,
         )
         if last_review == "__rejected__":
+            triage = classify_terminal_state(
+                final_status="rejected",
+                gate_outcomes=last_outcomes,
+                review_text=last_review,
+                triage_policy=task.triage_policy,
+            )
             _persist_run_evidence(
                 evidence,
                 task=task,
                 spec_path=spec_path,
                 final_status="rejected",
                 plan_text=plan_text,
+                triage=triage,
             )
             return PipelineResult(
                 ok=False,
                 final_status="rejected",
                 summary="reviewer returned REJECT",
                 trace_id=trace_id,
+                triage=triage,
             )
         if last_review == "__blocked__":
+            triage = classify_terminal_state(
+                final_status="blocked",
+                gate_outcomes=last_outcomes,
+                review_text=last_review,
+                triage_policy=task.triage_policy,
+            )
             _persist_run_evidence(
                 evidence,
                 task=task,
                 spec_path=spec_path,
                 final_status="blocked",
                 plan_text=plan_text,
+                triage=triage,
             )
             return PipelineResult(
                 ok=False,
                 final_status="blocked",
                 summary="exceeded max patch rounds",
                 trace_id=trace_id,
+                triage=triage,
             )
 
         if task.has_checkpoint("diff_review"):
@@ -1050,13 +1144,34 @@ def run_pipeline(
         awaiting_checkpoint=None,
     )
     store.append_event(
-        task.id, "pipeline.done", {"pr_url": pr_url}, trace_id=trace_id
+        task.id,
+        "pipeline.done",
+        {
+            "pr_url": pr_url,
+            "triage": classify_terminal_state(
+                final_status="done",
+                gate_outcomes=last_outcomes,
+                review_text=last_review,
+                triage_policy=task.triage_policy,
+            ),
+        },
+        trace_id=trace_id,
     )
     # pipeline.done payload requires `status` (schema enum: done|failed|cancelled)
     # and carries `gate_results_summary` cloned from the run's aggregated gate
     # outcomes — this is the cross-check source the Round 3 validator
     # extension enforces against the Run record.
-    done_payload: dict[str, Any] = {"status": "done", "pr_url": pr_url}
+    triage = classify_terminal_state(
+        final_status="done",
+        gate_outcomes=last_outcomes,
+        review_text=last_review,
+        triage_policy=task.triage_policy,
+    )
+    done_payload: dict[str, Any] = {
+        "status": "done",
+        "pr_url": pr_url,
+        "triage": triage,
+    }
     done_summary = aggregate_gate_results(evidence.events)
     if done_summary is not None:
         done_payload["gate_results_summary"] = done_summary
@@ -1067,12 +1182,17 @@ def run_pipeline(
         spec_path=spec_path,
         final_status="done",
         plan_text=plan_text,
+        triage=triage,
     )
     summary = f"done: branch {worktree.branch}" + (
         f"; PR {pr_url}" if pr_url else ""
     )
     return PipelineResult(
-        ok=True, final_status="done", summary=summary, trace_id=trace_id
+        ok=True,
+        final_status="done",
+        summary=summary,
+        trace_id=trace_id,
+        triage=triage,
     )
 
 
@@ -1194,6 +1314,13 @@ def _run_implement_loop(
             gates_ok, outcomes = gate_runner.run_gates(
                 task.all_gates(), cwd=worktree.path
             )
+            if _task_has_contract_gates(task):
+                contract_outcomes = _run_contract_gates(task, worktree.path)
+                outcomes.extend(contract_outcomes)
+                gates_ok = gates_ok and all(
+                    outcome.ok or not outcome.must_pass
+                    for outcome in contract_outcomes
+                )
         for outcome in outcomes:
             artifacts.write(
                 task.id,

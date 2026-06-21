@@ -348,6 +348,108 @@ deferred:
   - id: R-PROP-011
     note: deferred until tests/property/test_ts_python_parity.py lands in W2 (paired with Codex TS engine mirror)
 
+  # R-FACVL-* -- spec 0018 factory v2-lite pilot.
+  # DEC-FACTORY-V2-LITE-001 uses a broader factory-v2-lite front-matter id;
+  # these requirement rows are covered collectively by its pilot verdict.
+  - id: R-FACVL-001
+    note: covered collectively by DEC-FACTORY-V2-LITE-001-multi-phase-pilot
+  - id: R-FACVL-002
+    note: covered collectively by DEC-FACTORY-V2-LITE-001-multi-phase-pilot
+  - id: R-FACVL-003
+    note: covered collectively by DEC-FACTORY-V2-LITE-001-multi-phase-pilot
+  - id: R-FACVL-004
+    note: covered collectively by DEC-FACTORY-V2-LITE-001-multi-phase-pilot
+  - id: R-FACVL-005
+    note: covered collectively by DEC-FACTORY-V2-LITE-001-multi-phase-pilot
+  - id: R-FACVL-006
+    note: covered collectively by DEC-FACTORY-V2-LITE-001-multi-phase-pilot
+  - id: R-FACVL-007
+    note: covered collectively by DEC-FACTORY-V2-LITE-001-multi-phase-pilot
+  - id: R-FACVL-008
+    note: covered collectively by DEC-FACTORY-V2-LITE-001-multi-phase-pilot
+  - id: R-FACVL-009
+    note: covered collectively by DEC-FACTORY-V2-LITE-001-multi-phase-pilot
+  - id: R-FACVL-010
+    note: covered collectively by DEC-FACTORY-V2-LITE-001-multi-phase-pilot
+  - id: R-FACVL-011
+    note: covered collectively by DEC-FACTORY-V2-LITE-001-multi-phase-pilot
+  - id: R-FACVL-012
+    note: covered collectively by DEC-FACTORY-V2-LITE-001-multi-phase-pilot
+
+  # R-FAM-V1-* -- spec 0019 factory active-MVP contract.
+  # DEC-FACTORY-V2-FULL-001 resolves R-FAM-V1-001 directly. The remaining
+  # rows are covered collectively by that DEC's contract adoption and pilot gate.
+  - id: R-FAM-V1-002
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-003
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-004
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-005
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-006
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-010
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-011
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-012
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-013
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-014
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-015
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-020
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-021
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-022
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-023
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-030
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-031
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-032
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-040
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-041
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-042
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-043
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-050
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-051
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-060
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-061
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-062
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-070
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-071
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-072
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-080
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-081
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-082
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-090
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+  - id: R-FAM-V1-091
+    note: covered collectively by DEC-FACTORY-V2-FULL-001-active-mvp-contract
+
 # Roles-deferred allowlist: R-* IDs whose traceability.md row carries an
 # `owner_role:` token mapped to the closest installed role plus an
 # `owner_role_pending_graduation:` marker that names a CATALOG role this

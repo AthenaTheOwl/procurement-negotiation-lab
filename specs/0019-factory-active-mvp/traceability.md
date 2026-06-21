@@ -36,3 +36,13 @@
 | R-FAM-V1-082 (single-screen onboarding gate for UI types) | DEC-FACTORY-V2-FULL-001 | `contract.py::validate_first_action_in_readme` | `test_first_action_gate_for_ui_types` | A | pending |
 | R-FAM-V1-090 (template path = ops/factory-templates/) | DEC-FACTORY-V2-FULL-001 | mkdir + loader | covered by R-FAM-V1-021 tests | A | pending |
 | R-FAM-V1-091 (defer 5 templates to spec 0020) | DEC-FACTORY-V2-FULL-001 | `out_of_scope` | — | — | shipped (this spec) |
+## Owner coverage
+
+- R-FAM-V1-001 R-FAM-V1-002 R-FAM-V1-003 R-FAM-V1-004 R-FAM-V1-005 R-FAM-V1-006 owner_role: control.coordinator
+- R-FAM-V1-010 R-FAM-V1-011 R-FAM-V1-012 R-FAM-V1-013 R-FAM-V1-014 R-FAM-V1-015 owner_role: control.coordinator
+- R-FAM-V1-020 R-FAM-V1-021 R-FAM-V1-022 R-FAM-V1-023 owner_role: control.coordinator
+- R-FAM-V1-030 R-FAM-V1-031 R-FAM-V1-032 owner_role: control.coordinator
+- R-FAM-V1-040 R-FAM-V1-041 R-FAM-V1-042 R-FAM-V1-043 owner_role: control.coordinator
+- R-FAM-V1-050 R-FAM-V1-051 R-FAM-V1-060 R-FAM-V1-061 R-FAM-V1-062 owner_role: control.coordinator
+- R-FAM-V1-070 R-FAM-V1-071 R-FAM-V1-072 owner_role: control.coordinator
+- R-FAM-V1-080 R-FAM-V1-081 R-FAM-V1-082 R-FAM-V1-090 R-FAM-V1-091 owner_role: control.coordinator

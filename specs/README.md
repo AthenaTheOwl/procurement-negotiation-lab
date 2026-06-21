@@ -1,8 +1,8 @@
 # specs
 
-This repo uses a lightweight spec-driven loop. The spec is not decorative; it is
-the source of truth for what the demo must teach, what the app must render, and
-which proof gates have to pass before a checkpoint is called done.
+This repo uses a lightweight spec-driven loop. The spec is the source of truth
+for what the demo must teach, what the app must render, and which proof gates
+have to pass before a checkpoint is called done.
 
 Current active specs:
 
@@ -119,6 +119,20 @@ Current active specs:
 - `0017-engine-property-test-battery/acceptance.md`
 - `0017-engine-property-test-battery/research.md`
 - `0017-engine-property-test-battery/traceability.md`
+
+- `0018-factory-v2-lite-pilot/requirements.md`
+- `0018-factory-v2-lite-pilot/design.md`
+- `0018-factory-v2-lite-pilot/tasks.md`
+- `0018-factory-v2-lite-pilot/acceptance.md`
+- `0018-factory-v2-lite-pilot/research.md`
+- `0018-factory-v2-lite-pilot/traceability.md`
+
+- `0019-factory-active-mvp/requirements.md`
+- `0019-factory-active-mvp/design.md`
+- `0019-factory-active-mvp/tasks.md`
+- `0019-factory-active-mvp/acceptance.md`
+- `0019-factory-active-mvp/research.md`
+- `0019-factory-active-mvp/traceability.md`
 
 The development loop is:
 

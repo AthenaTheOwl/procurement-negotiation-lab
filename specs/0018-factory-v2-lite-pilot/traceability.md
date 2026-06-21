@@ -14,3 +14,7 @@
 | R-FACVL-010 (9 pilot YAMLs) | DEC-FACTORY-V2-LITE-001 | `ops/factory-tasks/pilot-{slug}/{design-review,impl,test-matrix}.yaml` × 3 slugs | each must `load_task` cleanly + `--dry-run` succeeds | in flight |
 | R-FACVL-011 (pilot DEC with evidence) | DEC-FACTORY-V2-LITE-001 | `decisions/DEC-FACTORY-V2-LITE-001.md` go/no-go with evidence per 4 criteria | manual review against acceptance.md criteria | pending pilot runs |
 | R-FACVL-012 (no new worker classes) | DEC-FACTORY-V2-LITE-001 | `scripts/factory/workers.py` unchanged in v2-lite scope; persona is a string carried in events, not a typed worker subclass | `git diff scripts/factory/workers.py` shows no change | shipped |
+## Owner coverage
+
+- R-FACVL-001 R-FACVL-002 R-FACVL-003 R-FACVL-004 R-FACVL-005 R-FACVL-006 owner_role: control.coordinator
+- R-FACVL-007 R-FACVL-008 R-FACVL-009 R-FACVL-010 R-FACVL-011 R-FACVL-012 owner_role: control.coordinator
