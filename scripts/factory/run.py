@@ -22,6 +22,7 @@ from .router import route_tasks
 from .spec_tasks import expand_spec_to_tasks
 from .state import Store
 from .task import load_task
+from .templates import TemplateError, render_new_task
 from .workers import ClaudeCodeWorker, CodexWorker
 
 
@@ -30,16 +31,12 @@ def _print_status(store: Store) -> None:
     if not rows:
         print("no tasks recorded yet. Add one via --task <path>.")
         return
-    print(
-        f"{'id':<28}  {'status':<18}  {'step':<24}  {'awaiting':<14}  branch"
-    )
+    print(f"{'id':<28}  {'status':<18}  {'step':<24}  {'awaiting':<14}  branch")
     print("-" * 110)
     for row in rows:
         step = (row.current_step or "")[:24]
         awaiting = (row.awaiting_checkpoint or "")[:14]
-        print(
-            f"{row.id:<28}  {row.status:<18}  {step:<24}  {awaiting:<14}  {row.branch or ''}"
-        )
+        print(f"{row.id:<28}  {row.status:<18}  {step:<24}  {awaiting:<14}  {row.branch or ''}")
 
 
 def _print_show(store: Store, task_id: str) -> None:
@@ -68,9 +65,7 @@ def _print_show(store: Store, task_id: str) -> None:
     for event in store.events_for(task_id):
         payload = ""
         if event.payload:
-            keys = ", ".join(
-                f"{k}={event.payload[k]!r}" for k in list(event.payload)[:3]
-            )
+            keys = ", ".join(f"{k}={event.payload[k]!r}" for k in list(event.payload)[:3])
             payload = f"  ({keys})"
         trace = f" [{event.trace_id[:8]}]" if event.trace_id else ""
         print(f"  [{event.at}]{trace} {event.kind}{payload}")
@@ -101,9 +96,7 @@ def _print_trace(store: Store, task_id: str, trace_id: str | None) -> None:
     for event in events:
         payload = ""
         if event.payload:
-            keys = ", ".join(
-                f"{k}={event.payload[k]!r}" for k in list(event.payload)[:4]
-            )
+            keys = ", ".join(f"{k}={event.payload[k]!r}" for k in list(event.payload)[:4])
             payload = f"  ({keys})"
         print(f"  [{event.at}] {event.kind}{payload}")
 
@@ -134,9 +127,7 @@ def _probe_workers() -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        prog="factory", description="local agent factory"
-    )
+    parser = argparse.ArgumentParser(prog="factory", description="local agent factory")
     parser.add_argument(
         "--task",
         type=Path,
@@ -151,23 +142,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="don't actually invoke agents or run gates; record planned steps",
+        help="record planned steps without invoking agents or gates",
     )
-    parser.add_argument(
-        "--status", action="store_true", help="print all recorded tasks and exit"
-    )
+    parser.add_argument("--status", action="store_true", help="print all recorded tasks and exit")
     parser.add_argument("--show", type=str, help="print a task's events and exit")
     parser.add_argument(
         "--trace",
         type=str,
         help="print event traces for a task (use --trace-id to filter)",
     )
-    parser.add_argument(
-        "--trace-id", type=str, help="filter --trace output to a single trace_id"
-    )
-    parser.add_argument(
-        "--artifacts", type=str, help="list filesystem artifacts for a task"
-    )
+    parser.add_argument("--trace-id", type=str, help="filter --trace output to a single trace_id")
+    parser.add_argument("--artifacts", type=str, help="list filesystem artifacts for a task")
     parser.add_argument(
         "--resume",
         type=str,
@@ -176,15 +161,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--approve", action="store_true", help="when resuming, continue the pipeline"
     )
-    parser.add_argument(
-        "--reject", action="store_true", help="when resuming, abandon the task"
-    )
+    parser.add_argument("--reject", action="store_true", help="when resuming, abandon the task")
     parser.add_argument(
         "--comment", type=str, default=None, help="optional note attached to the resume"
     )
-    parser.add_argument(
-        "--probe", action="store_true", help="check which agent CLIs are available"
-    )
+    parser.add_argument("--probe", action="store_true", help="check which agent CLIs are available")
     parser.add_argument(
         "--expand-spec",
         type=Path,
@@ -224,11 +205,35 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="force the router to use the built-in ThreadPoolExecutor fallback",
     )
+    parser.add_argument(
+        "--new-task",
+        action="store_true",
+        help="render a task YAML from an ops/factory-templates template",
+    )
+    parser.add_argument("--template", type=str, help="template name for --new-task")
+    parser.add_argument("--repo", type=str, help="target repo path or slug for --new-task")
+    parser.add_argument("--task-id", type=str, help="task id for --new-task output")
+    parser.add_argument("--slug", type=str, default=None, help="optional {SLUG} override")
+    parser.add_argument("--brand", type=str, default=None, help="optional {BRAND} override")
+    parser.add_argument(
+        "--template-root",
+        type=Path,
+        default=Path("ops/factory-templates"),
+        help="template root for --new-task",
+    )
+    parser.add_argument(
+        "--task-output",
+        type=Path,
+        default=Path("ops/factory-tasks"),
+        help="output directory for --new-task",
+    )
     args = parser.parse_args(argv)
 
     if args.probe:
         _probe_workers()
         return 0
+    if args.new_task:
+        return _run_new_task(args)
 
     store = Store(args.db)
     try:
@@ -267,8 +272,7 @@ def main(argv: list[str] | None = None) -> int:
             for result in routed.results:
                 marker = "ok" if result.ok else "FAIL"
                 print(
-                    f"[{marker}] {result.task_id}: {result.status} "
-                    f"trace={result.trace_id or '-'}"
+                    f"[{marker}] {result.task_id}: {result.status} trace={result.trace_id or '-'}"
                 )
             return 0 if all(result.ok for result in routed.results) else 1
         if args.resume:
@@ -276,14 +280,12 @@ def main(argv: list[str] | None = None) -> int:
         if not args.task:
             parser.error(
                 "either --task, --resume, --status, --show, --trace, --artifacts, "
-                "--expand-spec, --run-many, or --probe is required"
+                "--expand-spec, --run-many, --new-task, or --probe is required"
             )
         task = load_task(args.task)
         if not args.dry_run:
             _probe_workers()
-        print(
-            f"running task {task.id} ({task.title}) dry_run={args.dry_run}"
-        )
+        print(f"running task {task.id} ({task.title}) dry_run={args.dry_run}")
         result = run_pipeline(
             task,
             store=store,
@@ -295,8 +297,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"summary: {result.summary}")
         if result.awaiting_checkpoint:
             print(
-                f"resume:  python -m scripts.factory.run --resume {task.id} "
-                f"--approve [--dry-run]"
+                f"resume:  python -m scripts.factory.run --resume {task.id} --approve [--dry-run]"
             )
         if result.trace_id:
             print(f"trace:   {result.trace_id}")
@@ -318,9 +319,7 @@ def _run_resume(store: Store, args: argparse.Namespace) -> int:
         print(f"task {task_id} marked rejected")
         return 0
     if row.status != "awaiting_approval" or not row.awaiting_checkpoint:
-        print(
-            f"task {task_id} is not awaiting approval (status={row.status}); nothing to resume"
-        )
+        print(f"task {task_id} is not awaiting approval (status={row.status}); nothing to resume")
         return 1
     checkpoint = row.awaiting_checkpoint
     if not row.spec_path:
@@ -338,9 +337,7 @@ def _run_resume(store: Store, args: argparse.Namespace) -> int:
         print(f"cannot find spec file for task {task_id}; tried {spec_path}")
         return 1
     task = load_task(spec_path)
-    print(
-        f"resuming task {task_id} from checkpoint {checkpoint} dry_run={args.dry_run}"
-    )
+    print(f"resuming task {task_id} from checkpoint {checkpoint} dry_run={args.dry_run}")
     result = run_pipeline(
         task,
         store=store,
@@ -353,15 +350,39 @@ def _run_resume(store: Store, args: argparse.Namespace) -> int:
     print(f"status:  {result.final_status}")
     print(f"summary: {result.summary}")
     if result.awaiting_checkpoint:
-        print(
-            f"resume:  python -m scripts.factory.run --resume {task.id} "
-            f"--approve [--dry-run]"
-        )
+        print(f"resume:  python -m scripts.factory.run --resume {task.id} --approve [--dry-run]")
     if result.trace_id:
         print(f"trace:   {result.trace_id}")
     if result.final_status == "awaiting_approval":
         return 2
     return 0 if result.ok else 1
+
+
+def _run_new_task(args: argparse.Namespace) -> int:
+    missing = [
+        name
+        for name in ("template", "repo", "task_id")
+        if not getattr(args, name.replace("-", "_"), None)
+    ]
+    if missing:
+        print(f"--new-task missing required argument(s): {', '.join(missing)}", file=sys.stderr)
+        return 2
+    try:
+        rendered = render_new_task(
+            template=args.template,
+            repo=args.repo,
+            task_id=args.task_id,
+            slug=args.slug,
+            brand=args.brand,
+            template_root=args.template_root,
+            output_dir=args.task_output,
+        )
+    except TemplateError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    print(f"wrote {rendered.path.as_posix()}")
+    print(f"next: python -m scripts.factory.run --task {rendered.path.as_posix()}")
+    return 0
 
 
 if __name__ == "__main__":
