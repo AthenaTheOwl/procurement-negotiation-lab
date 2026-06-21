@@ -1,0 +1,15 @@
+- name: cli
+  source: {PACKAGE}/cli.py
+  layer: ingest
+  public_interfaces:
+    - "main(argv: list[str] | None = None) -> int"
+- name: model
+  source: {PACKAGE}/model.py
+  layer: model
+  public_interfaces:
+    - "rank_constraints(plan: CapexPlan) -> list[FactorScore]"
+- name: report
+  source: {PACKAGE}/scoring.py
+  layer: report
+  public_interfaces:
+    - "write_report(scores: list[FactorScore], path: Path) -> Path"

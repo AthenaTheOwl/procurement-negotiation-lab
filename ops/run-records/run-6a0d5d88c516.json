@@ -1,0 +1,58 @@
+{
+  "agent_id": "procurement-lab-factory@codex",
+  "events": [
+    {
+      "kind": "terminal_triage",
+      "payload": {
+        "final_status": "blocked",
+        "triage": "HOLD"
+      },
+      "timestamp": "2026-06-21T14:54:47Z"
+    }
+  ],
+  "finished_at": "2026-06-21T14:54:47Z",
+  "gate_results_summary": {
+    "all_passed": false,
+    "gates_failed": [
+      "implementation-diff",
+      "contract-presence",
+      "contract:missing-status-section:STATUS.md",
+      "contract:missing-status-section:STATUS.md",
+      "contract:missing-status-section:STATUS.md",
+      "contract:missing-expected-artifact:pyproject.toml",
+      "contract:missing-expected-artifact:src-binding_constraint-cli.py",
+      "contract:missing-module-source:src-binding_constraint-cli.py",
+      "contract:missing-module-source:src-binding_constraint-model.py",
+      "contract:missing-module-source:src-binding_constraint-report.py",
+      "contract:missing-expected-artifact:src-binding_constraint-cli.py",
+      "contract:missing-module-source:src-binding_constraint-cli.py",
+      "contract:missing-module-source:src-binding_constraint-model.py",
+      "contract:missing-module-source:src-binding_constraint-report.py"
+    ],
+    "gates_passed": [
+      "reports-present",
+      "pytest",
+      "cli-validate",
+      "contract-presence",
+      "reports-present",
+      "pytest",
+      "cli-validate"
+    ]
+  },
+  "id": "run-6a0d5d88c516",
+  "inputs": [
+    {
+      "kind": "task",
+      "ref": "repo://procurement-negotiation-lab@fa148b4c8783c5acd41019b6343768bfb9122d65/ops/factory-tasks/pilot-fam-binding-constraint.yaml"
+    }
+  ],
+  "outputs": [],
+  "prompt_snapshot_hash": "f1fb8a5e1c18fe1c830bd706d48623aa0c8fd668dbc620bb9dbfc30bb0fa9a57",
+  "runtime": "procurement-lab-factory",
+  "sandbox_image_ref": "repo://procurement-negotiation-lab@PENDING/",
+  "spec_id": "E:\\claude_code\\random-apps\\procurement-negotiation-lab\\ops\\factory-tasks\\pilot-fam-binding-constraint.yaml",
+  "started_at": "2026-06-21T14:42:31Z",
+  "status": "needs_review",
+  "tool_schemas_snapshot_hash": "3c1c07393c02e58a5e1a420505ad5b9c69b51482d11de1906f3e37f79bbe7a95",
+  "workspace_id": "procurement-negotiation-lab"
+}

@@ -76,6 +76,33 @@ def test_update_status_md_creates_sections_and_is_idempotent(tmp_path: Path) -> 
     assert first == second
 
 
+def test_operator_status_summarizes_raw_worker_payload(tmp_path: Path) -> None:
+    raw_summary = (
+        '=== reviewer: claude_code ===\n{"type":"result","api_error_status":429,'
+        '"session_id":"abc-123","total_cost_usd":0.12,"result":"rate limited"}'
+    )
+
+    items = update_status_md(
+        tmp_path,
+        open_defects=[
+            {
+                "kind": "review.needs_patch",
+                "gate_or_finding": "=== reviewer: claude_code ===",
+                "summary": raw_summary,
+            }
+        ],
+    )
+
+    text = (tmp_path / "STATUS.md").read_text(encoding="utf-8")
+    assert items == [
+        "Resolve factory defect: "
+        "claude_code review hit provider rate limit; rerun or inspect defect log"
+    ]
+    assert "api_error_status" not in text
+    assert "session_id" not in text
+    assert "total_cost_usd" not in text
+
+
 def test_write_handoff_packet_shape(tmp_path: Path) -> None:
     path = write_handoff_packet(
         task_id="task-1",
@@ -99,6 +126,36 @@ def test_write_handoff_packet_shape(tmp_path: Path) -> None:
     assert "- Add CSV export" in text
     assert "## Pick up via" in text
     assert "## Blocked on" in text
+
+
+def test_handoff_packet_summarizes_raw_worker_payload(tmp_path: Path) -> None:
+    path = write_handoff_packet(
+        task_id="task-1",
+        title="ship v0",
+        status="needs_review",
+        summary="blocked",
+        trace_id="abc123",
+        target_repo=tmp_path,
+        handoff_dir=tmp_path / "handoffs",
+        triage="INVESTIGATE",
+        defects=[
+            {
+                "kind": "review.needs_patch",
+                "gate_or_finding": "=== reviewer: claude_code ===",
+                "summary": (
+                    '=== reviewer: claude_code ===\n{"type":"result",'
+                    '"api_error_status":null,"session_id":"abc-123",'
+                    '"result":"STATUS: NEEDS_PATCH"}'
+                ),
+            }
+        ],
+        next_items=[],
+    )
+
+    text = path.read_text(encoding="utf-8")
+    assert "claude_code review requested patch; inspect defect log" in text
+    assert "api_error_status" not in text
+    assert "session_id" not in text
 
 
 def test_pipeline_dry_run_writes_success_handoff(

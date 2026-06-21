@@ -49,7 +49,7 @@ review:
         template / "module_map.yaml",
         """
 - name: cli
-  source: src/{SLUG}/cli.py
+  source: {PACKAGE}/cli.py
   layer: ingest
   public_interfaces:
     - "main(argv: list[str]) -> int"
@@ -75,7 +75,7 @@ def test_render_new_task_substitutes_placeholders(tmp_path: Path) -> None:
     assert task.template == "data-report"
     assert task.product_vision.startswith("Helps operators")
     assert task.expected_artifacts[1].kind == "glob"
-    assert task.module_map[0].source == "src/binding-constraint/cli.py"
+    assert task.module_map[0].source == "binding_constraint/cli.py"
 
 
 def test_render_new_task_rejects_unknown_template(tmp_path: Path) -> None:

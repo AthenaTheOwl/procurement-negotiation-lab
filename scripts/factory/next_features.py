@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from scripts.factory.defects import operator_defect_summary
+
 REQUIRED_STATUS_SECTIONS = (
     "## Current state",
     "## Known limits",
@@ -36,7 +38,7 @@ def _queue_items(deferred_items: list[str], open_defects: list[dict[str, Any]]) 
         if stripped:
             out.append(stripped)
     for defect in open_defects:
-        summary = str(defect.get("summary") or defect.get("gate_or_finding") or "").strip()
+        summary = operator_defect_summary(defect).strip()
         if summary:
             out.append(f"Resolve factory defect: {summary}")
     return out

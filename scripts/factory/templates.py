@@ -11,7 +11,7 @@ import yaml
 
 TEMPLATE_ROOT = Path("ops/factory-templates")
 TASK_OUTPUT_DIR = Path("ops/factory-tasks")
-PLACEHOLDERS = ("SLUG", "REPO", "BRAND", "TASK_ID", "NOW")
+PLACEHOLDERS = ("SLUG", "PACKAGE", "REPO", "BRAND", "TASK_ID", "NOW")
 
 
 class TemplateError(RuntimeError):
@@ -52,6 +52,7 @@ def render_new_task(
         )
     values = {
         "SLUG": slug or _slug_from_repo(repo),
+        "PACKAGE": _package_from_slug(slug or _slug_from_repo(repo)),
         "REPO": repo,
         "BRAND": brand or _brand_from_slug(slug or _slug_from_repo(repo)),
         "TASK_ID": task_id,
@@ -102,3 +103,7 @@ def _slug_from_repo(repo: str) -> str:
 
 def _brand_from_slug(slug: str) -> str:
     return " ".join(part.capitalize() for part in slug.replace("_", "-").split("-") if part)
+
+
+def _package_from_slug(slug: str) -> str:
+    return slug.replace("-", "_").replace(".", "_").lower()

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from procurement_lab.run_evidence import now_iso
+from scripts.factory.defects import operator_defect_summary
 
 
 def write_handoff_packet(
@@ -67,7 +68,7 @@ def _defect_lines(defects: list[dict[str, Any]]) -> list[str]:
         return ["- Nothing currently blocking."]
     lines: list[str] = []
     for defect in defects:
-        summary = str(defect.get("summary") or defect.get("gate_or_finding") or "open defect")
+        summary = operator_defect_summary(defect)
         kind = str(defect.get("kind") or "defect")
         lines.append(f"- {kind}: {summary}")
     return lines

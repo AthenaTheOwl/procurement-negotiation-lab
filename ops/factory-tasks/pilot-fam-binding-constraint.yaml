@@ -1,0 +1,87 @@
+id: pilot-fam-binding-constraint
+title: Binding Constraint v0.1 data report
+target_repo: E:/claude_code/random-apps/binding-constraint
+goal: |
+  Ship Binding Constraint v0.1 as a runnable deterministic Python data-report repo.
+
+  Product slice:
+  - A user can run `python -m binding_constraint validate` after setup.
+  - The repo scores one checked-in capex plan: TSMC Arizona.
+  - The engine ranks five candidate binding constraints:
+    chip-allocation, transformer-lead-time, water-rights,
+    skilled-trades-labor, permit-timeline.
+  - It writes one checked-in JSONL artifact under
+    `reports/2026-06-tsmc-arizona.jsonl`.
+  - It includes PRODUCT_BRIEF.md, SYSTEM_MAP.md, STATUS.md, and
+    specs/0002-design/{requirements,design,tasks,acceptance}.md.
+  - It keeps all inputs public and fixture-based; no API keys, no live fetch.
+
+  Implement the smallest useful system: typed dataclasses or pydantic-free
+  dict validation, deterministic scoring from checked-in fixture weights, a
+  CLI with `validate` and `diagnose`, pytest coverage, and a README "How to
+  run" path.
+active: true
+template: data-report
+product_vision: Turns one public-data question into a small runnable report with a
+  clear next action.
+target_user: operator or analyst who needs a first-pass data report
+first_user_action: python -m binding_constraint validate
+system_layers:
+- ingest
+- model
+- report
+next_feature_queue:
+- Add live source fetching with polite rate limits.
+- Add a second report scenario and compare outputs.
+gates:
+- name: contract-presence
+  cmd: python -c "from pathlib import Path; required=['PRODUCT_BRIEF.md','SYSTEM_MAP.md','STATUS.md','README.md','pyproject.toml'];
+    missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing
+    '+','.join(missing) if missing else 0)"
+- name: reports-present
+  cmd: python -c "from pathlib import Path; reports=Path('reports'); raise SystemExit(0
+    if reports.exists() and any(reports.glob('*.jsonl')) else 'missing reports/*.jsonl')"
+- name: pytest
+  cmd: python -m pytest -q
+- name: cli-validate
+  cmd: python -m binding_constraint validate
+review:
+  reviewer: claude_code
+  reviewers:
+  - claude_code
+  max_patch_rounds: 2
+pr:
+  open: false
+planner: claude_code
+implementer: codex
+expected_artifacts:
+- path: PRODUCT_BRIEF.md
+- path: SYSTEM_MAP.md
+- path: STATUS.md
+- path: README.md
+- path: pyproject.toml
+- path: specs/0002-design/requirements.md
+- path: specs/0002-design/design.md
+- path: specs/0002-design/tasks.md
+- path: specs/0002-design/acceptance.md
+- path: binding_constraint/cli.py
+- path: tests
+  kind: dir
+- path: reports/*.jsonl
+  kind: glob
+module_map:
+- name: cli
+  source: binding_constraint/cli.py
+  layer: ingest
+  public_interfaces:
+  - 'main(argv: list[str] | None = None) -> int'
+- name: model
+  source: binding_constraint/model.py
+  layer: model
+  public_interfaces:
+  - 'rank_constraints(plan: CapexPlan) -> list[FactorScore]'
+- name: report
+  source: binding_constraint/scoring.py
+  layer: report
+  public_interfaces:
+  - 'write_report(scores: list[FactorScore], path: Path) -> Path'

@@ -1,0 +1,14 @@
+- path: PRODUCT_BRIEF.md
+- path: SYSTEM_MAP.md
+- path: STATUS.md
+- path: README.md
+- path: pyproject.toml
+- path: specs/0002-design/requirements.md
+- path: specs/0002-design/design.md
+- path: specs/0002-design/tasks.md
+- path: specs/0002-design/acceptance.md
+- path: {PACKAGE}/cli.py
+- path: tests
+  kind: dir
+- path: reports/*.jsonl
+  kind: glob

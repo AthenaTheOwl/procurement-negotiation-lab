@@ -51,11 +51,11 @@ PR 5 — privacy canary property test
 - [x] New `tests/factory/test_privacy_canary.py` per R-FAM-V1-043. Plant canary in fixture inputs; assert no leakage to prompts/events/defects/handoffs/committed files.
 
 PR 6 — pilot run: binding-constraint
-- [ ] `python -m scripts.factory.run --new-task --template data-report --repo binding-constraint --task-id pilot-fam-binding-constraint`
-- [ ] Edit the generated YAML to populate goal + expected_artifacts list
-- [ ] Run end-to-end; merge each phase manually IF gate-rigidity hits (document as lessons)
-- [ ] Confirm all 6 contract artifacts present in `AthenaTheOwl/binding-constraint`
-- [ ] Append evidence to DEC-FACTORY-V2-FULL-001
+- [x] `python -m scripts.factory.run --new-task --template data-report --repo binding-constraint --task-id pilot-fam-binding-constraint`
+- [x] Edit the generated YAML to populate goal + expected_artifacts list
+- [x] Run end-to-end; no manual code merge. First attempt blocked, task/template paths were repaired, rerun committed clean.
+- [x] Confirm all 6 contract artifacts present in `AthenaTheOwl/binding-constraint`
+- [x] Append evidence to DEC-FACTORY-V2-FULL-001
 
 ## Lane B (Claude) — templates + design
 

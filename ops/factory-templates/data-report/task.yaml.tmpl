@@ -1,0 +1,33 @@
+id: {TASK_ID}
+title: "{BRAND} v0.1 data report"
+target_repo: "{REPO}"
+goal: |
+  Ship {BRAND} as a useful v0.1 data-report repo. The repo must have a
+  clear product brief, system map, specs/0002-design ledger, runnable
+  Python CLI, tests, and one checked-in report artifact.
+active: true
+template: data-report
+product_vision: "Turns one public-data question into a small runnable report with a clear next action."
+target_user: "operator or analyst who needs a first-pass data report"
+first_user_action: "python -m {SLUG} validate"
+system_layers:
+  - ingest
+  - model
+  - report
+next_feature_queue:
+  - Add live source fetching with polite rate limits.
+  - Add a second report scenario and compare outputs.
+gates:
+  - name: contract-presence
+    cmd: python -c "from pathlib import Path; required=['PRODUCT_BRIEF.md','SYSTEM_MAP.md','STATUS.md','README.md','pyproject.toml']; missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing '+','.join(missing) if missing else 0)"
+  - name: reports-present
+    cmd: python -c "from pathlib import Path; reports=Path('reports'); raise SystemExit(0 if reports.exists() and any(reports.glob('*.jsonl')) else 'missing reports/*.jsonl')"
+review:
+  reviewer: claude_code
+  reviewers:
+    - claude_code
+  max_patch_rounds: 2
+pr:
+  open: false
+planner: claude_code
+implementer: codex

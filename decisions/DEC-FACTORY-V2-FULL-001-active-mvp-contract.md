@@ -87,7 +87,7 @@ adoption_ladder:
 # DEC-FACTORY-V2-FULL-001 — Active-MVP contract
 
 **Date**: 2026-06-21
-**Status**: approved (pilot pending)
+**Status**: approved (binding-constraint pilot shipped; brief-calibration pending)
 **Spec**: [0019-factory-active-mvp](../specs/0019-factory-active-mvp/)
 **Supersedes**: nothing (additive on top of DEC-FACTORY-V2-LITE-001)
 
@@ -144,10 +144,10 @@ After the 2-repo pilot (R-FAM-V1-050), fill the 4 evidence rows below per R-FAM-
 
 | Criterion | binding-constraint (Codex) | brief-calibration (Claude) |
 |---|---|---|
-| 1. All 6 contract artifacts present | _pending_ | _pending_ |
-| 2. No manual merges (factory commit fired clean) | _pending_ | _pending_ |
-| 3. Per-repo wall-clock <= 30 min | _pending_ | _pending_ |
-| 4. next_feature_queue has >= 2 entries | _pending_ | _pending_ |
+| 1. All 6 contract artifacts present | PASS: `AthenaTheOwl/binding-constraint@7deb562` has PRODUCT_BRIEF.md, SYSTEM_MAP.md, STATUS.md, specs/0002-design, runnable code, tests, and `reports/2026-06-tsmc-arizona.jsonl`. | _pending_ |
+| 2. No manual merges (factory commit fired clean) | PARTIAL: factory commit fired clean on rerun (`fa7b9b4`), with no manual code merge. Operator repaired generated task/template paths and cleaned STATUS after the first failed attempt. | _pending_ |
+| 3. Per-repo wall-clock <= 30 min | PASS: first blocked run plus successful rerun consumed about 18 minutes of factory runtime; successful rerun was about 6 minutes. | _pending_ |
+| 4. next_feature_queue has >= 2 entries | PASS: STATUS.md in `binding-constraint@7deb562` has 3 queued features. | _pending_ |
 
 ## Decision rules
 

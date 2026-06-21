@@ -142,7 +142,10 @@ def test_legacy_factory_task_yamls_still_load() -> None:
     for path in legacy:
         task = load_task(path)
         assert task.id
-        assert task.active is False
+        if task.template:
+            assert task.active is True
+        else:
+            assert task.active is False
 
 
 def test_active_repo_files_report_missing_files(tmp_path: Path) -> None:

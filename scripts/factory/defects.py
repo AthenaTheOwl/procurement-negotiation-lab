@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -65,3 +66,26 @@ def unresolved_defects(task_id: str, defects_dir: Path) -> list[dict[str, Any]]:
     return [
         row for row in read_defects(task_id, defects_dir) if row.get("resolved_in_round") is None
     ]
+
+
+def operator_defect_summary(defect: dict[str, Any], *, max_len: int = 180) -> str:
+    """Return a concise, public-safe summary for STATUS and handoff surfaces."""
+    summary = str(defect.get("summary") or defect.get("gate_or_finding") or "open defect")
+    finding = str(defect.get("gate_or_finding") or "").strip()
+    normalized = " ".join(summary.split())
+    raw_lower = normalized.lower()
+    if normalized.startswith("=== reviewer:") or raw_lower.startswith("{"):
+        reviewer = finding.replace("=== reviewer:", "").replace("===", "").strip()
+        reviewer = reviewer or "reviewer"
+        if re.search(r'"api_error_status"\s*:\s*429', raw_lower) or "rate limited" in raw_lower:
+            return f"{reviewer} review hit provider rate limit; rerun or inspect defect log"
+        return f"{reviewer} review requested patch; inspect defect log"
+    normalized = re.sub(r'"session_id"\s*:\s*"[^"]+"', '"session_id":"<redacted>"', normalized)
+    normalized = re.sub(
+        r'"total_cost_usd"\s*:\s*[0-9.]+',
+        '"total_cost_usd":"<redacted>"',
+        normalized,
+    )
+    if len(normalized) <= max_len:
+        return normalized
+    return normalized[: max_len - 1].rstrip() + "..."

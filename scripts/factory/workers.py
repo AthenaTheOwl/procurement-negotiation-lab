@@ -561,6 +561,8 @@ class GateWorker:
                     cwd=str(gate_cwd),
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",
+                    errors="replace",
                     timeout=timeout,
                     shell=True,
                     check=False,
