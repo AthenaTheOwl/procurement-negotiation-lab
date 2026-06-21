@@ -26,8 +26,7 @@ from scripts.factory.task import (
 from scripts.factory.triage import classify_terminal_state
 from scripts.factory.workers import GateOutcome
 
-from .conftest import LedgerDirs
-from .test_pipeline import _init_repo
+from .conftest import LedgerDirs, init_git_repo
 
 
 def _write(path: Path, contents: str) -> Path:
@@ -231,7 +230,7 @@ def test_dry_run_run_record_carries_terminal_triage(
     tmp_path: Path, _redirect_run_evidence_dirs: LedgerDirs
 ) -> None:
     repo = tmp_path / "repo"
-    _init_repo(repo)
+    init_git_repo(repo)
     task = Task(
         id="triage-run",
         title="triage run",

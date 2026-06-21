@@ -12,8 +12,7 @@ from scripts.factory.pipeline import run_pipeline
 from scripts.factory.state import Store
 from scripts.factory.task import GateSpec, PRSpec, ReviewSpec, Task
 
-from .conftest import LedgerDirs
-from .test_pipeline import _init_repo
+from .conftest import LedgerDirs, init_git_repo
 
 
 def test_defect_log_appends_jsonl(tmp_path: Path) -> None:
@@ -106,7 +105,7 @@ def test_pipeline_dry_run_writes_success_handoff(
     tmp_path: Path, _redirect_run_evidence_dirs: LedgerDirs
 ) -> None:
     repo = tmp_path / "repo"
-    _init_repo(repo)
+    init_git_repo(repo)
     task = Task(
         id="handoff-success",
         title="handoff success",
@@ -136,7 +135,7 @@ def test_pipeline_blocked_run_writes_defect_log_and_handoff(
     tmp_path: Path, _redirect_run_evidence_dirs: LedgerDirs
 ) -> None:
     repo = tmp_path / "repo"
-    _init_repo(repo)
+    init_git_repo(repo)
     task = Task(
         id="handoff-blocked",
         title="handoff blocked",
