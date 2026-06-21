@@ -29,6 +29,9 @@ from procurement_lab.run_evidence import (
 
 from .artifacts import ArtifactStore
 from .contract import ContractViolation, validate_contract
+from .defects import DefectEntry, append_defect, unresolved_defects
+from .handoffs import write_handoff_packet
+from .next_features import update_status_md
 from .state import Store
 from .task import Task
 from .triage import Triage, classify_terminal_state
@@ -57,6 +60,8 @@ from .worktree import (
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EVENT_LEDGER_DIR = REPO_ROOT / "ops" / "event-ledger"
 RUN_RECORDS_DIR = REPO_ROOT / "ops" / "run-records"
+FACTORY_DEFECTS_DIR = REPO_ROOT / "ops" / "factory-defects"
+HANDOFFS_DIR = REPO_ROOT / "ops" / "handoffs"
 
 # Known factory workers form the canonical tool surface for hashing.
 KNOWN_WORKERS = ("claude_code", "codex", "stub")
@@ -150,17 +155,22 @@ Constraints:
   the review step can see it; do not silently skip.
 """
 
-IMPLEMENT_PROMPT = IMPLEMENT_PROMPT_BASE + """
+IMPLEMENT_PROMPT = (
+    IMPLEMENT_PROMPT_BASE
+    + """
 
 PLAN (from the planner):
 {plan}
 """
+)
 
 # Patch-round prompt: keeps every piece of the round-0 prompt (working dir,
 # tool guidance, anti-pattern warnings, verification checklist) PLUS adds
 # the reviewer's findings. Without the full context the agent has nothing
 # to ground its patch in and tends to no-op or re-introduce the same bugs.
-IMPLEMENT_PATCH_PROMPT = IMPLEMENT_PROMPT_BASE + """
+IMPLEMENT_PATCH_PROMPT = (
+    IMPLEMENT_PROMPT_BASE
+    + """
 
 ORIGINAL PLAN (from the planner):
 {plan}
@@ -172,6 +182,7 @@ Apply patches that address each finding. If a finding is wrong or already
 resolved, write a one-line note in your output naming the finding and the
 reason -- but the default action is to fix.
 """
+)
 
 REVIEW_PROMPT = """\
 You are the review agent. The implementer edited the worktree at {cwd}.
@@ -577,6 +588,79 @@ def _violation_to_outcome(violation: ContractViolation) -> GateOutcome:
     )
 
 
+def _append_gate_defects(
+    task: Task,
+    outcomes: list[GateOutcome],
+    *,
+    round_idx: int,
+    defects_dir: Path,
+) -> None:
+    for outcome in outcomes:
+        if outcome.ok:
+            continue
+        append_defect(
+            task.id,
+            DefectEntry(
+                kind="gate.failed",
+                gate_or_finding=outcome.name,
+                round=round_idx,
+                phase=getattr(task, "phase", "impl"),
+                persona=getattr(task, "persona", "default"),
+                summary=outcome.stderr.strip() or f"gate {outcome.name} failed",
+            ),
+            defects_dir,
+        )
+
+
+def _append_review_defect(
+    task: Task,
+    *,
+    kind: str,
+    finding: str,
+    round_idx: int,
+    defects_dir: Path,
+) -> None:
+    append_defect(
+        task.id,
+        DefectEntry(
+            kind=kind,
+            gate_or_finding=finding.splitlines()[0][:120] if finding else kind,
+            round=round_idx,
+            phase=getattr(task, "phase", "impl"),
+            persona=getattr(task, "persona", "default"),
+            summary=finding.strip()[:500] if finding else kind,
+        ),
+        defects_dir,
+    )
+
+
+def _write_terminal_handoff(
+    *,
+    task: Task,
+    status: str,
+    summary: str,
+    trace_id: str | None,
+    target_repo: Path,
+    triage: Triage | None,
+    handoff_dir: Path,
+    defects_dir: Path,
+    next_items: list[str] | None = None,
+) -> None:
+    defects = unresolved_defects(task.id, defects_dir)
+    write_handoff_packet(
+        task_id=task.id,
+        title=task.title,
+        status=status,
+        summary=summary,
+        trace_id=trace_id,
+        target_repo=target_repo,
+        handoff_dir=handoff_dir,
+        triage=triage,
+        defects=defects,
+        next_items=next_items,
+    )
+
+
 def _has_material_diff(worktree: WorktreeInfo) -> bool:
     """Return True when the implementation produced committed or pending changes."""
     return has_uncommitted_changes(worktree.path) or bool(
@@ -603,9 +687,7 @@ def _gate_results_for_artifact(outcomes: list[GateOutcome]) -> str:
     return "\n".join(chunks)
 
 
-def _open_pr(
-    worktree: WorktreeInfo, task: Task, plan: str, review: str
-) -> str | None:
+def _open_pr(worktree: WorktreeInfo, task: Task, plan: str, review: str) -> str | None:
     body_parts = [
         f"## Goal\n\n{task.goal}\n",
         f"## Plan\n\n{plan or '(no plan recorded)'}\n",
@@ -700,9 +782,7 @@ def _resolve_worktree(
     try:
         wt = create_worktree(repo, task.id, task.base_branch)
     except WorktreeError as cause:
-        store.append_event(
-            task.id, "worktree.error", {"error": str(cause)}, trace_id=trace_id
-        )
+        store.append_event(task.id, "worktree.error", {"error": str(cause)}, trace_id=trace_id)
         return None, str(cause)
     store.append_event(
         task.id,
@@ -767,16 +847,25 @@ def run_pipeline(
     )
 
     # --- worktree ---
-    worktree, error = _resolve_worktree(
-        task, dry_run=dry_run, store=store, trace_id=trace_id
-    )
+    worktree, error = _resolve_worktree(task, dry_run=dry_run, store=store, trace_id=trace_id)
     if worktree is None or error is not None:
         store.update_task(task.id, status="failed", failure_reason=error or "worktree")
+        _write_terminal_handoff(
+            task=task,
+            status="failed",
+            summary=error or "worktree resolution failed",
+            trace_id=trace_id,
+            target_repo=task.repo_path(),
+            triage="HOLD",
+            handoff_dir=HANDOFFS_DIR,
+            defects_dir=FACTORY_DEFECTS_DIR,
+        )
         return PipelineResult(
             ok=False,
             final_status="failed",
             summary=error or "worktree resolution failed",
             trace_id=trace_id,
+            triage="HOLD",
         )
     store.update_task(
         task.id,
@@ -814,12 +903,8 @@ def run_pipeline(
             "trace_id": trace_id,
             "dry_run": dry_run,
             "risk": task.risk,
-            "prompt_snapshot_hash": initial_fields.fields[
-                "prompt_snapshot_hash"
-            ],
-            "tool_schemas_snapshot_hash": initial_fields.fields[
-                "tool_schemas_snapshot_hash"
-            ],
+            "prompt_snapshot_hash": initial_fields.fields["prompt_snapshot_hash"],
+            "tool_schemas_snapshot_hash": initial_fields.fields["tool_schemas_snapshot_hash"],
         },
     )
 
@@ -827,20 +912,29 @@ def run_pipeline(
     if resume_from in (None, "plan_review"):
         if resume_from == "plan_review":
             # Plan was produced before the pause; load from artifacts.
-            plan_refs = [
-                ref for ref in artifacts.list(task.id) if ref.kind == "plan"
-            ]
+            plan_refs = [ref for ref in artifacts.list(task.id) if ref.kind == "plan"]
             if not plan_refs:
                 store.update_task(
                     task.id,
                     status="failed",
                     failure_reason="resume plan_review but no plan artifact found",
                 )
+                _write_terminal_handoff(
+                    task=task,
+                    status="failed",
+                    summary="cannot resume: no stored plan",
+                    trace_id=trace_id,
+                    target_repo=worktree.path,
+                    triage="HOLD",
+                    handoff_dir=HANDOFFS_DIR,
+                    defects_dir=FACTORY_DEFECTS_DIR,
+                )
                 return PipelineResult(
                     ok=False,
                     final_status="failed",
                     summary="cannot resume: no stored plan",
                     trace_id=trace_id,
+                    triage="HOLD",
                 )
             plan_text = artifacts.read(plan_refs[0])
             store.append_event(
@@ -895,9 +989,7 @@ def run_pipeline(
                 parent_event_id=started_event["event_id"],
             )
             if not plan_result.ok:
-                store.update_task(
-                    task.id, status="failed", failure_reason=plan_result.stderr
-                )
+                store.update_task(task.id, status="failed", failure_reason=plan_result.stderr)
                 store.append_event(
                     task.id,
                     "plan.failed",
@@ -910,12 +1002,24 @@ def run_pipeline(
                     spec_path=spec_path,
                     final_status="failed",
                     plan_text="",
+                    triage="HOLD",
+                )
+                _write_terminal_handoff(
+                    task=task,
+                    status="failed",
+                    summary=plan_result.stderr,
+                    trace_id=trace_id,
+                    target_repo=worktree.path,
+                    triage="HOLD",
+                    handoff_dir=HANDOFFS_DIR,
+                    defects_dir=FACTORY_DEFECTS_DIR,
                 )
                 return PipelineResult(
                     ok=False,
                     final_status="failed",
                     summary=plan_result.stderr,
                     trace_id=trace_id,
+                    triage="HOLD",
                 )
             plan_text = plan_result.stdout
             plan_ref = artifacts.write(task.id, "plan", 0, plan_text)
@@ -957,6 +1061,16 @@ def run_pipeline(
                     spec_path=spec_path,
                     final_status="awaiting_approval",
                     plan_text=plan_text,
+                )
+                _write_terminal_handoff(
+                    task=task,
+                    status="awaiting_approval",
+                    summary=f"paused at plan_review (artifact {plan_ref.path})",
+                    trace_id=trace_id,
+                    target_repo=worktree.path,
+                    triage=None,
+                    handoff_dir=HANDOFFS_DIR,
+                    defects_dir=FACTORY_DEFECTS_DIR,
                 )
                 return PipelineResult(
                     ok=True,
@@ -1002,6 +1116,16 @@ def run_pipeline(
                 plan_text=plan_text,
                 triage=triage,
             )
+            _write_terminal_handoff(
+                task=task,
+                status="rejected",
+                summary="reviewer returned REJECT",
+                trace_id=trace_id,
+                target_repo=worktree.path,
+                triage=triage,
+                handoff_dir=HANDOFFS_DIR,
+                defects_dir=FACTORY_DEFECTS_DIR,
+            )
             return PipelineResult(
                 ok=False,
                 final_status="rejected",
@@ -1023,6 +1147,16 @@ def run_pipeline(
                 final_status="blocked",
                 plan_text=plan_text,
                 triage=triage,
+            )
+            _write_terminal_handoff(
+                task=task,
+                status="blocked",
+                summary="exceeded max patch rounds",
+                trace_id=trace_id,
+                target_repo=worktree.path,
+                triage=triage,
+                handoff_dir=HANDOFFS_DIR,
+                defects_dir=FACTORY_DEFECTS_DIR,
             )
             return PipelineResult(
                 ok=False,
@@ -1058,6 +1192,16 @@ def run_pipeline(
                 final_status="awaiting_approval",
                 plan_text=plan_text,
             )
+            _write_terminal_handoff(
+                task=task,
+                status="awaiting_approval",
+                summary="paused at diff_review",
+                trace_id=trace_id,
+                target_repo=worktree.path,
+                triage=None,
+                handoff_dir=HANDOFFS_DIR,
+                defects_dir=FACTORY_DEFECTS_DIR,
+            )
             return PipelineResult(
                 ok=True,
                 final_status="awaiting_approval",
@@ -1080,10 +1224,17 @@ def run_pipeline(
         )
         last_review = artifacts.read(review_refs[-1]) if review_refs else ""
 
+    # --- successful active tasks update their target STATUS.md before commit ---
+    next_items: list[str] = []
+    if task.active and not dry_run:
+        next_items = update_status_md(
+            worktree.path,
+            deferred_items=[],
+            open_defects=unresolved_defects(task.id, FACTORY_DEFECTS_DIR),
+        )
+
     # --- commit ---
-    sha = (
-        commit_all(worktree.path, f"factory: {task.title}") if not dry_run else None
-    )
+    sha = commit_all(worktree.path, f"factory: {task.title}") if not dry_run else None
     store.append_event(
         task.id,
         "commit.done",
@@ -1112,6 +1263,17 @@ def run_pipeline(
             spec_path=spec_path,
             final_status="awaiting_approval",
             plan_text=plan_text,
+        )
+        _write_terminal_handoff(
+            task=task,
+            status="awaiting_approval",
+            summary="paused at pre_pr",
+            trace_id=trace_id,
+            target_repo=worktree.path,
+            triage=None,
+            handoff_dir=HANDOFFS_DIR,
+            defects_dir=FACTORY_DEFECTS_DIR,
+            next_items=next_items,
         )
         return PipelineResult(
             ok=True,
@@ -1184,8 +1346,17 @@ def run_pipeline(
         plan_text=plan_text,
         triage=triage,
     )
-    summary = f"done: branch {worktree.branch}" + (
-        f"; PR {pr_url}" if pr_url else ""
+    summary = f"done: branch {worktree.branch}" + (f"; PR {pr_url}" if pr_url else "")
+    _write_terminal_handoff(
+        task=task,
+        status="done",
+        summary=summary,
+        trace_id=trace_id,
+        target_repo=worktree.path,
+        triage=triage,
+        handoff_dir=HANDOFFS_DIR,
+        defects_dir=FACTORY_DEFECTS_DIR,
+        next_items=next_items,
     )
     return PipelineResult(
         ok=True,
@@ -1227,9 +1398,7 @@ def _run_implement_loop(
     last_outcomes: list[GateOutcome] = []
     for round_idx in range(task.review.max_patch_rounds + 1):
         prompt = (
-            IMPLEMENT_PROMPT.format(
-                goal=task.goal, plan=plan_text, cwd=worktree.path
-            )
+            IMPLEMENT_PROMPT.format(goal=task.goal, plan=plan_text, cwd=worktree.path)
             if round_idx == 0
             else IMPLEMENT_PATCH_PROMPT.format(
                 goal=task.goal,
@@ -1253,9 +1422,7 @@ def _run_implement_loop(
             )
         )
         if not impl_result.ok:
-            store.update_task(
-                task.id, status="failed", failure_reason=impl_result.stderr
-            )
+            store.update_task(task.id, status="failed", failure_reason=impl_result.stderr)
             store.append_event(
                 task.id,
                 "implement.failed",
@@ -1263,9 +1430,7 @@ def _run_implement_loop(
                 trace_id=trace_id,
             )
             return "__rejected__", []
-        impl_ref = artifacts.write(
-            task.id, "implement-stdout", round_idx, impl_result.stdout
-        )
+        impl_ref = artifacts.write(task.id, "implement-stdout", round_idx, impl_result.stdout)
         _record_worker_event(
             store,
             task,
@@ -1311,15 +1476,12 @@ def _run_implement_loop(
                 for g in task.all_gates()
             ]
         else:
-            gates_ok, outcomes = gate_runner.run_gates(
-                task.all_gates(), cwd=worktree.path
-            )
+            gates_ok, outcomes = gate_runner.run_gates(task.all_gates(), cwd=worktree.path)
             if _task_has_contract_gates(task):
                 contract_outcomes = _run_contract_gates(task, worktree.path)
                 outcomes.extend(contract_outcomes)
                 gates_ok = gates_ok and all(
-                    outcome.ok or not outcome.must_pass
-                    for outcome in contract_outcomes
+                    outcome.ok or not outcome.must_pass for outcome in contract_outcomes
                 )
         for outcome in outcomes:
             artifacts.write(
@@ -1339,8 +1501,7 @@ def _run_implement_loop(
                 "phase": getattr(task, "phase", None),
                 "persona": getattr(task, "persona", None),
                 "outcomes": [
-                    {"name": o.name, "ok": o.ok, "must_pass": o.must_pass}
-                    for o in outcomes
+                    {"name": o.name, "ok": o.ok, "must_pass": o.must_pass} for o in outcomes
                 ],
             },
             trace_id=trace_id,
@@ -1357,11 +1518,15 @@ def _run_implement_loop(
                     "round": round_idx,
                     "phase": getattr(task, "phase", None),
                     "persona": getattr(task, "persona", None),
-                    "failing_gates": [
-                        o.name for o in outcomes if not o.ok and o.must_pass
-                    ],
+                    "failing_gates": [o.name for o in outcomes if not o.ok and o.must_pass],
                 },
                 trace_id=trace_id,
+            )
+            _append_gate_defects(
+                task,
+                outcomes,
+                round_idx=round_idx,
+                defects_dir=FACTORY_DEFECTS_DIR,
             )
         if evidence is not None:
             for outcome in outcomes:
@@ -1390,8 +1555,7 @@ def _run_implement_loop(
             review_prompt = REVIEW_PROMPT.format(
                 cwd=worktree.path,
                 base_branch=worktree.base_branch,
-                diff_stat=diff_stat(worktree.path, worktree.base_branch)
-                or "(no diff yet)",
+                diff_stat=diff_stat(worktree.path, worktree.base_branch) or "(no diff yet)",
                 gate_results=_format_gate_results(outcomes),
                 goal=task.goal,
             )
@@ -1408,6 +1572,13 @@ def _run_implement_loop(
                 dry_run_status="NEEDS_PATCH",
             )
             store.update_task(task.id, review=last_review[:4000])
+            _append_review_defect(
+                task,
+                kind="review.needs_patch",
+                finding=last_review,
+                round_idx=round_idx,
+                defects_dir=FACTORY_DEFECTS_DIR,
+            )
             if round_idx >= task.review.max_patch_rounds:
                 store.update_task(
                     task.id,
@@ -1420,8 +1591,7 @@ def _run_implement_loop(
         review_prompt = REVIEW_PROMPT.format(
             cwd=worktree.path,
             base_branch=worktree.base_branch,
-            diff_stat=diff_stat(worktree.path, worktree.base_branch)
-            or "(no diff yet)",
+            diff_stat=diff_stat(worktree.path, worktree.base_branch) or "(no diff yet)",
             gate_results=_format_gate_results(outcomes),
             goal=task.goal,
         )
@@ -1442,12 +1612,26 @@ def _run_implement_loop(
         if review_status == "CLEAN":
             break
         if review_status == "REJECT":
+            _append_review_defect(
+                task,
+                kind="review.rejected",
+                finding=last_review,
+                round_idx=round_idx,
+                defects_dir=FACTORY_DEFECTS_DIR,
+            )
             store.update_task(
                 task.id,
                 status="blocked",
                 failure_reason="reviewer returned REJECT",
             )
             return "__rejected__", outcomes
+        _append_review_defect(
+            task,
+            kind="review.needs_patch",
+            finding=last_review,
+            round_idx=round_idx,
+            defects_dir=FACTORY_DEFECTS_DIR,
+        )
         if round_idx >= task.review.max_patch_rounds:
             store.update_task(
                 task.id,
@@ -1586,10 +1770,7 @@ def _run_reviewers(
             if not dry_run
             else WorkerResult(
                 ok=True,
-                stdout=(
-                    f"STATUS: {dry_run_status}\n"
-                    f"FINDINGS:\n- [dry-run via {reviewer.name}]"
-                ),
+                stdout=(f"STATUS: {dry_run_status}\nFINDINGS:\n- [dry-run via {reviewer.name}]"),
                 metadata={
                     "thread_id": f"stub-{reviewer.name}-thread-{round_idx}",
                     "run_id": f"stub-{reviewer.name}-run-{round_idx}",
@@ -1641,6 +1822,4 @@ def reject_task(
         awaiting_checkpoint=None,
         failure_reason=f"rejected by user: {comment}" if comment else "rejected by user",
     )
-    store.append_event(
-        task_id, "checkpoint.rejected", {"comment": comment}
-    )
+    store.append_event(task_id, "checkpoint.rejected", {"comment": comment})
