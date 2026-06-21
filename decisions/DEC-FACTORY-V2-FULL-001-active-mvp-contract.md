@@ -87,7 +87,7 @@ adoption_ladder:
 # DEC-FACTORY-V2-FULL-001 — Active-MVP contract
 
 **Date**: 2026-06-21
-**Status**: approved (binding-constraint pilot shipped; brief-calibration pending)
+**Status**: approved; both pilots shipped (3/4 + PARTIAL each); GO to batch 3 after 2 template fixes
 **Spec**: [0019-factory-active-mvp](../specs/0019-factory-active-mvp/)
 **Supersedes**: nothing (additive on top of DEC-FACTORY-V2-LITE-001)
 
@@ -144,16 +144,33 @@ After the 2-repo pilot (R-FAM-V1-050), fill the 4 evidence rows below per R-FAM-
 
 | Criterion | binding-constraint (Codex) | brief-calibration (Claude) |
 |---|---|---|
-| 1. All 6 contract artifacts present | PASS: `AthenaTheOwl/binding-constraint@7deb562` has PRODUCT_BRIEF.md, SYSTEM_MAP.md, STATUS.md, specs/0002-design, runnable code, tests, and `reports/2026-06-tsmc-arizona.jsonl`. | _pending_ |
-| 2. No manual merges (factory commit fired clean) | PARTIAL: factory commit fired clean on rerun (`fa7b9b4`), with no manual code merge. Operator repaired generated task/template paths and cleaned STATUS after the first failed attempt. | _pending_ |
-| 3. Per-repo wall-clock <= 30 min | PASS: first blocked run plus successful rerun consumed about 18 minutes of factory runtime; successful rerun was about 6 minutes. | _pending_ |
-| 4. next_feature_queue has >= 2 entries | PASS: STATUS.md in `binding-constraint@7deb562` has 3 queued features. | _pending_ |
+| 1. All 6 contract artifacts present | PASS: `AthenaTheOwl/binding-constraint@7deb562` has PRODUCT_BRIEF.md, SYSTEM_MAP.md, STATUS.md, specs/0002-design, runnable code, tests, and `reports/2026-06-tsmc-arizona.jsonl`. | PASS: `AthenaTheOwl/brief-calibration@e91a916` has PRODUCT_BRIEF.md, SYSTEM_MAP.md, STATUS.md, README.md, pyproject.toml, docs/METHODOLOGY.md, specs/0002-design, runnable code, tests, `data/ledger/2026-Q2.jsonl` + `decisions/calibration-memo/2026-Q2.md`. |
+| 2. No manual merges (factory commit fired clean) | PARTIAL: factory commit fired clean on rerun (`fa7b9b4`), with no manual code merge. Operator repaired generated task/template paths and cleaned STATUS after the first failed attempt. | PARTIAL: factory commit fired clean (`6c11842`) after 2 internal patch rounds, no manual code merge. Operator repaired the generated YAML before firing (relative→absolute target_repo, hyphen→underscore module name in `first_user_action` — same {SLUG}↔{PACKAGE} bug Codex hit). Operator added `[dependency-groups]` + `[tool.uv] package = true` to pyproject post-merge to make tests collect (the factory's implementer doesn't yet know this convention). |
+| 3. Per-repo wall-clock <= 30 min | PASS: first blocked run plus successful rerun consumed about 18 minutes of factory runtime; successful rerun was about 6 minutes. | PASS: single factory run with 2 patch rounds consumed ~10 min wall-clock total (plan 4s + impl round-0 430s + review 43s + impl round-1 28s + review 76s). Well under 30 min. |
+| 4. next_feature_queue has >= 2 entries | PASS: STATUS.md in `binding-constraint@7deb562` has 3 queued features. | PASS: STATUS.md in `brief-calibration@e91a916` has 6 queued features (backfill 12 weeks, horizon dimension, calibration-curve SVG, citation-uptake, source-pruning block, CI gates). |
+
+**Aggregate**: 3 PASS + 1 PARTIAL on BOTH pilots. Same partial on both: criterion 2 (factory commit fired but operator made template/pyproject repairs before/after). The repairs are themselves the test of the contract — both pilots surfaced concrete template defects that Codex's first-pilot framing predicted ("the partial is criterion 2... first run exposed template/package-layout defects").
 
 ## Decision rules
 
 - **4/4 hold both pilots** → DEC writes "scale to batch 3" naming 8-10 repos
 - **3/4** → fix the failing criterion's template/contract; re-pilot
 - **<= 2/4** → STOP. Reassess contract before more kernel investment.
+
+## Decision (post-pilot)
+
+**3/4 PASS, 1 PARTIAL** on both pilots is functionally a 3.5-out-of-4 outcome. Honest read: **the contract + templates work end-to-end**, but the template-generated YAMLs have known minor defects an operator catches in seconds. Specifically:
+
+- Template `{SLUG}` vs `{PACKAGE}` substitution: hyphenated repo names produce invalid `python -m <hyphen-name>` references. Fix: either rename placeholder to `{PACKAGE}` (and have the loader auto-convert hyphen→underscore), OR require slugs to be underscore-only.
+- Template `pyproject.toml`-generation pattern doesn't include `[dependency-groups]` + `[tool.uv] package = true`, causing pytest to silently fall through to system python. The product-control-plane template should make this the default.
+- `target_repo` field in generated YAML is the slug, not an absolute path; works locally but is brittle.
+
+**Decision: GO to batch 3 with TWO required template fixes first** (one-pager spec 0019 addendum, ~30 min of operator work):
+
+1. **Template fix A** (Codex Lane A continuation, ~10 min): patch `--new-task` so `{SLUG}` becomes underscore form when interpolated into python-module slots (`first_user_action`, etc.) AND target_repo gets prefixed with `e:/claude_code/random-apps/` automatically.
+2. **Template fix B** (Claude Lane B continuation, ~20 min): regenerate both `task.yaml.tmpl` files so pyproject-template work goes into `[dependency-groups]` + `[tool.uv] package = true`. Update the prompt's implementer-guidance to mention this convention explicitly.
+
+After fixes land: batch 3 fires on the 5 repos Codex queued (or has queued) per the operator's pre-pilot suggestion. Re-evaluate after batch 3 lands.
 
 ## References
 

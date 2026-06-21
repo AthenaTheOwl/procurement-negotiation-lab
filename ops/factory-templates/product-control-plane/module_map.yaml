@@ -1,0 +1,21 @@
+- name: cli
+  source: {PACKAGE}/cli.py
+  layer: score
+  public_interfaces:
+    - "main(argv: list[str] | None = None) -> int"
+- name: score
+  source: {PACKAGE}/score.py
+  layer: score
+  public_interfaces:
+    - "compute_score(inputs: ScoreInputs) -> ScoreResult"
+- name: ledger
+  source: {PACKAGE}/ledger.py
+  layer: ledger
+  public_interfaces:
+    - "append_row(root: Path, period: str, score: ScoreResult, *, now: datetime | None = None) -> Path"
+    - "read_period(root: Path, period: str) -> list[ScoreResult]"
+- name: report
+  source: {PACKAGE}/report.py
+  layer: report
+  public_interfaces:
+    - "write_memo(root: Path, period: str) -> Path"

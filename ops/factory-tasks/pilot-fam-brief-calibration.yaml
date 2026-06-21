@@ -1,0 +1,122 @@
+id: pilot-fam-brief-calibration
+title: Brief Calibration v0.1 control plane
+target_repo: e:/claude_code/random-apps/brief-calibration
+goal: |
+  Ship brief-calibration as a useful v0.1 control-plane repo. The repo scores
+  the ai-field-brief's own predictions/calls against subsequent reality
+  (Brier-style calibration on the brief's confidence buckets) and produces
+  a quarterly verdict memo.
+
+  v0.1 narrow scope (defer everything else to spec 0003+):
+  - Ingest a small committed fixture of brief items with stated confidence
+    + a manual "what happened" outcome flag (3-5 example rows is enough
+    for v0.1 — real backfill is a later spec).
+  - Compute the Brier score per confidence bucket; emit one typed row to
+    data/ledger/<period>.jsonl.
+  - Write the quarterly memo at decisions/calibration-memo/<period>.md
+    naming the score, the buckets that drifted most, and 1-3 follow-ups.
+  - Methodology doc explaining the rubric + when this DEC revisits.
+
+  Files to create:
+  - PRODUCT_BRIEF.md (who serves: the brief author; decision helped:
+    keep/drop confidence vocabulary; output that matters: the memo)
+  - SYSTEM_MAP.md (3 modules: score, ledger, report; layers from template)
+  - specs/0002-design/{requirements,design,tasks,acceptance}.md
+  - docs/METHODOLOGY.md (rubric + "## What revisits this" section)
+  - brief_calibration/__init__.py
+  - brief_calibration/__main__.py (entry point)
+  - brief_calibration/cli.py (argparse: validate, score --period, memo --period)
+  - brief_calibration/score.py (compute_score per Brier)
+  - brief_calibration/ledger.py (append-only writer + period reader)
+  - brief_calibration/report.py (write_memo composing yield table)
+  - data/fixtures/2026-Q2-brief-calls.yaml (3-5 example items)
+  - data/ledger/2026-Q2.jsonl (the v0.1 ledger row written by a real
+    `python -m brief_calibration score --period 2026-Q2` run)
+  - decisions/calibration-memo/2026-Q2.md (the memo written by a real
+    `python -m brief_calibration memo --period 2026-Q2` run)
+  - decisions/DEC-CAL-001-rubric-v0.md
+  - pyproject.toml (uv + pytest + pydantic + pyyaml)
+  - tests/test_score.py, test_ledger.py, test_cli.py
+  - STATUS.md with the 3 required sections including a next_feature_queue
+  - README.md with a "How to run" section that includes the validation
+    command from first_user_action
+
+  Voice: lowercase headings, no marketing words. No internal employer
+  references. No API keys.
+active: true
+template: product-control-plane
+product_vision: Turns a periodic question about a portfolio repo's outputs into a
+  typed score plus a memo a human acts on.
+target_user: operator running the portfolio who needs the verdict, not the dashboard
+first_user_action: python -m brief_calibration validate
+system_layers:
+- score
+- ledger
+- report
+next_feature_queue:
+- Wire to a second repo's outputs so this is a control plane and not a singleton.
+- Land a second time period and confirm the diff section actually surfaces drift.
+gates:
+- name: contract-presence
+  cmd: python -c "from pathlib import Path; required=['PRODUCT_BRIEF.md','SYSTEM_MAP.md','STATUS.md','README.md','pyproject.toml','docs/METHODOLOGY.md'];
+    missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing
+    '+','.join(missing) if missing else 0)"
+- name: ledger-present
+  cmd: python -c "from pathlib import Path; ledger=Path('data/ledger'); raise SystemExit(0
+    if ledger.exists() and any(ledger.glob('*.jsonl')) else 'missing data/ledger/*.jsonl')"
+- name: methodology-has-revisit-section
+  cmd: python -c "from pathlib import Path; text=Path('docs/METHODOLOGY.md').read_text(encoding='utf-8');
+    raise SystemExit(0 if '## What revisits this' in text else 'METHODOLOGY.md missing
+    revisit section')"
+review:
+  reviewer: claude_code
+  reviewers:
+  - claude_code
+  max_patch_rounds: 2
+pr:
+  open: false
+planner: claude_code
+implementer: claude_code
+expected_artifacts:
+- path: PRODUCT_BRIEF.md
+- path: SYSTEM_MAP.md
+- path: STATUS.md
+- path: README.md
+- path: pyproject.toml
+- path: specs/0002-design/requirements.md
+- path: specs/0002-design/design.md
+- path: specs/0002-design/tasks.md
+- path: specs/0002-design/acceptance.md
+- path: docs/METHODOLOGY.md
+- path: brief_calibration/cli.py
+- path: brief_calibration/score.py
+- path: brief_calibration/ledger.py
+- path: tests
+  kind: dir
+- path: data/ledger/*.jsonl
+  kind: glob
+- path: decisions/DEC-*.md
+  kind: glob
+module_map:
+- name: cli
+  source: brief_calibration/cli.py
+  layer: score
+  public_interfaces:
+  - 'main(argv: list[str] | None = None) -> int'
+- name: score
+  source: brief_calibration/score.py
+  layer: score
+  public_interfaces:
+  - 'compute_score(inputs: ScoreInputs) -> ScoreResult'
+- name: ledger
+  source: brief_calibration/ledger.py
+  layer: ledger
+  public_interfaces:
+  - 'append_row(root: Path, period: str, score: ScoreResult, *, now: datetime | None
+    = None) -> Path'
+  - 'read_period(root: Path, period: str) -> list[ScoreResult]'
+- name: report
+  source: brief_calibration/report.py
+  layer: report
+  public_interfaces:
+  - 'write_memo(root: Path, period: str) -> Path'

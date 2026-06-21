@@ -1,0 +1,37 @@
+id: {TASK_ID}
+title: "{BRAND} v0.1 control plane"
+target_repo: "{REPO}"
+goal: |
+  Ship {BRAND} as a useful v0.1 control-plane repo. This is monthly or
+  quarterly tooling that scores, calibrates, or audits some other repo's
+  outputs. It has a clear product brief, system map, specs/0002-design
+  ledger, runnable Python CLI, tests, a methodology doc, and one checked-in
+  ledger row representing the first scoring/calibration run.
+active: true
+template: product-control-plane
+product_vision: "Turns a periodic question about a portfolio repo's outputs into a typed score plus a memo a human acts on."
+target_user: "operator running the portfolio who needs the verdict, not the dashboard"
+first_user_action: "python -m {SLUG} validate"
+system_layers:
+  - score
+  - ledger
+  - report
+next_feature_queue:
+  - Wire to a second repo's outputs so this is a control plane and not a singleton.
+  - Land a second time period and confirm the diff section actually surfaces drift.
+gates:
+  - name: contract-presence
+    cmd: python -c "from pathlib import Path; required=['PRODUCT_BRIEF.md','SYSTEM_MAP.md','STATUS.md','README.md','pyproject.toml','docs/METHODOLOGY.md']; missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing '+','.join(missing) if missing else 0)"
+  - name: ledger-present
+    cmd: python -c "from pathlib import Path; ledger=Path('data/ledger'); raise SystemExit(0 if ledger.exists() and any(ledger.glob('*.jsonl')) else 'missing data/ledger/*.jsonl')"
+  - name: methodology-has-revisit-section
+    cmd: python -c "from pathlib import Path; text=Path('docs/METHODOLOGY.md').read_text(encoding='utf-8'); raise SystemExit(0 if '## What revisits this' in text else 'METHODOLOGY.md missing revisit section')"
+review:
+  reviewer: claude_code
+  reviewers:
+    - claude_code
+  max_patch_rounds: 2
+pr:
+  open: false
+planner: claude_code
+implementer: claude_code
