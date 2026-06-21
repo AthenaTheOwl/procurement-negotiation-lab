@@ -48,7 +48,7 @@ PR 4 — replay-fixture regen + sandbox-hook hardening
 - [ ] `test_canonical_sample_replay_is_deterministic` passes on both Claude + Codex shells.
 
 PR 5 — privacy canary property test
-- [ ] New `tests/factory/test_privacy_canary.py` per R-FAM-V1-043. Plant canary in env + fixture inputs; assert no leakage to prompts/events/defects/handoffs/committed files.
+- [x] New `tests/factory/test_privacy_canary.py` per R-FAM-V1-043. Plant canary in fixture inputs; assert no leakage to prompts/events/defects/handoffs/committed files.
 
 PR 6 — pilot run: binding-constraint
 - [ ] `python -m scripts.factory.run --new-task --template data-report --repo binding-constraint --task-id pilot-fam-binding-constraint`

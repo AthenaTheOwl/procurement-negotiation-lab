@@ -24,7 +24,7 @@
 | R-FAM-V1-040 (3 new test files) | DEC-FACTORY-V2-FULL-001 | `tests/factory/{test_active_mvp_contract,test_templates,test_handoff_packet}.py` | self | A | pending |
 | R-FAM-V1-041 (replay fixture regen) | DEC-FACTORY-V2-FULL-001 | `ops/run-records/run-<new-hash>.json` + ledger | `test_canonical_sample_replay_is_deterministic` passes | A | pending |
 | R-FAM-V1-042 (sandbox hook hardening) | DEC-FACTORY-V2-FULL-001 | `tests/factory/conftest.py` patches `git init` | regression in `test_workers.py::test_*_in_git_fixture` | A | pending |
-| R-FAM-V1-043 (privacy canary) | DEC-FACTORY-V2-FULL-001 | `tests/factory/test_privacy_canary.py` | self | A | pending |
+| R-FAM-V1-043 (privacy canary) | DEC-FACTORY-V2-FULL-001 | `tests/factory/test_privacy_canary.py` | `test_active_task_metadata_canary_does_not_leak_to_persisted_sinks` | A | done |
 | R-FAM-V1-050 (pilot 2 repos) | DEC-FACTORY-V2-FULL-001 | `ops/factory-tasks/pilot-fam-{binding-constraint,brief-calibration}.yaml` | manual verification per acceptance | A (binding-constraint) + B (brief-calibration) | pending |
 | R-FAM-V1-051 (4 pilot criteria) | DEC-FACTORY-V2-FULL-001 | DEC evidence row after pilot | — | both | pending |
 | R-FAM-V1-060/061/062 (decision branches) | DEC-FACTORY-V2-FULL-001 | DEC verdict section | — | both | pending |
