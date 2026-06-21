@@ -8,8 +8,10 @@ reversible: true
 decision: |
   Accept the factory v2-lite pilot evidence across source-decay-ledger,
   promotion-vs-pip, and grid-silicon as a conditional GO for direct-build
-  scale-up. Keep the factory CLI worker path blocked from real repo creation
-  until BUG-FAC-002 and BUG-FAC-003 are fixed.
+  scale-up. BUG-FAC-001..007 are all fixed as of commit 277d27f; the
+  remaining open work is YAML-template hardening (gate-design lessons in
+  the batch-2 addendum) before scaling factory orchestration to more
+  repos in parallel.
 alternatives:
   - label: scale the full factory v2 plan now
     rejected_because: |
@@ -39,8 +41,8 @@ evidence:
     ref: specs/0018-factory-v2-lite-pilot/
 rollback: |
   Mark this DEC superseded by a later factory decision, stop direct-build
-  scale-up, and require spec 0019 to fix BUG-FAC-002 and BUG-FAC-003 before
-  new repos are built.
+  scale-up, and route gate-template work + replay-fixture regen into spec
+  0019 before new factory-orchestrated repos are built.
 systems_map: |
   The decision splits the repo factory into two loops: a scope-and-review
   loop that is ready today, and a CLI-worker execution loop that still needs
@@ -59,7 +61,8 @@ adoption_ladder:
   full_adoption: Rerun a three-repo factory-worker pilot before any broader automation.
   monitoring_signals:
     - direct-build repos ship runnable artifacts with tests
-    - BUG-FAC-002 and BUG-FAC-003 are fixed before factory-worker scale-up
+    - factory CLI worker layer stays green on Windows after FAC-001..007
+    - YAML-template gate-design lessons land before next factory-orchestrated batch
 ---
 
 # DEC-FACTORY-V2-LITE-001 — Multi-phase pilot before scale-up
@@ -138,8 +141,8 @@ The Claude lane did NOT run via the factory CLI invocation path. See "Factory bu
 ### Factory bugs surfaced (this is criterion #1 evidence)
 
 - **BUG-FAC-001**: `subprocess.run([bare-name], shell=False)` on Windows does NOT honor PATHEXT. npm-installed `claude.cmd`/`codex.cmd` fail with WinError 2 "binary not found" before any real work runs. **Fixed in commit `3ef84c3`** via `shutil.which()` resolution. Without this fix, every Windows factory run silently fell to stub worker.
-- **BUG-FAC-002**: `claude --print` in headless mode runs but does not invoke its file-write tools by default. The `plan` and `implement` steps in `pilot-sdl-design-review` returned in 4–9s with text-only output — no files written. All 4 gate `test -f` checks failed because the design files were never created. **Not yet fixed.** The factory needs to pass `--allowedTools` (or equivalent) to the Claude CLI so headless invocations can edit the repo. This is spec-0019 v2-full territory.
-- **BUG-FAC-003**: When the round-1 review patch loop kicked in after BUG-FAC-002, the review output (8,431 bytes) was packed into argv and exceeded Windows' ~8,191 char cmd-line limit, raising `OSError: [WinError 206] The filename or extension is too long.\n`. **Not yet fixed.** Long prompts must be piped via stdin or written to a temp file. Spec-0019.
+- **BUG-FAC-002**: `claude --print` in headless mode runs but does not invoke its file-write tools by default. The `plan` and `implement` steps in `pilot-sdl-design-review` returned in 4–9s with text-only output — no files written. All 4 gate `test -f` checks failed because the design files were never created. **Fixed in `71bb202`** by passing `--permission-mode acceptEdits` plus `--allowedTools "Edit Write Read Bash Glob Grep MultiEdit"`; codex equivalent is `--sandbox workspace-write`.
+- **BUG-FAC-003**: When the round-1 review patch loop kicked in after BUG-FAC-002, the review output (8,431 bytes) was packed into argv and exceeded Windows' ~8,191 char cmd-line limit, raising `OSError: [WinError 206] The filename or extension is too long.\n`. **Fixed in `71bb202`** by introducing `PROMPT_STDIN_THRESHOLD = 4000` and piping prompts above that threshold via stdin (claude reads stdin when no positional prompt; codex uses its `-` argv convention).
 - **BUG-FAC-006**: Post-FAC-001..005 cross-validation against a scratch `policy-replay` clone failed before planning because current `codex exec --output-format json` returns `unexpected argument '--output-format' found` and points to `--output-schema`. The worker fallback detector recognized "unknown option" style errors but not "unexpected argument", so it never retried plain `codex exec`. **Fixed in the follow-up factory patch** by adding `unexpected argument` to `_UNSUPPORTED_FLAG_MARKERS`.
 - **BUG-FAC-007**: After BUG-FAC-006 was fixed, the same scratch `policy-replay` task reached `status: done` with all gates green, but the requested `factory-validation/2026-06-20.md` file was never created and the factory branch still pointed at the base SHA. The implement artifact said the agent was missing the task body; the factory still accepted the no-op because green gates were not coupled to diff/artifact production. **Fixed in the follow-up factory patch** by synthesizing a failing `implementation-diff` gate whenever a non-dry-run implementation round produces no committed, staged, or unstaged changes.
 
@@ -182,16 +185,14 @@ Codex lane:
 
 For all 3 pilot repos: **PASS on all 4 criteria.** Factory v2-lite earns its keep at the spec/typed-event level (phase/persona/test_matrix/attribution all work, 135 factory tests green); the factory's CLI worker path on Windows is broken in two ways the pilot surfaced; direct builds work and ship real artifacts.
 
-Grid-silicon confirms the same practical conclusion as the Claude lane: use the v2-lite discipline, but do not lean on the factory CLI worker path for real repo creation until BUG-FAC-002 and BUG-FAC-003 are fixed.
+Grid-silicon confirmed the same practical conclusion as the Claude lane: at pilot time, use the v2-lite discipline + direct-build because the factory CLI worker path had open issues. After the pilot, the user picked path (1) — see the batch-2 addendum for the engineering work that landed BUG-FAC-001..007 fixes and exercised the factory end-to-end on 5 more repos.
 
-**Decision on scaling to the other 39 repos**: **CONDITIONAL GO**. The conditions:
+**Decision on scaling to the other untouched repos**: **CONDITIONAL GO** (now revised — see batch-2 addendum below for the post-pilot evidence). The conditions were:
 
-1. **Fix BUG-FAC-002 and BUG-FAC-003 before any factory-orchestrated run**, OR
-2. **Continue with direct-build lanes** (split: Claude takes 21, Codex takes 21) without trying to use the factory as the orchestrator. The factory's typed-artifact discipline (phase/persona/test_matrix/attribution) still applies — it's metadata we record manually, not a runtime we lean on.
+1. **Fix BUG-FAC-001..007 before any factory-orchestrated run** — DONE in `3ef84c3` through `277d27f`.
+2. **OR continue with direct-build lanes** (factory's typed-artifact discipline still applies as metadata, not runtime).
 
-Both paths are viable. (1) is the v2-full work (spec 0019). (2) is what the pilot just proved out — 2 repos shipped real code in 80 minutes total, both passing their tests, both with real artifacts.
-
-**Recommendation**: do (2) for the next batch (5 more repos, not all 39), then circle back to (1) when there's evidence of which v2-full investments earn their keep. Don't sink a week into fixing the factory's CLI worker layer when the operator's own tools are already producing better results faster.
+Both paths shipped repos. The post-pilot evidence (batch-2 addendum) shows path (1) is viable but per-repo gate-template engineering is still required. Recommendation in the batch-2 addendum updates this: keep direct-build as the default; reach for the factory when 5+ similar-shape repos can amortize the gate-template work.
 
 ## What still needs to land
 
@@ -285,14 +286,29 @@ It STILL has 2 known gate-design issues (smoke gates too literal; test phase ins
 - `AthenaTheOwl/promotion-vs-pip` (Claude direct-build)
 - `AthenaTheOwl/grid-silicon` (Codex direct-build)
 
-**Batch 2 (5)**:
+**Claude batch 2 (5)**:
 - `AthenaTheOwl/agent-notary-layer` (factory)
 - `AthenaTheOwl/site-atlas` (factory + manual merge)
 - `AthenaTheOwl/ratepayer-exposure` (factory)
 - `AthenaTheOwl/puc-docket-rag` (factory + manual merge)
 - `AthenaTheOwl/proof-gate-runner` (factory + manual merge)
 
-**Total: 8 of 42 portfolio repos moved from scaffold → v0.1 in one session.**
+**Codex batch 2 (5)** — all direct-build:
+- `AthenaTheOwl/fab-risk-radar@36a18fe`
+- `AthenaTheOwl/wafer-to-watt@eb682d0`
+- `AthenaTheOwl/channel-atlas@3ff62b3`
+- `AthenaTheOwl/sovereign-compute@f6ff000`
+- `AthenaTheOwl/policy-replay@a649c92`
+
+**Total: 13 of 42 portfolio repos moved from scaffold → v0.1 in one session.**
+
+### Remaining cleanup (next session)
+
+1. **Replay-equivalence fixture regen** — `tests/factory/test_replay_run.py::test_canonical_sample_replay_is_deterministic` fails because the committed sample's `prompt_snapshot_hash` was computed against pre-engineering prompts. Regenerate the fixture from a fresh canonical run on current HEAD; commit the new sample as the baseline.
+2. **Sandbox hook hardening** — when factory tests create temp git repos as fixtures, they inherit any operator-level `.security-hooks/pre-commit` (e.g., Codex's environment has one calling `dirname` unavailable in the shell). Fixture-creation paths should `git init` with `--template=` pointing at an empty hooks dir, OR set `core.hooksPath=/dev/null` immediately after init. Codex's sandbox showed 14 errors traceable to this in addition to the 1 fixture-hash failure.
+3. **Test-count claim**: full factory suite is 150 passed / 1 failed (Claude shell) and 134 passed / 3 failed / 14 errored (Codex sandbox before hardening). Both have the same single real failure (replay fixture); Codex's extras are env-induced.
+
+These are scoped tightly enough to be a single follow-up PR rather than a v2-full spec 0019.
 
 ## References
 
