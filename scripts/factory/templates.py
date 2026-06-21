@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,6 +13,7 @@ import yaml
 TEMPLATE_ROOT = Path("ops/factory-templates")
 TASK_OUTPUT_DIR = Path("ops/factory-tasks")
 PLACEHOLDERS = ("SLUG", "PACKAGE", "REPO", "BRAND", "TASK_ID", "NOW")
+DEFAULT_PORTFOLIO_ROOT = Path("E:/claude_code/random-apps")
 
 
 class TemplateError(RuntimeError):
@@ -50,15 +52,19 @@ def render_new_task(
         raise TemplateError(
             f"unknown template {template!r}; expected task.yaml.tmpl. available: {available}"
         )
+    resolved_repo = _target_repo(repo)
+    task_slug = slug or _slug_from_repo(repo)
+    package = _package_from_slug(task_slug)
     values = {
-        "SLUG": slug or _slug_from_repo(repo),
-        "PACKAGE": _package_from_slug(slug or _slug_from_repo(repo)),
-        "REPO": repo,
-        "BRAND": brand or _brand_from_slug(slug or _slug_from_repo(repo)),
+        "SLUG": task_slug,
+        "PACKAGE": package,
+        "REPO": resolved_repo,
+        "BRAND": brand or _brand_from_slug(task_slug),
         "TASK_ID": task_id,
         "NOW": now or datetime.now(UTC).replace(microsecond=0).isoformat(),
     }
     rendered = _substitute(task_template.read_text(encoding="utf-8"), values)
+    rendered = _normalize_python_module_slots(rendered, slug=task_slug, package=package)
     parsed = yaml.safe_load(rendered)
     if not isinstance(parsed, dict):
         raise TemplateError("task.yaml.tmpl must render to a YAML mapping")
@@ -82,6 +88,7 @@ def _merge_optional_yaml(
     if key in parsed or not path.is_file():
         return
     text = _substitute(path.read_text(encoding="utf-8"), values)
+    text = _normalize_python_module_slots(text, slug=values["SLUG"], package=values["PACKAGE"])
     value = yaml.safe_load(text)
     if value is None:
         value = []
@@ -107,3 +114,21 @@ def _brand_from_slug(slug: str) -> str:
 
 def _package_from_slug(slug: str) -> str:
     return slug.replace("-", "_").replace(".", "_").lower()
+
+
+def _target_repo(repo: str) -> str:
+    path = Path(repo)
+    if path.is_absolute():
+        return path.as_posix()
+    return (DEFAULT_PORTFOLIO_ROOT / repo).as_posix()
+
+
+def _normalize_python_module_slots(text: str, *, slug: str, package: str) -> str:
+    """Convert ``python -m {SLUG}`` expansions to importable package names."""
+    if slug == package:
+        return text
+    return re.sub(
+        rf"python\s+-m\s+{re.escape(slug)}(?=\s|$)",
+        f"python -m {package}",
+        text,
+    )

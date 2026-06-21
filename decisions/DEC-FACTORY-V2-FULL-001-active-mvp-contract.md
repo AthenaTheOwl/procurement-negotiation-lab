@@ -167,7 +167,7 @@ After the 2-repo pilot (R-FAM-V1-050), fill the 4 evidence rows below per R-FAM-
 
 **Decision: GO to batch 3 with TWO required template fixes first** (one-pager spec 0019 addendum, ~30 min of operator work):
 
-1. **Template fix A** (Codex Lane A continuation, ~10 min): patch `--new-task` so `{SLUG}` becomes underscore form when interpolated into python-module slots (`first_user_action`, etc.) AND target_repo gets prefixed with `e:/claude_code/random-apps/` automatically.
+1. **Template fix A** (Codex Lane A continuation): landed. `--new-task` now rewrites `python -m {SLUG}` slots to the underscore package form and prefixes relative `target_repo` values with `E:/claude_code/random-apps/`.
 2. **Template fix B** (Claude Lane B continuation, ~20 min): regenerate both `task.yaml.tmpl` files so pyproject-template work goes into `[dependency-groups]` + `[tool.uv] package = true`. Update the prompt's implementer-guidance to mention this convention explicitly.
 
 After fixes land: batch 3 fires on the 5 repos Codex queued (or has queued) per the operator's pre-pilot suggestion. Re-evaluate after batch 3 lands.
