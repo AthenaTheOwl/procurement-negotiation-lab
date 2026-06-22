@@ -240,13 +240,14 @@ briefs, and tests, but four repos needed a human to make the promised
 `python -m <package> validate` command work without arguments. Patch that
 template-coaching gap before the next data-report batch.
 
-### Factory note from batch 4
+### Factory note from batch 4 — 2 new bugs surfaced + patched
 
-Two long-running batch-4 workers surfaced Windows text-decoding warnings while
-subprocess output was being read. The runs completed, but the factory should
-decode subprocess text as UTF-8 with replacement semantics so non-ASCII worker
-output cannot interrupt log readers. `scripts/factory/pipeline.py` now passes
-`encoding="utf-8", errors="replace"` for the affected subprocess captures.
+| Bug | What broke | Commit |
+|---|---|---|
+| **BUG-FAC-008** | Long-running batch-4 workers emitted non-ASCII subprocess output (mostly em-dashes / smart quotes in CLI prose). The pipeline's `_run_cli` already passed `encoding="utf-8"` (BUG-FAC-004 fix) but two ADDITIONAL subprocess captures in `pipeline.py` (worktree diff readers / log streamers) did NOT — they fell back to cp1252 on Windows and surfaced decode warnings. Codex extended the fix: `encoding="utf-8", errors="replace"` on the remaining captures at lines ~497 and ~720. Same root cause as FAC-004, different code path. | `7d0a2a7` |
+| **BUG-FAC-009** | When two factory lanes ran in parallel (this session: Claude + Codex batch 4), `test_replay_run.py`'s fixture-discovery walked `ops/run-records/` and could pick up a pending/failed run-record from the OTHER lane mid-flight — flaking the replay-determinism test. Codex tightened the discovery to filter scratch/pending records. | `7d0a2a7` |
+
+Both were surfaced ONLY by the parallel-lane setup — single-lane runs wouldn't have hit either. The pattern: scaling parallelism finds the latent edge cases the linear path skips. Bug count now FAC-001..009 across the session.
 
 ## Batch 4 Claude lane evidence
 
