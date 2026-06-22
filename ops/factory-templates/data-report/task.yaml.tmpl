@@ -62,6 +62,8 @@ gates:
     cmd: python -c "from pathlib import Path; required=['PRODUCT_BRIEF.md','SYSTEM_MAP.md','STATUS.md','README.md','pyproject.toml']; missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing '+','.join(missing) if missing else 0)"
   - name: reports-present
     cmd: python -c "from pathlib import Path; reports=Path('reports'); raise SystemExit(0 if reports.exists() and any(reports.glob('*.jsonl')) else 'missing reports/*.jsonl')"
+  - name: first-action-runs
+    cmd: python -m uv run python -m {SLUG} validate
   - name: pyproject-uv-conventions
     must_pass: false
     cmd: |

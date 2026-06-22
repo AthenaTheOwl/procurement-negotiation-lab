@@ -52,6 +52,8 @@ gates:
     cmd: python -c "from pathlib import Path; ledger=Path('data/ledger'); raise SystemExit(0 if ledger.exists() and any(ledger.glob('*.jsonl')) else 'missing data/ledger/*.jsonl')"
   - name: methodology-has-revisit-section
     cmd: python -c "from pathlib import Path; text=Path('docs/METHODOLOGY.md').read_text(encoding='utf-8'); raise SystemExit(0 if '## What revisits this' in text else 'METHODOLOGY.md missing revisit section')"
+  - name: first-action-runs
+    cmd: python -m uv run python -m {SLUG} validate
   - name: pyproject-uv-conventions
     must_pass: false
     cmd: |
