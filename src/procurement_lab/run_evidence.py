@@ -193,6 +193,8 @@ def derive_sandbox_image_ref(
             ["git", "-C", str(worktree), "rev-parse", "HEAD"],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=False,
             timeout=10,
         )

@@ -236,6 +236,8 @@ def _current_head_sha() -> str:
         ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         check=False,
         timeout=10,
     )
@@ -338,6 +340,8 @@ def _run_factory_dry_run(
         cwd=str(ROOT),
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         check=False,
         timeout=300,
         env=env,

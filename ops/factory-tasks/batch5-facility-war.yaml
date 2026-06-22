@@ -1,0 +1,123 @@
+id: batch5-facility-war
+title: Facility War v0.1 scenario simulator
+target_repo: E:/claude_code/random-apps/facility-war
+goal: |
+  Ship facility-war as a useful v0.1 scenario-simulation repo. This is a
+  special-shape repo: the artifact is a deterministic supply-shock
+  playthrough and report, not a generic data report.
+
+  v0.1 narrow scope from specs/0001-foundation:
+  - `facility_war` Python package with `__version__` and CLI.
+  - `schemas/supply_graph.schema.json`, `schemas/scenario.schema.json`,
+    and `schemas/sim_run.schema.json`.
+  - fixture supply graph under `graphs/h100_bom.yaml`.
+  - three required scenarios under `scenarios/`:
+    `taiwan_substrate_90d.yaml`, `suez_closure_30d.yaml`,
+    `az_drought_1in50.yaml`.
+  - `facility_war/simulator.py` implements a deterministic Monte Carlo
+    style simulator with explicit seed, tier-N traversal up to N=4,
+    substitution edges, and geography shocks.
+  - `facility_war/cli.py` exposes `validate` with no args, plus a run
+    command if useful.
+  - first published report at
+    `reports/2026-Q3-h100-substrate-shock/report.md` and matching
+    `reports/2026-Q3-h100-substrate-shock/run.json`.
+  - tests cover schema validation, deterministic rerun with same seed,
+    geography shock propagation, and report presence.
+  - PRODUCT_BRIEF.md + SYSTEM_MAP.md + STATUS.md + README.md +
+    pyproject.toml + specs/0002-design.
+
+  STATUS.md section convention (REQUIRED - contract gate fails otherwise):
+  - `STATUS.md` MUST have these THREE H2 sections, with these EXACT
+    headings:
+
+        ## Current state
+        ## Known limits
+        ## Next feature queue
+
+  Python packaging convention (REQUIRED):
+  - In `pyproject.toml`, declare dev deps under `[dependency-groups]`,
+    NOT `[project.optional-dependencies]`.
+  - Add `[tool.uv]` with `package = true` for hatchling backends.
+
+  First-user-action convention (REQUIRED):
+  - `python -m facility_war validate` MUST work with NO args.
+    Default: validate the three scenarios, the H100 graph, the committed
+    sim run, and the markdown report.
+
+  Voice: lowercase, no marketing words. No internal employer references.
+active: true
+template: scenario-sim-custom
+product_vision: A small war-game simulator for facility and component shocks, giving operators a reproducible playthrough before building heavier sourcing models.
+target_user: operations analyst stress-testing one BOM against one geopolitical or logistics shock
+first_user_action: python -m facility_war validate
+system_layers:
+- graph
+- scenario
+- simulator
+- report
+next_feature_queue:
+- Add a historical Suez 2021 calibration backtest with a readable Brier score.
+- Add HTML rendering beside the markdown report.
+- Add sensitivity sweeps across seed, duration, and severity distributions.
+gates:
+- name: contract-presence
+  cmd: |
+    python -c "from pathlib import Path; required=['PRODUCT_BRIEF.md','SYSTEM_MAP.md','STATUS.md','README.md','pyproject.toml']; missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing '+','.join(missing) if missing else 0)"
+- name: scenario-present
+  cmd: |
+    python -c "from pathlib import Path; required=['scenarios/taiwan_substrate_90d.yaml','scenarios/suez_closure_30d.yaml','scenarios/az_drought_1in50.yaml']; missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing '+','.join(missing) if missing else 0)"
+- name: sim-report-present
+  cmd: |
+    python -c "from pathlib import Path; required=['reports/2026-Q3-h100-substrate-shock/report.md','reports/2026-Q3-h100-substrate-shock/run.json']; missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing '+','.join(missing) if missing else 0)"
+- name: pyproject-uv-conventions
+  must_pass: false
+  cmd: |
+    python -c "from pathlib import Path; t=Path('pyproject.toml').read_text(encoding='utf-8'); flags=[]; ('[project.optional-dependencies]' in t and 'dev' in t.split('[project.optional-dependencies]')[1].split('[')[0]) and flags.append('dev under optional-deps -- move to dependency-groups'); ('hatchling' in t and '[tool.uv]' not in t) and flags.append('hatchling without tool.uv package=true'); raise SystemExit('pyproject warnings - '+'; '.join(flags) if flags else 0)"
+review:
+  reviewer: claude_code
+  reviewers:
+  - claude_code
+  max_patch_rounds: 2
+pr:
+  open: false
+planner: claude_code
+implementer: codex
+expected_artifacts:
+- path: PRODUCT_BRIEF.md
+- path: SYSTEM_MAP.md
+- path: STATUS.md
+- path: README.md
+- path: pyproject.toml
+- path: specs/0002-design/requirements.md
+- path: specs/0002-design/design.md
+- path: specs/0002-design/tasks.md
+- path: specs/0002-design/acceptance.md
+- path: facility_war/cli.py
+- path: facility_war/simulator.py
+- path: schemas/supply_graph.schema.json
+- path: schemas/scenario.schema.json
+- path: schemas/sim_run.schema.json
+- path: graphs/h100_bom.yaml
+- path: scenarios
+  kind: dir
+- path: reports/2026-Q3-h100-substrate-shock/report.md
+- path: reports/2026-Q3-h100-substrate-shock/run.json
+- path: tests
+  kind: dir
+module_map:
+- name: cli
+  source: facility_war/cli.py
+  layer: simulator
+  public_interfaces:
+  - 'main(argv: list[str] | None = None) -> int'
+- name: simulator
+  source: facility_war/simulator.py
+  layer: simulator
+  public_interfaces:
+  - 'run_simulation(graph: SupplyGraph, scenario: Scenario, seed: int, trials: int) -> SimRun'
+- name: report
+  source: facility_war/report.py
+  layer: report
+  public_interfaces:
+  - 'render_report(run: SimRun, out_dir: Path) -> Path'

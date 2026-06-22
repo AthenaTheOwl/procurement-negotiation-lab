@@ -300,6 +300,31 @@ next iteration of the data-report template.
 
 The product-control-plane template hit 100% clean on batch 4 — its post-batch-3 STATUS-section + pyproject-convention coaching is now landing reliably. The data-report template still has a first-action coaching gap (4 of 5 Codex repos needed `python -m <pkg> validate` to be wired without arguments). That's the next single-line template improvement before batch 5.
 
+## Batch 5 Codex lane evidence
+
+Fired 6 repos from `E:/claude_code/_codex-packets-2026-06-20/packet-04-batch5-codex-lane.md`: four data-report repos plus two custom-shape repos (`multitier-psi`, `facility-war`). The active-MVP contract passes against the real main repo directories for all six after merge.
+
+| Repo | Outcome | Real artifact | Test + first action | Manual fixes |
+|---|---|---|---|---|
+| `interconnect-alpha` | shipped (`3fb9c93`) | `reports/2026-08-pjm-survival.jsonl` | 3 tests pass; `python -m interconnect_alpha validate` OK | added root contract files, specs/0002-design split, jsonl report row, and module-map compatibility files after factory produced a partial data-report build |
+| `trace-to-eval-cli` | shipped (`f45c876`) | `reports/ttec_v0_1_smoke.jsonl` | 7 tests pass; `python -m trace_to_eval_cli validate` OK | added root contract files, specs/0002-design split, jsonl report row, and module-map compatibility files after factory produced a partial data-report build |
+| `power-ppa-forge` | shipped (`40fcf9e`) | `reports/capital_impact.jsonl` | 4 tests pass; `python -m power_ppa_forge validate` OK | added root `SYSTEM_MAP.md`, specs/0002-design split, jsonl report row, and module-map compatibility files after factory produced a partial data-report build |
+| `robust-siting-lab` | shipped (`9ce43ba`) | `reports/toy_public.jsonl` | 3 tests pass; `python -m robust_siting_lab validate` OK | direct-built after the factory stalled before useful implementation output |
+| `multitier-psi` | shipped (`82d6c07`) | `examples/psi-session-baseline.jsonl` | 7 tests pass; `python -m mtpsi validate` OK | added root package compatibility files because implementation landed under `src/mtpsi` while the contract expected root package sources |
+| `facility-war` | shipped (`34827e9`) | `reports/2026-Q3-h100-substrate-shock/run.json` and `report.md` | 5 tests pass; `python -m facility_war validate` OK | quoted YAML reference strings, added specs/0002-design split, and added root package compatibility files because implementation landed under `src/facility_war` |
+
+**Batch-5 Codex verdict**: 6 of 6 shipped; 0 of 6 factory-clean. The factory still created useful partial builds for five repos, but Windows decode/hang behavior left several tasks stuck after plan or mid-gate, and the operator had to finish contract repairs directly.
+
+### Factory note from batch 5 - FAC-010 surfaced + patched
+
+| Bug | What broke | Commit |
+|---|---|---|
+| **BUG-FAC-010** | Parallel batch-5 runs still hit Windows text-decoding hangs even after FAC-008. Remaining subprocess readers outside `pipeline.py` still relied on the locale codec: worktree git helpers, sandbox-ref finalization, replay-run helpers, and run-evidence git lookup. These paths can stall or warn when agent output or git output carries non-ASCII text. | this batch-5 evidence commit |
+
+Patch: set `encoding="utf-8", errors="replace"` on the remaining subprocess text captures in `scripts/factory/worktree.py`, `scripts/finalize_sandbox_ref.py`, `scripts/replay_run.py`, and `src/procurement_lab/run_evidence.py`.
+
+Decision after batch 5: keep using the active-MVP contract, but do not treat a factory-launched repo as complete until the contract check runs against the real target repo after merge. The factory now needs a focused cleanup pass for terminal status emission on Windows, then the next batch can resume.
+
 ## References
 
 - Spec 0019: `specs/0019-factory-active-mvp/`

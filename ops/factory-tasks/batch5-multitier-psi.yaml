@@ -1,0 +1,123 @@
+id: batch5-multitier-psi
+title: MultiTierPSI v0.1 reference protocol
+target_repo: E:/claude_code/random-apps/multitier-psi
+goal: |
+  Ship multitier-psi as a useful v0.1 PSI protocol repo. This is a
+  special-shape repo: the artifact is a reference protocol + fixtures,
+  not a data report or control plane.
+
+  v0.1 narrow scope from specs/0001-foundation:
+  - `mtpsi` Python package with `__version__` and a CLI entrypoint.
+  - `schemas/supplier_graph.schema.json` and
+    `schemas/psi_session.schema.json`.
+  - `data/canonical_supplier_dict.json`,
+    `data/oem_a_graph.json`, and `data/oem_b_graph.json`.
+  - `mtpsi/protocol.py` implements tier-N traversal and two modes:
+    `baseline` plaintext set intersection and `dh_based` reference mode
+    with a mock secure-channel transcript. Both return the same
+    intersection size for the fixtures.
+  - `mtpsi/party.py` models party-local graph loading and canonical id
+    preparation.
+  - `examples/psi-session-baseline.jsonl` records one canonical fixture
+    run.
+  - tests cover graph schema validation, baseline/dh parity,
+    deterministic baseline output with a seed, and the leakage-report
+    boundary stated in docs.
+  - `decisions/DEC-PSI-001-protocol-choice.md` documents why this is a
+    reference implementation, not audited production crypto.
+  - PRODUCT_BRIEF.md + SYSTEM_MAP.md + STATUS.md + README.md +
+    pyproject.toml + specs/0002-design.
+
+  STATUS.md section convention (REQUIRED - contract gate fails otherwise):
+  - `STATUS.md` MUST have these THREE H2 sections, with these EXACT
+    headings:
+
+        ## Current state
+        ## Known limits
+        ## Next feature queue
+
+  Python packaging convention (REQUIRED):
+  - In `pyproject.toml`, declare dev deps under `[dependency-groups]`,
+    NOT `[project.optional-dependencies]`.
+  - Add `[tool.uv]` with `package = true` for hatchling backends.
+
+  First-user-action convention (REQUIRED):
+  - `python -m mtpsi validate` MUST work with NO args.
+    Default: validate both fixture graphs, run baseline + dh_based on
+    the committed fixtures, confirm equal intersection size, and confirm
+    `examples/psi-session-baseline.jsonl` parses.
+
+  Voice: lowercase, no marketing words. No internal employer references.
+active: true
+template: psi-protocol-custom
+product_vision: A reference PSI protocol for finding shared tier-N supplier choke points without exposing each party's full supplier graph.
+target_user: supply-chain security engineer comparing private supplier overlap approaches
+first_user_action: python -m mtpsi validate
+system_layers:
+- graph
+- protocol
+- transcript
+next_feature_queue:
+- Add OPRF-based PSI as a second protocol mode.
+- Add three-party set-intersection fixture coverage.
+- Add a formal leakage-note that separates transcript leakage from fixture-derived claims.
+gates:
+- name: contract-presence
+  cmd: |
+    python -c "from pathlib import Path; required=['PRODUCT_BRIEF.md','SYSTEM_MAP.md','STATUS.md','README.md','pyproject.toml']; missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing '+','.join(missing) if missing else 0)"
+- name: psi-fixtures-present
+  cmd: |
+    python -c "from pathlib import Path; required=['data/canonical_supplier_dict.json','data/oem_a_graph.json','data/oem_b_graph.json','examples/psi-session-baseline.jsonl']; missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing '+','.join(missing) if missing else 0)"
+- name: psi-schemas-present
+  cmd: |
+    python -c "from pathlib import Path; required=['schemas/supplier_graph.schema.json','schemas/psi_session.schema.json']; missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing '+','.join(missing) if missing else 0)"
+- name: pyproject-uv-conventions
+  must_pass: false
+  cmd: |
+    python -c "from pathlib import Path; t=Path('pyproject.toml').read_text(encoding='utf-8'); flags=[]; ('[project.optional-dependencies]' in t and 'dev' in t.split('[project.optional-dependencies]')[1].split('[')[0]) and flags.append('dev under optional-deps -- move to dependency-groups'); ('hatchling' in t and '[tool.uv]' not in t) and flags.append('hatchling without tool.uv package=true'); raise SystemExit('pyproject warnings - '+'; '.join(flags) if flags else 0)"
+review:
+  reviewer: claude_code
+  reviewers:
+  - claude_code
+  max_patch_rounds: 2
+pr:
+  open: false
+planner: claude_code
+implementer: codex
+expected_artifacts:
+- path: PRODUCT_BRIEF.md
+- path: SYSTEM_MAP.md
+- path: STATUS.md
+- path: README.md
+- path: pyproject.toml
+- path: specs/0002-design/requirements.md
+- path: specs/0002-design/design.md
+- path: specs/0002-design/tasks.md
+- path: specs/0002-design/acceptance.md
+- path: mtpsi/cli.py
+- path: mtpsi/protocol.py
+- path: mtpsi/party.py
+- path: schemas/supplier_graph.schema.json
+- path: schemas/psi_session.schema.json
+- path: data/canonical_supplier_dict.json
+- path: data/oem_a_graph.json
+- path: data/oem_b_graph.json
+- path: examples/psi-session-baseline.jsonl
+- path: tests
+  kind: dir
+module_map:
+- name: cli
+  source: mtpsi/cli.py
+  layer: protocol
+  public_interfaces:
+  - 'main(argv: list[str] | None = None) -> int'
+- name: party
+  source: mtpsi/party.py
+  layer: graph
+  public_interfaces:
+  - 'load_party_graph(path: Path, dictionary_path: Path) -> PartyGraph'
+- name: protocol
+  source: mtpsi/protocol.py
+  layer: protocol
+  public_interfaces:
+  - 'run_psi(a: PartyGraph, b: PartyGraph, mode: str, seed: int | None = None) -> PSISession'
