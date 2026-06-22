@@ -1,0 +1,118 @@
+id: batch5-oulipo-memory-deck
+title: Oulipo Memory Deck v0.1 (narrative-card deck)
+target_repo: E:/claude_code/random-apps/oulipo-memory-deck
+goal: |
+  Ship oulipo-memory-deck as a useful v0.1 NARRATIVE-CARD-DECK repo.
+  Different shape from data-report or control-plane: the artifact is a
+  printable card deck + S+7 dictionary + a renderer, not a JSONL report.
+
+  v0.1 narrow scope:
+  - 8 starter cards as YAML files under `cards/objects/`: kettle.yaml,
+    hinge.yaml, key.yaml, lamp.yaml, mirror.yaml, radio.yaml, spoon.yaml,
+    window.yaml. Each has: id, object (single noun), base_line (1-2
+    sentences), s_plus_7_line (deterministic output), vignette (40-80
+    words), dictionary_id, dictionary_version.
+  - `schemas/card.schema.json` validating the card shape.
+  - `dictionaries/common-nouns.txt` UTF-8 newline-delimited noun list
+    (canonical S+7 walk order).
+  - `oulipo_memory_deck/cli.py` with `validate` subcommand (no args
+    default: validate all 8 cards against schema + verify S+7 output
+    is deterministic).
+  - `oulipo_memory_deck/render.py` producing `print.html` from cards.
+  - tests in tests/ covering schema, S+7 determinism, render.
+  - PRODUCT_BRIEF.md + SYSTEM_MAP.md + STATUS.md + README.md + pyproject.toml.
+
+  STATUS.md section convention (REQUIRED — contract gate fails otherwise):
+  - `STATUS.md` MUST have these THREE H2 sections, with these EXACT
+    headings (case- and word-sensitive):
+
+        ## Current state
+        ## Known limits
+        ## Next feature queue
+
+    Do NOT rename to "Shipped" / "Done" / "Next" / "TODO" / "Roadmap" —
+    the contract gate matches the literal strings above.
+
+  Python packaging convention (REQUIRED):
+  - In `pyproject.toml`, declare dev deps under `[dependency-groups]`,
+    NOT `[project.optional-dependencies]`.
+  - Add `[tool.uv]` with `package = true` for hatchling backends.
+
+  First-user-action convention (REQUIRED):
+  - `python -m oulipo_memory_deck validate` MUST work with NO args.
+    Default: validate all 8 starter cards against the schema + verify
+    S+7 outputs are deterministic given the committed dictionary.
+
+  Voice: lowercase, no marketing words. Specific to this repo: NO
+  references to specific employers / managers / internal projects.
+active: true
+template: narrative-cards-custom
+product_vision: Eight everyday-object cards become memory probes via S+7 word-swaps; each card prints to a paper deck for a writing session or 1-on-1 prompt game.
+target_user: writer or facilitator running a short prompt session
+first_user_action: python -m oulipo_memory_deck validate
+system_layers:
+- cards
+- transform
+- render
+next_feature_queue:
+- Expand from 8 cards to 24 (add bicycle/clock/glass/letter/etc.).
+- Add an alternate dictionary so the same cards produce different S+7 walks.
+- Ship a small Streamlit UI for live S+7 exploration.
+gates:
+- name: contract-presence
+  cmd: |
+    python -c "from pathlib import Path; required=['PRODUCT_BRIEF.md','SYSTEM_MAP.md','STATUS.md','README.md','pyproject.toml']; missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing '+','.join(missing) if missing else 0)"
+- name: eight-cards-present
+  cmd: |
+    python -c "from pathlib import Path; cards=Path('cards/objects'); n=len(list(cards.glob('*.yaml'))) if cards.exists() else 0; raise SystemExit('expected 8 cards under cards/objects, found '+str(n) if n != 8 else 0)"
+- name: dictionary-present
+  cmd: test -s dictionaries/common-nouns.txt
+- name: schema-present
+  cmd: test -s schemas/card.schema.json
+- name: pyproject-uv-conventions
+  must_pass: false
+  cmd: |
+    python -c "from pathlib import Path; t=Path('pyproject.toml').read_text(encoding='utf-8'); flags=[]; ('[project.optional-dependencies]' in t and 'dev' in t.split('[project.optional-dependencies]')[1].split('[')[0]) and flags.append('dev under optional-deps -- move to dependency-groups'); ('hatchling' in t and '[tool.uv]' not in t) and flags.append('hatchling without tool.uv package=true'); raise SystemExit('pyproject warnings - '+'; '.join(flags) if flags else 0)"
+review:
+  reviewer: claude_code
+  reviewers:
+  - claude_code
+  max_patch_rounds: 2
+pr:
+  open: false
+planner: claude_code
+implementer: claude_code
+expected_artifacts:
+- path: PRODUCT_BRIEF.md
+- path: SYSTEM_MAP.md
+- path: STATUS.md
+- path: README.md
+- path: pyproject.toml
+- path: specs/0002-design/requirements.md
+- path: specs/0002-design/design.md
+- path: specs/0002-design/tasks.md
+- path: specs/0002-design/acceptance.md
+- path: oulipo_memory_deck/cli.py
+- path: oulipo_memory_deck/render.py
+- path: schemas/card.schema.json
+- path: dictionaries/common-nouns.txt
+- path: cards/objects
+  kind: dir
+- path: tests
+  kind: dir
+module_map:
+- name: cli
+  source: oulipo_memory_deck/cli.py
+  layer: cards
+  public_interfaces:
+  - 'main(argv: list[str] | None = None) -> int'
+- name: transform
+  source: oulipo_memory_deck/transform.py
+  layer: transform
+  public_interfaces:
+  - 's_plus_7(base: str, dictionary_path: Path) -> str'
+- name: render
+  source: oulipo_memory_deck/render.py
+  layer: render
+  public_interfaces:
+  - 'render_html(cards: list[dict], out: Path) -> Path'

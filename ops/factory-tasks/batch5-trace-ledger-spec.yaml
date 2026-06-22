@@ -1,0 +1,114 @@
+id: batch5-trace-ledger-spec
+title: Trace Ledger Spec v0.1 (schema-publishing repo)
+target_repo: E:/claude_code/random-apps/trace-ledger-spec
+goal: |
+  Ship trace-ledger-spec as a useful v0.1 SCHEMA-PUBLISHING repo.
+  Different shape from data-report or control-plane: the deliverable is
+  a JSON Schema + controlled vocabulary + reference validator, not a
+  weekly report or scoring memo. Closest sibling: agent-notary-layer's
+  schema-publishing pattern.
+
+  v0.1 narrow scope:
+  - `spec/trace-event.schema.json` defines the canonical event shape
+    with required fields: event_id, ledger_id, seq, timestamp, actor,
+    event_type, payload, prev_hash. event_id is a content-addressable
+    hash; seq is per-ledger monotonic starting at 0.
+  - `spec/event-types.yaml` is the controlled-vocabulary file
+    (version-pinned).
+  - `trace_ledger_spec/validator.py` exposes a pure-Python reference
+    validator. CLI entrypoint at `trace_ledger_spec/cli.py` with
+    `validate` subcommand.
+  - `examples/` ships 3-5 example ledgers as JSONL: at least one
+    valid, one with a gap in seq (should fail), one with a tampered
+    event_id (should fail).
+  - tests/ covers schema validation, seq monotonicity, content-addressable
+    hash verification, controlled-vocabulary enforcement.
+  - PRODUCT_BRIEF.md + SYSTEM_MAP.md + STATUS.md + README.md + pyproject.toml.
+
+  STATUS.md section convention (REQUIRED — contract gate fails otherwise):
+  - `STATUS.md` MUST have these THREE H2 sections, with these EXACT
+    headings:
+
+        ## Current state
+        ## Known limits
+        ## Next feature queue
+
+  Python packaging convention (REQUIRED):
+  - In `pyproject.toml`, declare dev deps under `[dependency-groups]`,
+    NOT `[project.optional-dependencies]`.
+  - Add `[tool.uv]` with `package = true` for hatchling backends.
+
+  First-user-action convention (REQUIRED):
+  - `python -m trace_ledger_spec validate` MUST work with NO args.
+    Default: validate every JSONL under `examples/` against the
+    schema + chain rules, report per-file pass/fail.
+
+  Voice: lowercase, no marketing words. NO references to specific
+  employers / internal projects.
+active: true
+template: schema-spec-custom
+product_vision: A JSON Schema + reference validator for append-only event ledgers; a shared contract between agent runtimes that emit trace events.
+target_user: framework author wiring trace emission against a stable schema
+first_user_action: python -m trace_ledger_spec validate
+system_layers:
+- schema
+- validator
+- examples
+next_feature_queue:
+- Add an OpenAPI/Protobuf companion publishing the same schema in two more shapes.
+- Land a conformance test suite that other languages can run against.
+- Submit the schema to A2A / NIST AI RMF / similar standards venues.
+gates:
+- name: contract-presence
+  cmd: |
+    python -c "from pathlib import Path; required=['PRODUCT_BRIEF.md','SYSTEM_MAP.md','STATUS.md','README.md','pyproject.toml']; missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing '+','.join(missing) if missing else 0)"
+- name: schema-present
+  cmd: test -s spec/trace-event.schema.json
+- name: event-types-present
+  cmd: test -s spec/event-types.yaml
+- name: examples-present
+  cmd: |
+    python -c "from pathlib import Path; ex=Path('examples'); n=len(list(ex.glob('*.jsonl'))) if ex.exists() else 0; raise SystemExit('expected >=3 example ledgers, found '+str(n) if n < 3 else 0)"
+- name: pyproject-uv-conventions
+  must_pass: false
+  cmd: |
+    python -c "from pathlib import Path; t=Path('pyproject.toml').read_text(encoding='utf-8'); flags=[]; ('[project.optional-dependencies]' in t and 'dev' in t.split('[project.optional-dependencies]')[1].split('[')[0]) and flags.append('dev under optional-deps -- move to dependency-groups'); ('hatchling' in t and '[tool.uv]' not in t) and flags.append('hatchling without tool.uv package=true'); raise SystemExit('pyproject warnings - '+'; '.join(flags) if flags else 0)"
+review:
+  reviewer: claude_code
+  reviewers:
+  - claude_code
+  max_patch_rounds: 2
+pr:
+  open: false
+planner: claude_code
+implementer: claude_code
+expected_artifacts:
+- path: PRODUCT_BRIEF.md
+- path: SYSTEM_MAP.md
+- path: STATUS.md
+- path: README.md
+- path: pyproject.toml
+- path: specs/0002-design/requirements.md
+- path: specs/0002-design/design.md
+- path: specs/0002-design/tasks.md
+- path: specs/0002-design/acceptance.md
+- path: spec/trace-event.schema.json
+- path: spec/event-types.yaml
+- path: trace_ledger_spec/cli.py
+- path: trace_ledger_spec/validator.py
+- path: examples
+  kind: dir
+- path: tests
+  kind: dir
+module_map:
+- name: cli
+  source: trace_ledger_spec/cli.py
+  layer: validator
+  public_interfaces:
+  - 'main(argv: list[str] | None = None) -> int'
+- name: validator
+  source: trace_ledger_spec/validator.py
+  layer: validator
+  public_interfaces:
+  - 'validate_event(event: dict, schema: dict) -> ValidationResult'
+  - 'validate_ledger(events: list[dict]) -> LedgerValidation'

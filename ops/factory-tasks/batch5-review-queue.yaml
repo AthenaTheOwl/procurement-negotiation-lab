@@ -1,0 +1,111 @@
+id: batch5-review-queue
+title: Review Queue v0.1 control plane
+target_repo: E:/claude_code/random-apps/review-queue
+goal: "Ship Review Queue as a useful v0.1 control-plane repo. This is monthly or\n\
+  quarterly tooling that scores, calibrates, or audits some other repo's\noutputs.\
+  \ It has a clear product brief, system map, specs/0002-design\nledger, runnable\
+  \ Python CLI, tests, a methodology doc, and one checked-in\nledger row representing\
+  \ the first scoring/calibration run.\n\nSTATUS.md section convention (REQUIRED \u2014\
+  \ contract gate fails otherwise):\n- `STATUS.md` MUST have these THREE H2 sections,\
+  \ with these EXACT\n  headings (case- and word-sensitive):\n\n      ## Current state\n\
+  \      ## Known limits\n      ## Next feature queue\n\n  Do NOT rename to \"Shipped\"\
+  \ / \"Done\" / \"Next\" / \"TODO\" / \"Roadmap\" \u2014\n  the contract gate matches\
+  \ the literal strings above. Section bodies\n  are bullet lists; the \"Next feature\
+  \ queue\" body becomes the input\n  to the next factory run for this repo.\n\nPython\
+  \ packaging convention (REQUIRED \u2014 `python -m uv sync` + tests\nsilently break\
+  \ otherwise):\n- In `pyproject.toml`, declare dev deps under `[dependency-groups]`,\n\
+  \  NOT `[project.optional-dependencies]`. uv installs dependency-groups\n  automatically;\
+  \ optional-dependencies need an explicit `--extra` flag\n  and won't reach the venv\
+  \ on a plain `uv sync`.\n- Add `[tool.uv]` with `package = true` so the project\
+  \ itself is\n  editable-installed into the venv. Without it, `python -m uv run\n\
+  \  pytest` falls back to the system python and `from review-queue import X`\n  raises\
+  \ ModuleNotFoundError even though the package exists on disk.\n- Build backend can\
+  \ be hatchling or setuptools \u2014 either works once\n  the two uv blocks above\
+  \ are present.\n"
+active: true
+template: product-control-plane
+product_vision: Turns a periodic question about a portfolio repo's outputs into a
+  typed score plus a memo a human acts on.
+target_user: operator running the portfolio who needs the verdict, not the dashboard
+first_user_action: python -m review_queue validate
+system_layers:
+- score
+- ledger
+- report
+next_feature_queue:
+- Wire to a second repo's outputs so this is a control plane and not a singleton.
+- Land a second time period and confirm the diff section actually surfaces drift.
+gates:
+- name: contract-presence
+  cmd: python -c "from pathlib import Path; required=['PRODUCT_BRIEF.md','SYSTEM_MAP.md','STATUS.md','README.md','pyproject.toml','docs/METHODOLOGY.md'];
+    missing=[p for p in required if not Path(p).exists()]; raise SystemExit('missing
+    '+','.join(missing) if missing else 0)"
+- name: ledger-present
+  cmd: python -c "from pathlib import Path; ledger=Path('data/ledger'); raise SystemExit(0
+    if ledger.exists() and any(ledger.glob('*.jsonl')) else 'missing data/ledger/*.jsonl')"
+- name: methodology-has-revisit-section
+  cmd: python -c "from pathlib import Path; text=Path('docs/METHODOLOGY.md').read_text(encoding='utf-8');
+    raise SystemExit(0 if '## What revisits this' in text else 'METHODOLOGY.md missing
+    revisit section')"
+- name: pyproject-uv-conventions
+  must_pass: false
+  cmd: 'python -c "from pathlib import Path; t=Path(''pyproject.toml'').read_text(encoding=''utf-8'');
+    flags=[]; (''[project.optional-dependencies]'' in t and ''dev'' in t.split(''[project.optional-dependencies]'')[1].split(''['')[0])
+    and flags.append(''dev under optional-deps -- move to dependency-groups''); (''hatchling''
+    in t and ''[tool.uv]'' not in t) and flags.append(''hatchling without tool.uv
+    package=true''); raise SystemExit(''pyproject warnings - ''+''; ''.join(flags)
+    if flags else 0)"
+
+    '
+review:
+  reviewer: claude_code
+  reviewers:
+  - claude_code
+  max_patch_rounds: 2
+pr:
+  open: false
+planner: claude_code
+implementer: claude_code
+expected_artifacts:
+- path: PRODUCT_BRIEF.md
+- path: SYSTEM_MAP.md
+- path: STATUS.md
+- path: README.md
+- path: pyproject.toml
+- path: specs/0002-design/requirements.md
+- path: specs/0002-design/design.md
+- path: specs/0002-design/tasks.md
+- path: specs/0002-design/acceptance.md
+- path: docs/METHODOLOGY.md
+- path: review_queue/cli.py
+- path: review_queue/score.py
+- path: review_queue/ledger.py
+- path: tests
+  kind: dir
+- path: data/ledger/*.jsonl
+  kind: glob
+- path: decisions/DEC-*.md
+  kind: glob
+module_map:
+- name: cli
+  source: review_queue/cli.py
+  layer: score
+  public_interfaces:
+  - 'main(argv: list[str] | None = None) -> int'
+- name: score
+  source: review_queue/score.py
+  layer: score
+  public_interfaces:
+  - 'compute_score(inputs: ScoreInputs) -> ScoreResult'
+- name: ledger
+  source: review_queue/ledger.py
+  layer: ledger
+  public_interfaces:
+  - 'append_row(root: Path, period: str, score: ScoreResult, *, now: datetime | None
+    = None) -> Path'
+  - 'read_period(root: Path, period: str) -> list[ScoreResult]'
+- name: report
+  source: review_queue/report.py
+  layer: report
+  public_interfaces:
+  - 'write_memo(root: Path, period: str) -> Path'
