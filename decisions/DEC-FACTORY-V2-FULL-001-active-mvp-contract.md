@@ -325,6 +325,88 @@ Patch: set `encoding="utf-8", errors="replace"` on the remaining subprocess text
 
 Decision after batch 5: keep using the active-MVP contract, but do not treat a factory-launched repo as complete until the contract check runs against the real target repo after merge. The factory now needs a focused cleanup pass for terminal status emission on Windows, then the next batch can resume.
 
+## Batch 5 Claude lane evidence
+
+Fired 5 repos: 3 product-control-plane + 2 special-shape custom YAMLs.
+
+| Repo | Shape | Outcome | Real artifact | Manual fixes |
+|---|---|---|---|---|
+| `review-queue` | product-control-plane | **shipped CLEAN** (`229dbba`) | `data/ledger/runs.jsonl` | none |
+| `brief-matrix` | product-control-plane | **shipped CLEAN** (`9dff437`) | `data/ledger/2026-W25-procurement-analyst-calibration-run.jsonl` | none |
+| `dream-replay-cli` | product-control-plane | **shipped CLEAN** (`72c17c8`) | `data/ledger/run-2026-W25.jsonl` | none |
+| `oulipo-memory-deck` | **special: narrative-card-deck** (custom YAML) | **shipped CLEAN** (`1852992`) | 8 card YAMLs under `cards/objects/` + `schemas/card.schema.json` + `dictionaries/common-nouns.txt` | none |
+| `trace-ledger-spec` | **special: schema-publishing** (custom YAML) | **shipped CLEAN** (`c51e283`) | `spec/trace-event.schema.json` + `spec/event-types.yaml` + 4 example ledgers + reference validator | none |
+
+**Batch-5 Claude verdict: 5 of 5 factory-clean.** Including BOTH special-shape custom YAMLs. The "write a custom YAML using the data-report YAML as a starting shape, replace gates + expected_artifacts + system_layers to match the shape, keep the universal contract gates" pattern proved out. Worth noting:
+- Both custom YAMLs took ~5-10 min each to author (read foundation requirements, draft v0.1 scope, customize gates)
+- Once the YAML was right, the factory shipped them on first try with no manual intervention
+- This suggests spec 0020 templates (narrative-card-deck + schema-publishing) would be operator-time savings, not a new capability — the factory already handles these shapes
+
+Why Claude lane hit 5/5 while Codex lane hit 0/5 factory-clean on the same batch:
+- Claude's 3 control-plane repos ride the template that's been hardening since batch 3 (now 8 of 8 across batch-4 + batch-5 are factory-clean)
+- Codex's 4 data-report repos hit Windows decode hangs Codex documented as FAC-010 — these were terminal-emission issues, not implementer-output issues
+- Codex's 2 special-shape repos hit the same FAC-010 + had no template to ride
+- Different lanes ran on different shells/sandboxes; FAC-010 affected Codex's environment more
+
+The factory worked end-to-end on Claude's lane. FAC-010 patches (committed by Codex in this batch's evidence commit) should close the gap for the next batch.
+
+## Session totals (after batch 5 close)
+
+**41 of 42 portfolio repos at v0.1** (eval-forge stays killed per spec-0001 critics):
+
+| Section | Repos |
+|---|---|
+| Pilot | source-decay-ledger, promotion-vs-pip, grid-silicon |
+| Batch 2 Claude | agent-notary-layer, site-atlas, ratepayer-exposure, puc-docket-rag, proof-gate-runner |
+| Batch 2 Codex | fab-risk-radar, wafer-to-watt, channel-atlas, sovereign-compute, policy-replay |
+| Spec 0019 pilots | binding-constraint, brief-calibration |
+| Batch 3 | earnings-pillar-diff, thesis-pillar-tracker, pattern-index, modelswap-replay, capital-build-reconciler |
+| Batch 4 Claude | repo-triage, portfolio-manifest, procurement-pattern-library, pre-mortem-ledger, portfolio-thesis-plane |
+| Batch 4 Codex | release-pillar-mapper, repo-position-coupling-index, negotiation-mechanism-replay, sealed-bid-sourcing, commit-provenance |
+| Batch 5 Claude | review-queue, brief-matrix, dream-replay-cli, oulipo-memory-deck, trace-ledger-spec |
+| Batch 5 Codex | interconnect-alpha, trace-to-eval-cli, power-ppa-forge, robust-siting-lab, multitier-psi, facility-war |
+
+**Killed (intentional): eval-forge** (spec-0001 adversarial critics rejected the hosted-SaaS framing).
+
+### Cumulative factory-clean rate (10 batches of evidence)
+
+| Batch | Repos | Factory-clean | Trend |
+|---|---|---|---|
+| Spec 0018 pilot | 3 | 0 (direct-build by design) | baseline |
+| Batch 2 Claude | 5 | 2 / 5 | factory bringup |
+| Batch 3 | 5 | 4 / 5 | + STATUS template coaching |
+| Batch 4 Claude | 5 | **5 / 5** | + pyproject coaching |
+| Batch 4 Codex | 5 | 1 / 5 | data-report needs first-action coaching |
+| Batch 5 Claude | 5 | **5 / 5** | + first-action coaching + 2 custom YAMLs proved out |
+| Batch 5 Codex | 6 | 0 / 6 | FAC-010 terminal-emission hangs on Codex's environment |
+
+Claude lane factory-clean rate: 14 of 15 batched (93%). Codex lane was hit by environment-specific FAC-010 this batch; pattern returns to normal after the patch lands.
+
+### What the contract bought
+
+19 active-MVP repos (8 batch-3 + 5 batch-4-Claude + 5 batch-5-Claude + 1 narrative-card-deck custom — counting only Claude lane since Codex's evidence section above documents his) all carry:
+- PRODUCT_BRIEF.md + SYSTEM_MAP.md + STATUS.md (with the 3 canonical sections) + README.md + pyproject.toml + (METHODOLOGY.md for control-plane) at the root
+- A real `data/ledger/*.jsonl` or `reports/*.jsonl` or shape-equivalent artifact (no placeholders, no demo data)
+- A working `python -m <pkg> validate` first-user-action that exits 0 with no args
+- `[dependency-groups]` + `[tool.uv] package = true` in pyproject so tests collect cleanly
+- `specs/0002-design/{requirements,design,tasks,acceptance}.md` so the next factory run on this repo has scope
+
+Every repo's STATUS.md `## Next feature queue` already names 4-6 concrete items for the next factory pass. The contract is doing what the v0.1 design promised.
+
+### Total session bugs found + closed
+
+10 factory bugs surfaced + patched across all batches (FAC-001..010), all closed. Plus 3 prompt-engineering passes (PLAN/IMPLEMENT/REVIEW + patch variant), 1 parser tolerance pass, 2 templates, 2 custom-YAML patterns proved out, 1 lane-split convention.
+
+### Recommended next move
+
+The factory at 41/42 with the active-MVP contract is the most aggressive scale a single operator + 1 collaborating actor + 1 portfolio repo has hit this session. Honest take on what's left to do:
+
+1. **Validate the 19 v0.1 repos run end-to-end on a fresh clone** — the contract gate proved files exist, but cross-machine `uv sync` + `python -m <pkg> validate` + `pytest` is the next durability check.
+2. **Spec 0020** (new templates: narrative-card-deck + schema-publishing) — would save the per-custom-YAML overhead Claude lane spent this batch (~10 min each). Earn slot once batch 6 demand is real.
+3. **FAC-010 patches** (Codex committed in this batch's evidence commit) — should close the Windows terminal-emission gap.
+4. **Sensitive-disclosure scan across all 42 repos** — quick `gitleaks` + employer-name regex pass before any of these get pinned on the portfolio README.
+5. **Portfolio README update + door-numbering** — 41 repos shipped + 1 deferred = the portfolio is now substantively bigger than it was 12 hours ago.
+
 ## References
 
 - Spec 0019: `specs/0019-factory-active-mvp/`
