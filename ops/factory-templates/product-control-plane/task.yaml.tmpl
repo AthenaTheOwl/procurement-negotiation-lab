@@ -8,6 +8,19 @@ goal: |
   ledger, runnable Python CLI, tests, a methodology doc, and one checked-in
   ledger row representing the first scoring/calibration run.
 
+  STATUS.md section convention (REQUIRED — contract gate fails otherwise):
+  - `STATUS.md` MUST have these THREE H2 sections, with these EXACT
+    headings (case- and word-sensitive):
+
+        ## Current state
+        ## Known limits
+        ## Next feature queue
+
+    Do NOT rename to "Shipped" / "Done" / "Next" / "TODO" / "Roadmap" —
+    the contract gate matches the literal strings above. Section bodies
+    are bullet lists; the "Next feature queue" body becomes the input
+    to the next factory run for this repo.
+
   Python packaging convention (REQUIRED — `python -m uv sync` + tests
   silently break otherwise):
   - In `pyproject.toml`, declare dev deps under `[dependency-groups]`,

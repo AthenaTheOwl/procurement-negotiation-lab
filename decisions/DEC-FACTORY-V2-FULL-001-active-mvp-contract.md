@@ -176,6 +176,49 @@ After the 2-repo pilot (R-FAM-V1-050), fill the 4 evidence rows below per R-FAM-
 
 After fixes land: batch 3 fires on the 5 repos Codex has queued (or chooses) per the operator's pre-pilot suggestion. Re-evaluate after batch 3 lands.
 
+## Batch 3 evidence (post-template-fixes)
+
+Fired 5 data-heavy repos through the factory using the patched data-report template + `--new-task` loader (Codex fix A + Claude fix B). Operator authorized "go for it" 2026-06-21.
+
+| Repo | Outcome | Real artifact | Manual edits |
+|---|---|---|---|
+| `earnings-pillar-diff` | shipped (`0b514de`) | `reports/MSFT-2025Q4.jsonl` with real EDGAR-tag deltas | STATUS section names rewritten ("Shipped/Next" → canonical) |
+| `thesis-pillar-tracker` | **shipped CLEAN** (`1d51b5f`) | `reports/2026-06-monthly.jsonl` | none |
+| `pattern-index` | **shipped CLEAN** (`37610ce`) | `reports/2026-Q2-retro.jsonl` | none |
+| `modelswap-replay` | **shipped CLEAN** (`599eff1`) | `reports/fixture-candidate-v1-customer-support.jsonl` | none |
+| `capital-build-reconciler` | **shipped CLEAN** (`f5d74df`) | `reports/2026-M06-ingest-summary.jsonl` | none |
+
+**4 of 5 ran factory-clean (no manual merge).** The 1 that needed manual intervention (earnings-pillar-diff) was the calibration shot fired BEFORE the STATUS-section template guidance landed — once that guidance was added, the other 4 produced canonical `## Current state` / `## Known limits` / `## Next feature queue` sections on first attempt with no operator edits.
+
+Total batch-3 wall-clock: ~20 min for the 4 parallel impls. Per-repo cost dropped meaningfully vs batch-2 because the template + post-fix loader handles more of the boilerplate.
+
+### Template lesson #3 (captured from batch-3 calibration shot)
+
+Original templates pointed to the section names in design.md prose but didn't bake them into the goal text. Agents reasonably picked synonyms ("Shipped"/"Done"/"Next"/"TODO") that the contract gate rejected. Fix: templates now have an explicit "STATUS.md section convention (REQUIRED — contract gate fails otherwise)" block listing the three exact H2 headings and naming the banned synonyms. Validated by the 4 clean ships that followed.
+
+## Decision (post batch 3)
+
+**4-of-5 factory-clean ships** on the first batch where the operator did not have to write per-repo goals is the right outcome for an active-MVP contract pilot. The factory has now:
+
+- 7 patched CLI bugs (FAC-001..007) → clean Windows operation
+- Engineered prompts + tolerant verdict parser + safe-default tilt → reviewer-bias problems closed
+- `--new-task --template` with auto-conversion of slug→underscore + absolute target_repo → operator ergonomics fix
+- 2 templates with explicit STATUS section + pyproject convention coaching → consistent first-try implementer output
+- 3 advisory gates per template (contract-presence, reports-present, pyproject-uv-conventions) → drift visibility
+
+**Recommendation: scale to batch 4 (8-10 more repos) without further template work.** Pick the next data-heavy + control-plane shapes from the 26 untouched repos and fire. Spec 0020 (4 more personas + 5 more templates) earns its slot when batch 4 surfaces evidence that 2 personas + 2 templates aren't enough.
+
+## Session totals (after batch 3)
+
+19 of 42 portfolio repos at v0.1:
+- Pilot (3): source-decay-ledger, promotion-vs-pip, grid-silicon
+- Batch 2 (5): agent-notary-layer, site-atlas, ratepayer-exposure, puc-docket-rag, proof-gate-runner
+- Codex batch 2 (5): fab-risk-radar, wafer-to-watt, channel-atlas, sovereign-compute, policy-replay
+- Spec 0019 pilots (2): binding-constraint, brief-calibration
+- Batch 3 (5): earnings-pillar-diff, thesis-pillar-tracker, pattern-index, modelswap-replay, capital-build-reconciler
+
+23 untouched, available for batch 4+ via the factory or direct-build per shape.
+
 ## References
 
 - Spec 0019: `specs/0019-factory-active-mvp/`
