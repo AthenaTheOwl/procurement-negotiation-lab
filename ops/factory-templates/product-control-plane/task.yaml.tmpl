@@ -41,7 +41,8 @@ gates:
     cmd: python -c "from pathlib import Path; text=Path('docs/METHODOLOGY.md').read_text(encoding='utf-8'); raise SystemExit(0 if '## What revisits this' in text else 'METHODOLOGY.md missing revisit section')"
   - name: pyproject-uv-conventions
     must_pass: false
-    cmd: python -c "from pathlib import Path; t=Path('pyproject.toml').read_text(encoding='utf-8'); flags=[]; ('[project.optional-dependencies]' in t and 'dev' in t.split('[project.optional-dependencies]')[1].split('[')[0]) and flags.append('dev deps under [project.optional-dependencies] -- uv will NOT auto-install; move to [dependency-groups]'); ('hatchling' in t and '[tool.uv]' not in t) and flags.append('hatchling backend without [tool.uv] package=true -- uv may not editable-install the project, breaking pytest imports'); raise SystemExit('pyproject convention warnings: '+'; '.join(flags) if flags else 0)"
+    cmd: |
+      python -c "from pathlib import Path; t=Path('pyproject.toml').read_text(encoding='utf-8'); flags=[]; ('[project.optional-dependencies]' in t and 'dev' in t.split('[project.optional-dependencies]')[1].split('[')[0]) and flags.append('dev under optional-deps -- move to dependency-groups'); ('hatchling' in t and '[tool.uv]' not in t) and flags.append('hatchling without tool.uv package=true'); raise SystemExit('pyproject warnings - '+'; '.join(flags) if flags else 0)"
 review:
   reviewer: claude_code
   reviewers:
