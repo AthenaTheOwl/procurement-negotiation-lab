@@ -387,7 +387,7 @@ Claude lane factory-clean rate: 14 of 15 batched (93%). Codex lane was hit by en
 19 active-MVP repos (8 batch-3 + 5 batch-4-Claude + 5 batch-5-Claude + 1 narrative-card-deck custom — counting only Claude lane since Codex's evidence section above documents his) all carry:
 - PRODUCT_BRIEF.md + SYSTEM_MAP.md + STATUS.md (with the 3 canonical sections) + README.md + pyproject.toml + (METHODOLOGY.md for control-plane) at the root
 - A real `data/ledger/*.jsonl` or `reports/*.jsonl` or shape-equivalent artifact (no placeholders, no demo data)
-- A working `python -m <pkg> validate` first-user-action that exits 0 with no args
+- A working `python -m <pkg> validate` first-user-action that exits 0 with no args (NOTE: this was only true for ~6 of 19 at first ship; the post-hoc functional audit below found + fixed the other 13. As of `fd4ffd8` a real gate enforces it for future repos.)
 - `[dependency-groups]` + `[tool.uv] package = true` in pyproject so tests collect cleanly
 - `specs/0002-design/{requirements,design,tasks,acceptance}.md` so the next factory run on this repo has scope
 
@@ -397,15 +397,36 @@ Every repo's STATUS.md `## Next feature queue` already names 4-6 concrete items 
 
 10 factory bugs surfaced + patched across all batches (FAC-001..010), all closed. Plus 3 prompt-engineering passes (PLAN/IMPLEMENT/REVIEW + patch variant), 1 parser tolerance pass, 2 templates, 2 custom-YAML patterns proved out, 1 lane-split convention.
 
+## Post-hoc functional audit — the first-action gap (2026-06-21)
+
+After batch 5 closed, the operator asked the right question: "is it functional?" An audit ran each repo's advertised `first_user_action` (`python -m <pkg> validate`) with no args against the real merged repos. Result: **only ~6 of 19 Claude-lane repos actually worked as advertised.** The other ~13 had a functional CLI but the bare command was broken:
+
+| Failure mode | Count | Example |
+|---|---|---|
+| `validate` needs args | 6 | brief-calibration (`--period`), brief-matrix (`--tenant`), pattern-index (positional dir) |
+| No `__main__.py` — `python -m <pkg>` fails entirely | 4 | earnings-pillar-diff (console script `epd` only), thesis-pillar-tracker, modelswap-replay, pre-mortem-ledger |
+| Different command structure | 3 | repo-triage (`validate-schemas`), portfolio-thesis-plane (`list-repos/score/generate`), dream-replay-cli (module name mismatch) |
+
+**Root cause**: the templates COACHED the first-action convention in goal text, but no GATE ran the command. The contract gates (`contract-presence`, `reports-present`) checked that files exist + that the README mentions a command — never that the literal advertised command works with no args. R-FAM-V1-006 was enforced as "README names a command," not "the command runs." This is the exact gap between "looks shipped" and "a stranger clones it and it works."
+
+**The fix (committed 2026-06-21)**:
+1. **13 repos fixed** (workflow `wyb8ftubj`, 5 parallel agents): added `__main__.py` where missing, defaulted the required args to canonical values (newest period, bundled fixture, `.`), added `validate` subcommands where absent. Each repo's bare `python -m <pkg> validate` now exits 0 read-only against committed fixtures. Per-repo commits referenced in the workflow output.
+2. **`scripts/validate_first_actions.py`** — durability checker that runs each active repo's first action (`uv sync` + bare command), asserts exit 0. The "stranger clones it" test made executable. Covers all 25 active-MVP python repos.
+3. **`first-action-runs` gate** added to both templates: `python -m uv run python -m {SLUG} validate`. Every future factory repo runs the command during the pipeline and fails if it doesn't exit 0. Closes recurrence. Committed in `fd4ffd8`.
+
+**Verified**: `python scripts/validate_first_actions.py` → **25 of 25 pass** (19 Claude+pilot after fixes, 6 Codex which already worked post-manual-repair). trace-ledger-spec needed an extra tweak — its bare validate was exiting 1 because the examples/ dir holds 3 intentional negative cases; now they're auto-classified as expected-fail so the first action exits 0 while still showing the validator working (commit `1c20132`).
+
+**Lesson for the contract**: a "validation command exists" gate must RUN the command, not just check the README. The file-presence contract caught no-op impl rounds (BUG-FAC-007) but silently passed broken-UX repos. R-FAM-V1-006 is now genuinely enforced. This is the single most important correction of the session — without it, "41 repos shipped" would have meant "41 repos with files that exist," not "41 repos a stranger can run."
+
 ### Recommended next move
 
-The factory at 41/42 with the active-MVP contract is the most aggressive scale a single operator + 1 collaborating actor + 1 portfolio repo has hit this session. Honest take on what's left to do:
+The factory at 41/42 with the active-MVP contract — and now a real first-action gate — is the most aggressive scale a single operator + 1 collaborating actor + 1 portfolio repo has hit this session. What's left:
 
-1. **Validate the 19 v0.1 repos run end-to-end on a fresh clone** — the contract gate proved files exist, but cross-machine `uv sync` + `python -m <pkg> validate` + `pytest` is the next durability check.
+1. ~~Validate the v0.1 repos run end-to-end~~ — **DONE**: 25 of 25 python repos pass the first-action durability check. Remaining: full `pytest` on a fresh clone per repo (one known-weak test in brief-calibration documented).
 2. **Spec 0020** (new templates: narrative-card-deck + schema-publishing) — would save the per-custom-YAML overhead Claude lane spent this batch (~10 min each). Earn slot once batch 6 demand is real.
-3. **FAC-010 patches** (Codex committed in this batch's evidence commit) — should close the Windows terminal-emission gap.
-4. **Sensitive-disclosure scan across all 42 repos** — quick `gitleaks` + employer-name regex pass before any of these get pinned on the portfolio README.
-5. **Portfolio README update + door-numbering** — 41 repos shipped + 1 deferred = the portfolio is now substantively bigger than it was 12 hours ago.
+3. **FAC-010 patches** (Codex committed) — should close the Windows terminal-emission gap.
+4. **Sensitive-disclosure scan across all 42 repos** — quick `gitleaks` + employer-name regex pass before any of these get pinned on the portfolio README. (Deferred this session per operator.)
+5. **Portfolio README update + door-numbering** — 41 repos shipped + 1 deferred.
 
 ## References
 
