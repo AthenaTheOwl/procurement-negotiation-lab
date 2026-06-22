@@ -208,16 +208,96 @@ Original templates pointed to the section names in design.md prose but didn't ba
 
 **Recommendation: scale to batch 4 (8-10 more repos) without further template work.** Pick the next data-heavy + control-plane shapes from the 26 untouched repos and fire. Spec 0020 (4 more personas + 5 more templates) earns its slot when batch 4 surfaces evidence that 2 personas + 2 templates aren't enough.
 
-## Session totals (after batch 3)
+## Batch 4 Codex lane evidence
 
-19 of 42 portfolio repos at v0.1:
+Fired 5 data-report repos through the patched active-MVP factory using the
+Codex lane packet from `E:/claude_code/_codex-packets-2026-06-20/packet-03-batch4-codex-lane.md`.
+All 5 shipped to `origin/main` with the 6-artifact contract present, a real
+checked-in report artifact, tests, and a working first-user validation command.
+
+| Repo | Outcome | Real artifact | Run record | Manual fixes |
+|---|---|---|---|---|
+| `release-pillar-mapper` | shipped (`5c24f86`) | `reports/2026-04-01-example-frontier-agent-model.jsonl` | `ops/run-records/run-c1eef8160ce8.json` | added default `python -m release_pillar_mapper validate` and README run commands after the factory produced the engine but missed the first-action alias |
+| `repo-position-coupling-index` | shipped (`41ed3ed`) | `reports/2026-M07.jsonl` | `ops/run-records/run-5bee539f889d.json` | made `python -m repo_position_coupling_index validate` default to `coupling_index/2026-M07.md` |
+| `negotiation-mechanism-replay` | **shipped CLEAN** (`2cbb7df`) | `reports/2026-07-procurement-01.jsonl` | `ops/run-records/run-c1665181c5d4.json` | none |
+| `sealed-bid-sourcing` | shipped (`0e00deb`) | `reports/surplus_delta.jsonl` and `reports/surplus_delta.md` | `ops/run-records/run-0dad48d8c321.json` | made `python -m sealed_bid_sourcing validate` default to the canonical scenario and receipts |
+| `commit-provenance` | shipped (`55bad7e`) | `reports/commit-provenance-v0.1.jsonl` | `ops/run-records/run-72b8c1a3f4b8.json` | added `python -m commit_provenance` entrypoint plus default report validation |
+
+Pre-merge validation for the Codex lane:
+
+| Repo | Test gate | First-user command |
+|---|---|---|
+| `release-pillar-mapper` | 15 passed | `python -m release_pillar_mapper validate` -> OK |
+| `repo-position-coupling-index` | 9 passed | `python -m repo_position_coupling_index validate` -> OK |
+| `negotiation-mechanism-replay` | 8 passed | `python -m negotiation_mechanism_replay validate` -> OK |
+| `sealed-bid-sourcing` | 4 passed | `python -m sealed_bid_sourcing validate` -> OK |
+| `commit-provenance` | 5 passed | `python -m commit_provenance validate` -> OK |
+
+**Batch-4 Codex verdict**: 1 of 5 factory-clean, 5 of 5 shippable after small
+contract repairs. The common defect sat in the data-report template's
+first-action coaching. The factory built the reports, schemas, specs, product
+briefs, and tests, but four repos needed a human to make the promised
+`python -m <package> validate` command work without arguments. Patch that
+template-coaching gap before the next data-report batch.
+
+### Factory note from batch 4
+
+Two long-running batch-4 workers surfaced Windows text-decoding warnings while
+subprocess output was being read. The runs completed, but the factory should
+decode subprocess text as UTF-8 with replacement semantics so non-ASCII worker
+output cannot interrupt log readers. `scripts/factory/pipeline.py` now passes
+`encoding="utf-8", errors="replace"` for the affected subprocess captures.
+
+## Batch 4 Claude lane evidence
+
+Fired 5 product-control-plane repos through the patched factory in parallel.
+Same templates, same loader, no schema handshake (lanes are independent now).
+
+| Repo | Outcome | Real artifact | Manual fixes |
+|---|---|---|---|
+| `repo-triage` | **shipped CLEAN** (`f961513`) | `data/ledger/runs.jsonl` | none |
+| `portfolio-manifest` | **shipped CLEAN** (`b3aafc3`) | `data/ledger/2026-W25.jsonl` | none |
+| `procurement-pattern-library` | **shipped CLEAN** (`f2778b0`) | `data/ledger/2026-Q2-transfer-score.jsonl` | none |
+| `pre-mortem-ledger` | **shipped CLEAN** (`4f9064e`) | `data/ledger/runs.jsonl` | none |
+| `portfolio-thesis-plane` | **shipped CLEAN** (`8843b97`) | `data/ledger/2026-W25.jsonl` | none |
+
+**Batch-4 Claude verdict: 5 of 5 factory-clean.** Every repo shipped with:
+- All 6 contract artifacts (PRODUCT_BRIEF, SYSTEM_MAP, STATUS, README, pyproject, docs/METHODOLOGY)
+- Canonical STATUS sections (`## Current state` / `## Known limits` / `## Next feature queue`)
+- A real `data/ledger/*.jsonl` artifact (no placeholders)
+- pyproject following the uv conventions from template fix B
+- No manual merge needed
+
+The product-control-plane template held up better than the data-report template
+on this batch. Likely explanation: control-plane repos have a simpler
+"validate" command surface (read the ledger, exit 0) where the data-report
+shape needs more first-action coaching for the actual report-emit path. The
+Codex-lane manual fixes were all in that first-action surface — informs the
+next iteration of the data-report template.
+
+## Session totals (after batch 4 close)
+
+**29 of 42 portfolio repos at v0.1:**
 - Pilot (3): source-decay-ledger, promotion-vs-pip, grid-silicon
-- Batch 2 (5): agent-notary-layer, site-atlas, ratepayer-exposure, puc-docket-rag, proof-gate-runner
-- Codex batch 2 (5): fab-risk-radar, wafer-to-watt, channel-atlas, sovereign-compute, policy-replay
+- Batch 2 Claude (5): agent-notary-layer, site-atlas, ratepayer-exposure, puc-docket-rag, proof-gate-runner
+- Batch 2 Codex (5): fab-risk-radar, wafer-to-watt, channel-atlas, sovereign-compute, policy-replay
 - Spec 0019 pilots (2): binding-constraint, brief-calibration
 - Batch 3 (5): earnings-pillar-diff, thesis-pillar-tracker, pattern-index, modelswap-replay, capital-build-reconciler
+- Batch 4 Claude (5): repo-triage, portfolio-manifest, procurement-pattern-library, pre-mortem-ledger, portfolio-thesis-plane
+- Batch 4 Codex (5): release-pillar-mapper, repo-position-coupling-index, negotiation-mechanism-replay, sealed-bid-sourcing, commit-provenance
 
-23 untouched, available for batch 4+ via the factory or direct-build per shape.
+**13 untouched** remain.
+
+### Cumulative factory-clean rate per batch
+
+| Batch | Repos | Factory-clean | Manual-fix |
+|---|---|---|---|
+| Batch 2 (Claude factory) | 5 | 2 | 3 |
+| Batch 3 (1 lane) | 5 | 4 | 1 |
+| Batch 4 Claude | 5 | **5** | 0 |
+| Batch 4 Codex | 5 | 1 | 4 |
+
+The product-control-plane template hit 100% clean on batch 4 — its post-batch-3 STATUS-section + pyproject-convention coaching is now landing reliably. The data-report template still has a first-action coaching gap (4 of 5 Codex repos needed `python -m <pkg> validate` to be wired without arguments). That's the next single-line template improvement before batch 5.
 
 ## References
 
