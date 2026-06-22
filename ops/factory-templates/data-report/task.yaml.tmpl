@@ -19,6 +19,20 @@ goal: |
     are bullet lists; the "Next feature queue" body becomes the input
     to the next factory run for this repo.
 
+  First-user-action convention (REQUIRED — promised CLI must work with no args):
+  - The `first_user_action` field is `python -m {SLUG} validate`. The
+    implementer MUST wire that command to succeed WITHOUT requiring any
+    additional flags. The conventional path is:
+      * `cli.py` exposes `main()` and an argparse subcommand `validate`
+      * `validate` with no args picks a CANONICAL default scenario from
+        the checked-in fixture / report (e.g., the first ticker, the
+        current quarter, the first row in the ledger) and validates it
+      * Exit 0 on success, non-zero with a typed message on failure
+    Do NOT require `--scenario` / `--period` / `--input` flags for the
+    bare `validate` invocation. Batch-4 evidence showed 4 of 5 data-report
+    repos shipped a CLI that needed args, breaking the promised first
+    action. The defaults should always work for the v0.1 artifact.
+
   Python packaging convention (REQUIRED — `python -m uv sync` + tests
   silently break otherwise):
   - In `pyproject.toml`, declare dev deps under `[dependency-groups]`,
