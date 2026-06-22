@@ -69,10 +69,22 @@ def _read_committed_run() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     factory_runs = []
     for path in run_records:
         run = json.loads(path.read_text(encoding="utf-8"))
-        if run.get("runtime") == "procurement-lab-factory":
+        sandbox = run.get("sandbox_image_ref")
+        gate_summary = run.get("gate_results_summary")
+        finalized = isinstance(sandbox, str) and "@PENDING" not in sandbox
+        passed = (
+            isinstance(gate_summary, dict)
+            and gate_summary.get("all_passed") is True
+        )
+        if (
+            run.get("runtime") == "procurement-lab-factory"
+            and finalized
+            and passed
+        ):
             factory_runs.append((path, run))
     assert factory_runs, (
-        "no committed factory-runtime run record under ops/run-records/"
+        "no committed finalized passing factory-runtime run record under "
+        "ops/run-records/"
     )
     # Pick the most recent factory run (last alphabetically by id).
     run_path, run = factory_runs[-1]

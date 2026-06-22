@@ -1,0 +1,56 @@
+{
+  "agent_id": "procurement-lab-factory@codex",
+  "events": [
+    {
+      "kind": "terminal_triage",
+      "payload": {
+        "final_status": "done",
+        "triage": "INVESTIGATE"
+      },
+      "timestamp": "2026-06-22T12:47:00Z"
+    }
+  ],
+  "finished_at": "2026-06-22T12:47:00Z",
+  "gate_results_summary": {
+    "all_passed": false,
+    "gates_failed": [
+      "implementation-diff",
+      "contract-presence",
+      "reports-present",
+      "contract:missing-active-file:PRODUCT_BRIEF.md",
+      "contract:missing-active-file:SYSTEM_MAP.md",
+      "contract:missing-expected-artifact:PRODUCT_BRIEF.md",
+      "contract:missing-expected-artifact:SYSTEM_MAP.md",
+      "contract:missing-expected-artifact:sealed_bid_sourcing-cli.py",
+      "contract:missing-expected-artifact:reports-glob.jsonl",
+      "contract:missing-module-source:sealed_bid_sourcing-cli.py",
+      "contract:missing-module-source:sealed_bid_sourcing-model.py",
+      "contract:missing-module-source:sealed_bid_sourcing-scoring.py"
+    ],
+    "gates_passed": [
+      "pyproject-uv-conventions",
+      "contract-presence",
+      "reports-present",
+      "pyproject-uv-conventions",
+      "contract:active-repo-files",
+      "contract:expected-artifacts",
+      "contract:module-map"
+    ]
+  },
+  "id": "run-0dad48d8c321",
+  "inputs": [
+    {
+      "kind": "task",
+      "ref": "repo://procurement-negotiation-lab@994f2e0109cfbfa97af515c8ad291fbde63bcae1/ops/factory-tasks/batch4-sealed-bid-sourcing.yaml"
+    }
+  ],
+  "outputs": [],
+  "prompt_snapshot_hash": "99eb66f11e0d2bc9d30aabf3e712d67c25791e1e2e0c0243b74f08475954d56b",
+  "runtime": "procurement-lab-factory",
+  "sandbox_image_ref": "repo://procurement-negotiation-lab@PENDING/",
+  "spec_id": "E:\\claude_code\\random-apps\\procurement-negotiation-lab\\ops\\factory-tasks\\batch4-sealed-bid-sourcing.yaml",
+  "started_at": "2026-06-22T12:29:44Z",
+  "status": "done",
+  "tool_schemas_snapshot_hash": "4eea97cebfa9ffe7fa38fce84639259c9617f24760de396742fc973344696377",
+  "workspace_id": "procurement-negotiation-lab"
+}

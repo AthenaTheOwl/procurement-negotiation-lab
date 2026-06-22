@@ -494,6 +494,8 @@ def _emit_time_head_sha(worktree_path: Path | None) -> str | None:
             ["git", "-C", str(worktree_path), "rev-parse", "HEAD"],  # noqa: S607
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=False,
             timeout=10,
         )
@@ -715,6 +717,8 @@ def _open_pr(worktree: WorktreeInfo, task: Task, plan: str, review: str) -> str 
             cwd=str(worktree.path),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=False,
         )
     except FileNotFoundError:
