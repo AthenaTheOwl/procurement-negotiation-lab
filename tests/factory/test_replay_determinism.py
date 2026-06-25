@@ -202,6 +202,10 @@ def head_restorer():  # type: ignore[no-untyped-def]
             )
         except RuntimeError:
             pass
+        try:
+            _git("checkout", "--", "scripts/replay_run.py")
+        except RuntimeError:
+            pass
         _git("checkout", original_ref)
 
 
