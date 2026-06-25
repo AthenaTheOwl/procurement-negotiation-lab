@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
 const baseURL = process.env.SMOKE_URL ?? "https://procurement-negotiation-lab.vercel.app/";
+const browserChannel = process.env.PLAYWRIGHT_CHROME_CHANNEL;
 
 export default defineConfig({
   testDir: "./apps/web/e2e",
@@ -12,6 +13,7 @@ export default defineConfig({
   use: {
     baseURL,
     actionTimeout: 5_000,
+    channel: browserChannel || undefined,
     navigationTimeout: 10_000,
     headless: true,
     viewport: { width: 1280, height: 800 },
