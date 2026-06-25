@@ -73,10 +73,11 @@ jobs:
         run: |
           python -m trace_to_eval evidence validate /tmp/packet.json
 
-      - name: Save finalized Run record before checkout
+      - name: Save finalized replay inputs before checkout
         working-directory: procurement-negotiation-lab
         run: |
           cp ops/run-records/${CANONICAL_SAMPLE}.json /tmp/run-record-finalized.json
+          cp scripts/replay_run.py /tmp/replay_run-current.py
 
       - name: Extract sandbox SHA from canonical Run record
         id: sandbox
@@ -98,14 +99,18 @@ jobs:
         run: |
           git checkout ${{ steps.sandbox.outputs.sha }}
 
-      - name: Restore finalized Run record into worktree
+      - name: Restore finalized replay inputs into worktree
         working-directory: procurement-negotiation-lab
         # The sandbox SHA points at the commit that wrote the sample with a
         # PENDING placeholder per DEC-FACTORY-010's two-pass emit. Replay
         # needs the finalized Run record on disk so the recorded SHA is
         # readable; we restore the HEAD-finalized copy saved before checkout.
+        # The replay harness itself also evolves. Keeping the current harness
+        # in place lets old samples benefit from path-normalization fixes while
+        # the rest of the worktree remains pinned to the recorded sandbox SHA.
         run: |
           cp /tmp/run-record-finalized.json ops/run-records/${CANONICAL_SAMPLE}.json
+          cp /tmp/replay_run-current.py scripts/replay_run.py
 
       - name: Replay smoke (canonical sample)
         working-directory: procurement-negotiation-lab

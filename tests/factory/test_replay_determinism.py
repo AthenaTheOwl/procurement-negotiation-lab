@@ -279,10 +279,16 @@ def test_canonical_sample_replay_is_deterministic(  # type: ignore[no-untyped-de
     # carries the PENDING placeholder per the DEC-FACTORY-010 two-pass
     # flow) replays against the finalized SHA. The CI workflow does the
     # same dance via ``cp /tmp/run-record-finalized.json ...`` after the
-    # ``git checkout``.
+    # ``git checkout``. Save the current replay harness too: older sandbox
+    # commits can contain pre-portability replay code, while the replay
+    # contract should exercise the recorded code state with the current
+    # evidence reader.
     finalized_record_bytes = RUN_RECORD_PATH.read_bytes()
+    replay_script_path = REPO_ROOT / "scripts" / "replay_run.py"
+    replay_script_bytes = replay_script_path.read_bytes()
     _git("checkout", sandbox_sha)
     RUN_RECORD_PATH.write_bytes(finalized_record_bytes)
+    replay_script_path.write_bytes(replay_script_bytes)
 
     canonical_traces: list[dict[str, Any]] = []
     canonical_hashes: list[str] = []
