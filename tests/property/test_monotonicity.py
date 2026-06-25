@@ -25,13 +25,10 @@ that claims monotonicity gains coverage immediately.
 
 from __future__ import annotations
 
-from copy import deepcopy
-
 import pytest
 from hypothesis import given, settings
 
 from procurement_lab.engine.schemas import AlgorithmRun, Convergence, Scenario
-
 from tests.property.conftest import scenario_strategy
 from tests.property.registry import (
     PROP_MONOTONICITY,

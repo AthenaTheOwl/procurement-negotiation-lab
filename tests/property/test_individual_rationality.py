@@ -32,7 +32,6 @@ from procurement_lab.engine.schemas import (
     Convergence,
     Scenario,
 )
-
 from tests.property.conftest import scenario_strategy
 from tests.property.registry import (
     PROP_INDIVIDUAL_RATIONALITY,

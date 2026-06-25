@@ -56,6 +56,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -85,7 +86,10 @@ _REPO_URI_RE = re.compile(
 _ARTIFACT_URI_RE = re.compile(
     r"^artifact://(?P<repo>[a-z][a-z0-9-]*)/(?P<id>.+)$"
 )
-_DEFAULT_PORTFOLIO_ROOT = Path("e:/claude_code/random-apps")
+_DEFAULT_PORTFOLIO_ROOT = Path(
+    os.environ.get("PORTFOLIO_ROOT", str(ROOT.parent))
+)
+_WINDOWS_ABSOLUTE_RE = re.compile(r"^[A-Za-z]:[/\\]")
 
 
 def resolve_uri(
@@ -96,10 +100,24 @@ def resolve_uri(
         portfolio_root = _DEFAULT_PORTFOLIO_ROOT
     match = _REPO_URI_RE.match(uri)
     if match:
+        if match.group("repo") == ROOT.name:
+            return ROOT / match.group("path")
         return portfolio_root / match.group("repo") / match.group("path")
     if _ARTIFACT_URI_RE.match(uri):
         return None
+    if _WINDOWS_ABSOLUTE_RE.match(uri):
+        return _resolve_windows_absolute_uri(uri)
     return Path(uri)
+
+
+def _resolve_windows_absolute_uri(uri: str) -> Path:
+    """Map a recorded Windows absolute path to this checkout when possible."""
+    normalized = uri.replace("\\", "/")
+    marker = f"/{ROOT.name}/"
+    if marker in normalized:
+        _, _, rel = normalized.partition(marker)
+        return ROOT / rel
+    return Path(normalized)
 
 # Replay framing per DEC-FACTORY-009: factory dry-run is deterministic with
 # stub workers, but the pipeline shape is "an LLM pipeline" so the canonical

@@ -393,11 +393,6 @@ def test_rehydrate_from_run_record_round_trip(
     adapter = _make_adapter(fake_repo, run_id="run-adapter-rehydrate")
     first = adapter.run()
 
-    # Rehydrate from the persisted record. Use portfolio_root pointing
-    # at the parent of the fake repo so resolve_uri lands on the right
-    # task yaml.
-    portfolio_root = tmp_path.parent
-
     # The repo:// URI in the recorded inputs uses "procurement-negotiation-lab"
     # as the repo name; for the fake repo on disk, the directory name is
     # the tmp_path leaf (not "procurement-negotiation-lab"). To exercise

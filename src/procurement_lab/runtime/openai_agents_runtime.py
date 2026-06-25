@@ -47,15 +47,15 @@ import json
 import logging
 import os
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from procurement_lab.run_evidence import (
     REPO_NAME,
     SANDBOX_PENDING_PLACEHOLDER,
-    build_repo_uri,
     canonicalize_prompt,
     canonicalize_tool_surface,
     compute_sha256,
@@ -74,18 +74,18 @@ try:  # pragma: no cover - import probe
     from agents.sandbox import (  # type: ignore[import-not-found]
         Manifest as _SDKManifest,
     )
-    from agents.sandbox import (  # type: ignore[import-not-found]
+    from agents.sandbox import (
         SandboxAgent,
         SandboxRunConfig,
     )
 
     _SDK_AVAILABLE = True
 except ImportError:  # pragma: no cover - import probe
-    Agent = None  # type: ignore[assignment]
-    Runner = None  # type: ignore[assignment]
-    _SDKManifest = None  # type: ignore[assignment]
-    SandboxAgent = None  # type: ignore[assignment]
-    SandboxRunConfig = None  # type: ignore[assignment]
+    Agent = None
+    Runner = None
+    _SDKManifest = None
+    SandboxAgent = None
+    SandboxRunConfig = None
     _SDK_AVAILABLE = False
 
 
@@ -617,11 +617,11 @@ class AgentsSDKRuntimeAdapter:
         # ``_SDKManifest`` is the agents.sandbox.Manifest class; we
         # build it from the validated body so the SDK constructor sees
         # the same shape that landed in ops/sandbox-manifests/.
-        sdk_manifest = _SDKManifest(**manifest_body)  # type: ignore[misc]
-        sandbox_run_config = SandboxRunConfig(  # type: ignore[misc]
+        sdk_manifest = _SDKManifest(**manifest_body)
+        sandbox_run_config = SandboxRunConfig(
             session_state=None,
         )
-        agent = SandboxAgent(  # type: ignore[misc]
+        agent = SandboxAgent(
             default_manifest=sdk_manifest,
             base_instructions=(
                 "Procurement-lab factory task. Follow the task YAML."
@@ -642,7 +642,7 @@ class AgentsSDKRuntimeAdapter:
 
         # Runner.run is async in the documented surface; we use the
         # sync wrapper so the adapter does not need an asyncio loop.
-        result = Runner.run_sync(  # type: ignore[union-attr]
+        result = Runner.run_sync(
             agent,
             self.task_yaml_path.read_text(encoding="utf-8"),
             run_config=sandbox_run_config,
@@ -702,7 +702,7 @@ class AgentsSDKRuntimeAdapter:
             if callable(fn):
                 try:
                     run_state_payload = fn()
-                except Exception:  # noqa: BLE001 - best-effort fallback
+                except Exception:  # noqa: BLE001  # nosec B112
                     continue
                 break
         if run_state_payload is None:

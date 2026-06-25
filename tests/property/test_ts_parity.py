@@ -25,7 +25,6 @@ from procurement_lab.algorithms.weighted_nash import (
     PROTOCOL_NUMERICAL_TOLERANCE,
     PROTOCOL_VERSION,
 )
-
 from tests.property.registry import (
     PROP_TS_PARITY,
     MechanismEntry,

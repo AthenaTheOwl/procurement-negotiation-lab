@@ -72,25 +72,25 @@ import math
 import random
 import time
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Sequence
+from typing import Any
 
 from procurement_lab.algorithms.weighted_nash import (
     NASH_QUANTIZATION_LEVELS,
-    TIE_BREAK_TOLERANCE,
     WeightedNashPlaintext,
     _default_weights,
     _failure_run,
     _upper_bound,
 )
 from procurement_lab.engine.schemas import (
+    AggregateTranscriptExposure,
     AlgorithmRun,
     Convergence,
     InformationMode,
     IterationRecord,
     MechanismFailureReason,
     Scenario,
-    AggregateTranscriptExposure,
     TranscriptExposureParty,
     TranscriptExposureReport,
 )
@@ -314,7 +314,7 @@ class _MPCRunBookkeeping:
     rounds_used: int = 0
     transcript_chunks: list[bytes] = field(default_factory=list)
 
-    def add_transcript_chunk(self, payload: dict) -> None:
+    def add_transcript_chunk(self, payload: dict[str, Any]) -> None:
         self.transcript_chunks.append(
             json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
         )
@@ -485,7 +485,7 @@ class WeightedNashMPC:
             )
 
         seed = _seed_from_scenario(scenario)
-        rng = random.Random(seed)
+        rng = random.Random(seed)  # nosec B311
         bookkeeping = _MPCRunBookkeeping()
         run_id = f"run-mpc-{uuid.uuid4().hex[:12]}"
         bookkeeping.add_transcript_chunk(

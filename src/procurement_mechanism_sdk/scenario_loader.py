@@ -8,13 +8,12 @@ message so failed loads point at the offending file.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 import yaml
 
 from procurement_lab.engine.schemas import Scenario
-
 
 DEFAULT_SCENARIOS_DIR = Path(__file__).resolve().parents[2].parent / "scenarios"
 

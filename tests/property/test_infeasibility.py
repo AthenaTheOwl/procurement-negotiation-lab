@@ -25,7 +25,6 @@ from procurement_lab.engine.schemas import (
     Role,
     Scenario,
 )
-
 from tests.property.registry import (
     PROP_INFEASIBILITY,
     MechanismEntry,

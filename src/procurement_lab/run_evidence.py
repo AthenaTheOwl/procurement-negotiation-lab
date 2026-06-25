@@ -41,7 +41,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-import subprocess
+import subprocess  # nosec B404
 import uuid
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
@@ -49,7 +49,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-# ----------------------------------------------------------------- repo:// URI grammar (DEC-CDCP-014)
+# ---------------------------------------------------- repo:// URI grammar
 
 # Portable URI scheme for cross-repo references. The grammar lands in
 # athena-site DEC-CDCP-014; this repo's emitter switches to repo:// /
@@ -189,7 +189,7 @@ def derive_sandbox_image_ref(
     if not worktree.exists():
         return None
     try:
-        result = subprocess.run(  # noqa: S603 - args fixed, no shell
+        result = subprocess.run(  # nosec B603 B607
             ["git", "-C", str(worktree), "rev-parse", "HEAD"],
             capture_output=True,
             text=True,

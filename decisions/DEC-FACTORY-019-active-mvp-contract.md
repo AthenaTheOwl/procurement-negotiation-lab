@@ -1,5 +1,5 @@
 ---
-id: DEC-FACTORY-V2-FULL-001-active-mvp-contract
+id: DEC-FACTORY-019-active-mvp-contract
 spec: specs/0019-factory-active-mvp/
 requirement: R-FAM-V1-001
 date: 2026-06-21
@@ -399,7 +399,7 @@ Every repo's STATUS.md `## Next feature queue` already names 4-6 concrete items 
 
 ## Post-hoc functional audit — the first-action gap (2026-06-21)
 
-After batch 5 closed, the operator asked the right question: "is it functional?" An audit ran each repo's advertised `first_user_action` (`python -m <pkg> validate`) with no args against the real merged repos. Result: **only ~6 of 19 Claude-lane repos actually worked as advertised.** The other ~13 had a functional CLI but the bare command was broken:
+After batch 5 closed, the operator asked the right question: "is it functional?" An audit ran each repo's advertised `first_user_action` (`python -m <pkg> validate`) with no args against the real merged repos. Result: **only ~6 of 19 Claude-lane repos worked as advertised.** The other ~13 had a functional CLI but the bare command was broken:
 
 | Failure mode | Count | Example |
 |---|---|---|

@@ -14,14 +14,12 @@ import pytest
 from hypothesis import given, settings
 
 from procurement_lab.engine.schemas import AlgorithmRun, Scenario
-
 from tests.property.conftest import scenario_strategy
 from tests.property.registry import (
     PROP_DETERMINISM,
     MechanismEntry,
     mechanisms_claiming,
 )
-
 
 # Per DEC-PROP-001. Iterative mechanisms inherit the algorithm's
 # convergence tolerance; non-iterative ones use the strict floor.

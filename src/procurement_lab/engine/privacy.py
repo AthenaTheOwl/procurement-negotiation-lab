@@ -43,32 +43,31 @@ import math
 from dataclasses import dataclass
 
 from procurement_lab.engine.schemas import (
+    AggregateTranscriptExposure,
     Participant,
     Scenario,
-    AggregateTranscriptExposure,
     TranscriptExposureParty,
     TranscriptExposureReport,
 )
 from procurement_lab.engine.utility import evaluate_participant_utility
 
-
 # --- Protocol parameters (DEC-NASH-001 + DEC-NASH-002) ----------------------
 
-PROTOCOL_VERSION = "transcript-exposure/v1"
-LEGACY_PROTOCOL_VERSION = "bounded-leakage/v1"
-STEP_QUANTIZATION_LEVELS = 32
-MAX_ROUNDS = 200
-CONVERGENCE_TOLERANCE = 1e-3
+PROTOCOL_VERSION: str = "transcript-exposure/v1"
+LEGACY_PROTOCOL_VERSION: str = "bounded-leakage/v1"
+STEP_QUANTIZATION_LEVELS: int = 32
+MAX_ROUNDS: int = 200
+CONVERGENCE_TOLERANCE: float = 1e-3
 
 # Step schedule per DEC-NASH-001: eta_t = eta_0 / (1 + t) ** beta
 # STEP_ETA_0 is the DIMENSIONLESS coefficient; the operational step size
 # is scaled to the scenario's allocation upper bound via
 # STEP_SCALE_FRACTION so the protocol traverses the feasible range
 # inside MAX_ROUNDS regardless of allocation magnitude.
-STEP_ETA_0 = 0.5
-STEP_BETA = 0.5
-STEP_SCALE_FRACTION = 0.05  # initial step = 5% of upper_bound at t=0
-                            # (multiplied by STEP_ETA_0)
+STEP_ETA_0: float = 0.5
+STEP_BETA: float = 0.5
+STEP_SCALE_FRACTION: float = 0.05  # initial step = 5% of upper_bound at t=0
+                                   # (multiplied by STEP_ETA_0)
 
 # Sufficiency note carried on every TranscriptExposureReport per DEC-NASH-002.
 EXPOSURE_SUFFICIENCY_NOTE = (
@@ -88,7 +87,7 @@ def step_size(round_seq: int, upper_bound: float) -> float:
     allocation range and a 25-unit allocation range both converge in
     the same number of rounds.
     """
-    return (
+    return float(
         STEP_ETA_0
         * STEP_SCALE_FRACTION
         * upper_bound
@@ -109,7 +108,7 @@ def declared_exposure_bit_bound(round_count: int, n_coords: int) -> float:
     while keeping the measurement, or vice versa.
     """
     per_round = n_coords * math.log2(3) + math.log2(STEP_QUANTIZATION_LEVELS)
-    return round_count * per_round
+    return float(round_count * per_round)
 
 
 def declared_epsilon_bound(round_count: int, n_coords: int) -> float:

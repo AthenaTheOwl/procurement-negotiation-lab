@@ -15,7 +15,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import yaml
 
 from procurement_lab.engine.schemas import Scenario
 from procurement_mechanism_sdk.scenario_loader import (
@@ -23,7 +22,6 @@ from procurement_mechanism_sdk.scenario_loader import (
     load_all_scenarios,
     load_scenario,
 )
-
 
 SCENARIOS_DIR = Path(__file__).resolve().parents[1] / "scenarios"
 

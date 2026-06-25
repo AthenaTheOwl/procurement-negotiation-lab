@@ -42,11 +42,9 @@ from procurement_lab.engine.schemas import (
     Convergence,
     InformationMode,
     Participant,
-    Product,
     Role,
     Scenario,
 )
-
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "scenarios"
 

@@ -172,7 +172,7 @@ def test_validator_exits_zero_on_empty_dirs(validator):  # type: ignore[no-untyp
     assert module.main() == 0
 
 
-# ----------------------------------------------------------------- DEC-FACTORY-010 resolve_uri tests
+# ------------------------------------------------ DEC-FACTORY-010 resolve_uri tests
 
 
 def test_resolve_uri_repo_uri_returns_local_path(validator):  # type: ignore[no-untyped-def]

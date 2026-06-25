@@ -29,7 +29,6 @@ from procurement_lab.engine.schemas import (
     Scenario,
 )
 from procurement_lab.engine.utility import evaluate_participant_utility
-
 from tests.property.conftest import scenario_strategy
 from tests.property.registry import (
     PROP_PARETO,

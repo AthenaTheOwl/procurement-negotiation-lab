@@ -23,11 +23,9 @@ from hypothesis import given, settings
 
 from procurement_lab.engine.schemas import (
     AlgorithmRun,
-    Convergence,
     InformationMode,
     Scenario,
 )
-
 from tests.property.conftest import scenario_strategy
 from tests.property.registry import (
     PROP_LEAKAGE_BOUND,

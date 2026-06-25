@@ -28,9 +28,7 @@ from procurement_lab.engine.schemas import (
     Convergence,
     Scenario,
 )
-
 from tests.property.conftest import scenario_strategy
-
 
 BUDGET_BALANCE_TOLERANCE = 1e-6
 

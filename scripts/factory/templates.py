@@ -14,6 +14,7 @@ TEMPLATE_ROOT = Path("ops/factory-templates")
 TASK_OUTPUT_DIR = Path("ops/factory-tasks")
 PLACEHOLDERS = ("SLUG", "PACKAGE", "REPO", "BRAND", "TASK_ID", "NOW")
 DEFAULT_PORTFOLIO_ROOT = Path("E:/claude_code/random-apps")
+_WINDOWS_ABSOLUTE_RE = re.compile(r"^[A-Za-z]:[/\\]")
 
 
 class TemplateError(RuntimeError):
@@ -117,6 +118,8 @@ def _package_from_slug(slug: str) -> str:
 
 
 def _target_repo(repo: str) -> str:
+    if _WINDOWS_ABSOLUTE_RE.match(repo):
+        return repo.replace("\\", "/")
     path = Path(repo)
     if path.is_absolute():
         return path.as_posix()
