@@ -10,7 +10,7 @@
     "test": "vitest",
     "lint": "tsc --noEmit",
     "smoke": "playwright test -c ../../playwright.config.ts",
-    "smoke:install": "playwright install --with-deps chromium"
+    "smoke:install": "playwright install chromium"
   },
   "dependencies": {
     "@lab/engine": "*",

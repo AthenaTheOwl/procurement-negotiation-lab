@@ -27,7 +27,7 @@ jobs:
       - name: mobile typecheck
         run: npm run typecheck --workspace=@lab/mobile
       - name: install playwright
-        run: npx playwright install --with-deps chromium
+        run: npm run smoke:install --workspace=@lab/web
       - name: smoke built web
         shell: bash
         run: |
