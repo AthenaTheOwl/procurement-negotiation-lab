@@ -1,110 +1,90 @@
 # procurement-negotiation-lab
 
-A for-fun learning simulator for long-lead procurement commitments.
-You play the buyer, Cinder is the simulated supplier, and each round
-turns one decision into a visible consequence before the math appears.
+Two parties agree to a substrate order. The deal is worth $35,000 if they coordinate. One of the standard ways to split the work — averaging everyone's guess until it settles — never settles, and the table walks away with $28,825. The other $6,175 is real, and nobody took it home. This is a sandbox for watching that gap open and close.
+
+## What it does
+
+You play the buyer. Cinder is the simulated supplier. Each round of a long-lead procurement commitment turns one decision into a visible consequence before any math appears on screen — settle now, settle later, hold capacity, reveal a forecast band — and then the lab shows you what that decision cost against a centralized oracle that already knew the answer.
+
+The point is the gap, not the win. Two locally rational agents will reliably choose a globally worse plan, and the lab puts a dollar figure on how much worse. You can line up a dozen mechanisms — a JIT baseline, the oracle, ADMM-style price-and-residual coordination, menu contracts, alternating best response, plain consensus averaging, three weighted-Nash variants — and see which one closes the distance, without anyone crowning ADMM in advance. Some of them just don't converge. The output says so.
+
+This is an independent public demo built against the open-source [amzn/FloPro](https://github.com/amzn/FloPro) ADMM implementation. It uses synthetic data only — no purchase orders, no supplier records, no FloPro roadmap.
+
+## Try it
+
+The reusable mechanism logic ships as `procurement_mechanism_sdk`, importable without touching the web app. The standalone demo runs three mechanisms on one substrate-crunch scenario and prints the result:
+
+```powershell
+python -m procurement_mechanism_sdk.demo
+```
+
+```
+{
+  "participant_count": 2,
+  "participation": {
+    "feasible": true,
+    "mechanism": "admm",
+    "no_worse_off": {
+      "buyer-northstar": true,
+      "supplier-cinder": true
+    },
+    "oracle_gap": 0.0,
+    "surplus": 35000.0
+  },
+  "runs": [
+    {
+      "convergence": "converged",
+      "final_residual": 0.0,
+      "global_utility": 35000.0,
+      "mechanism": "centralized_oracle",
+      "oracle_gap": 0.0
+    },
+    {
+      "convergence": "converged",
+      "final_residual": 0.0,
+      "global_utility": 35000.0,
+      "mechanism": "admm",
+      "oracle_gap": 0.0
+    },
+    {
+      "convergence": "not_converged",
+      "final_residual": 56.875,
+      "global_utility": 28825.0,
+      "mechanism": "consensus_averaging",
+      "oracle_gap": 6175.0
+    }
+  ],
+  "scenario_id": "sdk-substrate-crunch"
+}
+```
+
+The oracle and ADMM both land on the full $35,000. Consensus averaging stops 56.875 short of convergence and a $6,175 oracle gap. That last row is the whole lesson in one object.
+
+Run the multi-party weighted-Nash demo:
+
+```powershell
+python -m procurement_mechanism_sdk.demo --sample multi_party --mechanism weighted_nash_bounded
+```
+
+The SDK wraps the deterministic Python engine rather than re-deriving the deployed simulator. See [`docs/mechanism-sdk.md`](docs/mechanism-sdk.md) for the exported API and boundary.
+
+## Live demo
+
+The polished public demo is the React/TypeScript app. It has three surfaces: PLAY (a six-beat management sim, "The Substrate Crunch"), LAB (an authoring workbench for scenarios, counterparties, mechanisms, and transfers), and STUDY (plain-English tutorial pages on utility, residuals, risk scores, ADMM, oracle gaps, and cost-benefit transfers).
 
 **Live:** [procurement-negotiation-lab.vercel.app](https://procurement-negotiation-lab.vercel.app/)
 
-This is an independent public demo built against the open-source
-[amzn/FloPro](https://github.com/amzn/FloPro) ADMM implementation.
-Not FloPro-branded. Not an official Amazon example.
+Start at Level 1 (`apps/web/src/surfaces/learn/Level01.tsx`): two figures, one settle button, the lost surplus made visible. Levels 1-11 build up the rest under `apps/web/src/surfaces/learn/`.
 
-## Read it for
+## The lab workbench
 
-- A six-beat negotiated-commitment simulator that explains why JIT
-  planning leaves surplus on the table.
-- A lab workbench where you can compare CPP/ADMM against a centralized
-  oracle, menu contracts, alternating best response, and consensus
-  averaging — without crowning ADMM.
-- Tutorial pages that explain utility, residuals, risk scores, ADMM,
-  oracle gaps, cost-benefit transfers, and the W0 reset toward
-  weighted-Nash bargaining in plain English.
-- A mechanism-design workbench for simulated procurement coordination:
-  weighted-Nash plaintext, transcript-exposure weighted-Nash, v1 BGW
-  MPC, oracle-gap metrics, exposure reports, and property tests.
-- A native iOS and Android port (Expo) that mirrors the web learn flow.
+The lab opens with a "so what" panel — how much value local JIT planning leaves on the table, which non-oracle mechanism performs best, and what full information is worth in the current synthetic setup. From there you can pick presets (substrate crunch, regional shipping asymmetry, multi-vendor shortage), build your own by tuning demand volatility, capacity tightness, lead time, and participant count, choose buyer and supplier strategies (JIT buyer, launch-protection buyer, truthful CPP responder, capacity guard, hard bargainer), and compare every mechanism side by side.
 
-## Where to start
+What it teaches, in order: why two locally rational agents pick a bad plan, how large the coordination gap is against an oracle, how ADMM does its local-solve-consensus-prices-residuals loop, when CPP+VCG/CBT or menu contracts beat it, when a dumb baseline is enough, and how cost-benefit transfers split surplus so nobody ends up worse off.
 
-- Open [procurement-negotiation-lab.vercel.app](https://procurement-negotiation-lab.vercel.app/)
-  and play Level 1 at `apps/web/src/surfaces/learn/Level01.tsx`. Two
-  figures, one settle button, lost surplus made visible. Each Level
-  shows the consequence before the math.
-- Read [`docs/tutorial.md`](docs/tutorial.md) with Levels 1-11 under
-  `apps/web/src/surfaces/learn/` for utility, residuals, risk scores,
-  ADMM, oracle gaps, and cost-benefit transfers in plain English.
-- Read [`docs/algorithms.md`](docs/algorithms.md) for the mechanism
-  comparison: centralized oracle, ADMM-style coordination, simple
-  baselines, weighted-Nash plaintext, transcript-exposure weighted-Nash,
-  and v1 MPC.
-- Read [`docs/factory.md`](docs/factory.md) for the factory subsystem:
-  narrow MCP stdio over shell tools, spec tasks expanded into
-  review-gated YAML, dual review, and optional LangGraph routing.
+## How it connects
 
-## How it's organized
-
-The repo runs the [Cognitive Delivery Control Plane](https://github.com/AthenaTheOwl/athena-site/blob/main/ops/control-plane.md)
-operating model: 17 specs with R-PREFIX requirements, 36 architectural
-decisions captured in `decisions/`, weekly dream-job retrospectives,
-eight roles, twelve tools, six policies, seven executable gate scripts.
-
-## App surfaces
-
-- **PLAY:** a six-beat management simulator, `The Substrate Crunch`.
-- **LAB:** an authoring workbench for scenarios, canonical counterparties,
-  mechanisms, information modes, and transfers.
-- **STUDY:** plain-English tutorial pages on utility, residuals, risk
-  scores, ADMM, oracle gaps, and cost-benefit transfers.
-
-## What it teaches
-
-- Why two locally rational agents can choose a globally bad commitment
-  plan.
-- How large the coordination gap is versus a centralized oracle.
-- How ADMM-style coordination works: local solve, consensus, prices,
-  residuals.
-- When CPP/ADMM helps, when CPP+VCG/CBT or menu contracts are stronger,
-  and when a simpler baseline is enough.
-- How more shared information can buy better joint utility.
-- How information exposure changes when counterparties reveal risk, capacity, cost,
-  or forecast bands.
-- How cost-benefit transfers split surplus so every participant ends
-  up no worse off.
-
-## Lab workbench
-
-The lab opens with a "so what" panel: how much value local JIT planning
-leaves on the table, which non-oracle mechanism performs best, and what
-full information is worth in the current synthetic setup.
-
-From there you can:
-
-- Pick canonical problem presets such as substrate crunch, regional
-  shipping asymmetry, and multi-vendor shortage.
-- Build your own scenario by changing demand volatility, capacity
-  tightness, lead time, FC count, product count, period count, and
-  participant count.
-- Pick canonical buyer and supplier strategies such as JIT buyer,
-  launch-protection buyer, truthful CPP responder, capacity guard,
-  relationship supplier, and hard bargainer.
-- Tune behavior knobs for urgency, flexibility, truthfulness,
-  information-disclosure preference, and risk aversion.
-- Compare JIT baseline, centralized oracle, CPP/ADMM, CPP+VCG/CBT,
-  menu-of-contracts, alternating best response, price-only
-  coordination, consensus averaging, weighted-Nash plaintext,
-  transcript-exposure weighted-Nash, and MPC weighted-Nash.
-
-## The factory subsystem
-
-`scripts/factory/` is a durable agent-orchestration runtime with
-checkpoint interrupts, per-task git worktrees, artifact-as-refs,
-trace IDs, and a stub/real worker abstraction. Spec 0009 documents the
-contract; DEC-FACTORY-001..005 capture the architectural decisions.
-
-It's used internally to expand specs into review-gated task runs. The
-pattern is portable to other repos. See [`docs/factory.md`](docs/factory.md)
-for the adoption guide.
+The repo runs the [Cognitive Delivery Control Plane](https://github.com/AthenaTheOwl/athena-site/blob/main/ops/control-plane.md) operating model — 17 specs with R-PREFIX requirements, 36 decisions under `decisions/`, weekly dream-job retrospectives, and seven executable gate scripts that fail the build when any record drifts. The factory subsystem under `scripts/factory/` is a durable agent-orchestration runtime (checkpoint interrupts, per-task git worktrees, artifact-as-refs, trace IDs); Spec 0009 and DEC-FACTORY-001..005 document the contract, and [`docs/factory.md`](docs/factory.md) is the adoption guide for other repos.
 
 ## Local run
 
@@ -124,134 +104,20 @@ python -m uv sync --python 3.11
 python -m uv run pytest
 ```
 
-If Python 3.11 is not installed locally, Python 3.12 or 3.13 also works.
-The hosted path does not require FICO Xpress or FloPro.
-
-`app.py` is a small compatibility entrypoint. The polished public demo
-is the React/TypeScript app.
-
-## Mechanism SDK
-
-The reusable mechanism logic is importable as `procurement_mechanism_sdk`.
-It wraps the deterministic Python engine instead of moving the deployed
-React/TypeScript simulator. The SDK includes the weighted-Nash
-plaintext, transcript-exposure, and MPC mechanism ids.
-
-```python
-from procurement_mechanism_sdk import compare_mechanisms, sample_scenario
-
-scenario = sample_scenario("base")
-comparison = compare_mechanisms(scenario, mechanisms=("centralized_oracle", "admm"))
-print(comparison.by_mechanism["admm"].utility_gap_vs_oracle)
-```
-
-Run the multi-party weighted-Nash demo:
-
-```powershell
-python -m procurement_mechanism_sdk.demo --sample multi_party --mechanism weighted_nash_bounded
-```
-
-Run the standalone demo without the web app:
-
-```powershell
-python -m procurement_mechanism_sdk.demo
-```
-
-See [`docs/mechanism-sdk.md`](docs/mechanism-sdk.md) for the exported API and
-boundary.
+If Python 3.11 is not installed locally, Python 3.12 or 3.13 also works. The hosted path does not require FICO Xpress or FloPro. `app.py` is a small compatibility entrypoint; the public demo is the React/TypeScript app.
 
 ## Mobile
 
-Native iOS and Android port via Expo + EAS. Tier 0-3 proof ladder
-(unit logic / lint+typecheck / Android emulator E2E / TestFlight).
-Spec 0012 documents the discipline. The hosted `mobile-e2e.yml`
-workflow runs Maestro flows on a KVM-accelerated runner.
+Native iOS and Android port via Expo + EAS, mirroring the web learn flow. Tier 0-3 proof ladder (unit logic, lint+typecheck, Android emulator E2E, TestFlight). Spec 0012 documents the discipline; the hosted `mobile-e2e.yml` workflow runs Maestro flows on a KVM-accelerated runner.
 
-## Proof gates
-
-```powershell
-python -m uv run python scripts/spec_check.py
-python -m uv run python scripts/voice_lint.py
-python -m uv run python scripts/validate_decisions.py
-python -m uv run python scripts/validate_roles.py
-python -m uv run python scripts/validate_tools.py
-python -m uv run python scripts/validate_policies.py
-python -m uv run pytest
-python -m uv run ruff check .
-python -m uv run mypy src
-python -m uv run bandit -q -r src
-python -m uv run pip-audit
-npm.cmd run lint
-npm.cmd run test
-npm.cmd run build
-```
-
-The rebuilt app also has a browser-QA gate: PLAY, LAB, and STUDY must
-be clicked through in a real browser before a checkpoint is called done.
-
-## Spec-driven development
-
-The active specs live under `specs/`. The development loop is:
-
-1. Write or update requirements in testable language.
-2. Update the design so each requirement has a named surface or module.
-3. Implement only tasks traceable to the current spec.
-4. Run proof gates: Python engine tests, frontend tests, type checks,
-   browser QA.
-5. Update traceability and decisions before committing.
-
-If a requested change does not fit the active spec, update the spec
-first.
-
-## What's intentionally not built
+## What it doesn't do
 
 - Real procurement data. Synthetic only.
-- Audited cryptographic MPC. The checked-in BGW MPC path is a
-  v1 reference mechanism for two-party correctness and contract tests;
-  a serious cryptographic deployment would need MP-SPDZ or comparable
-  audited infrastructure.
-- A production solver. Domain Guild roles advise; deterministic
-  FloPro reference code decides anything consequential.
+- Audited cryptographic MPC. The checked-in BGW MPC path is a v1 reference for two-party correctness and contract tests; a serious deployment would need MP-SPDZ or comparable audited infrastructure.
+- A production solver. Roles advise; deterministic FloPro reference code decides anything consequential.
 
-## Public boundary
-
-This repository uses deterministic synthetic data. It does not contain
-real purchase orders, internal supplier records, internal Amazon
-terminology, private FloPro roadmap information, or production
-recommendations.
-
-## Governance
-
-The Cognitive Delivery Control Plane (CDCP) scaffold landed in spec
-0013. It records what we build, why we build it, what we reuse, and
-what we learn, with executable gates that fail builds when any record
-drifts.
-
-- `specs/` — what we build. Spec ledgers under `specs/NNNN-<slug>/`
-  with the six-file pattern (requirements, design, tasks, acceptance,
-  research, traceability).
-- `decisions/` — why we built it. One `DEC-*.md` per architectural or
-  product decision, matching the cross-repo `decision.schema.json`.
-- `dreams/` — what we learned. Weekly offline-cognition outputs under
-  `dreams/YYYY-WNN/` matching the cross-repo `dream-output.schema.json`.
-- `.agents/AGENTS.md` — the single contract a coding agent reads first.
-- `.agents/roles/<role-id>/` — six baseline role contracts plus the
-  `tools.yaml`, `policies/`, `state-machines/`, `workflows/`, and
-  `CATALOG.md` files that make up the operating-model layer.
-- `.agents/skills/<id>/SKILL.md` — packaged recurring patterns. The
-  first graduated skill is `run-factory-task`.
-- `ops/RELEASE_LEDGER.md` — one entry per released commit.
-- `ops/RESET_LEDGER.md` — one entry per force-push, history rewrite,
-  or rollback.
-- `ops/run-ledger.md` — the factory subsystem's per-task pipeline
-  ledger (separate from the release ledger).
-- `docs/product-expansion-roadmap.md` documents the active W0 reset
-  roadmap. Older expansion framing is archived under `docs/archive/`.
-- The cross-repo CDCP charter lives at
-  `https://github.com/AthenaTheOwl/athena-site` under
-  `ops/control-plane.md`.
+This repository contains no real purchase orders, internal supplier records, internal Amazon terminology, or private FloPro roadmap information.
 
 ## License
 
-Apache-2.0 for code. Credits the `amzn/FloPro` public repo (Apache-2.0)
-as a reference implementation only.
+Apache-2.0 for code. Credits the [amzn/FloPro](https://github.com/amzn/FloPro) public repo (Apache-2.0) as a reference implementation only.
