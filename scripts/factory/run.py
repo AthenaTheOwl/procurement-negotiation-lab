@@ -145,6 +145,7 @@ def main(argv: list[str] | None = None) -> int:
         help="record planned steps without invoking agents or gates",
     )
     parser.add_argument("--status", action="store_true", help="print all recorded tasks and exit")
+    parser.add_argument("--metrics", action="store_true", help="roll up factory metrics (clean rate, rework, stop reasons, gate failures) and exit")
     parser.add_argument("--show", type=str, help="print a task's events and exit")
     parser.add_argument(
         "--trace",
@@ -248,6 +249,14 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.artifacts:
             _print_artifacts(args.artifacts)
+            return 0
+        if args.metrics:
+            from .metrics import compute_rollup, format_summary, write_rollup
+            from .pipeline import FACTORY_DEFECTS_DIR
+            rollup = compute_rollup(store, FACTORY_DEFECTS_DIR)
+            print(format_summary(rollup))
+            path = write_rollup(rollup)
+            print(f"\nappended rollup to {path}")
             return 0
         if args.expand_spec:
             generated = expand_spec_to_tasks(
