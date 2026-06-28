@@ -127,7 +127,17 @@ python -m uv run python -m scripts.factory.run --task ops/factory-tasks/example-
 # inspect state
 python -m uv run python -m scripts.factory.run --status
 python -m uv run python -m scripts.factory.run --show example-rename-fc-count
+
+# factory health: clean rate, rework, stop reasons, gate-failure distribution.
+# reads the SQLite ledger + the defect log; the defect log is the honest signal
+# for rework, since the event ledger under-records patch rounds.
+python -m uv run python -m scripts.factory.run --metrics          # print only, read-only
+python -m uv run python -m scripts.factory.run --metrics-record   # also append a snapshot to ops/factory-metrics/rollup.jsonl
 ```
+
+Note the `python -m uv run` prefix: the factory imports `procurement_lab`, so it
+must run inside the uv-installed environment. A bare `python -m scripts.factory.run`
+fails with `ModuleNotFoundError: procurement_lab`.
 
 ## Spec-driven task expansion
 

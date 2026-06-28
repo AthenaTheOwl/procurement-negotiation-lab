@@ -68,3 +68,77 @@ def test_rollup_writes_jsonl(tmp_path: Path) -> None:
     assert out.is_file()
     assert out.read_text(encoding="utf-8").strip().startswith("{")
     s.close()
+
+
+# --- defect-log-derived logic (the path that drives the honest numbers) ---
+
+def _write_defects(defects_dir: Path, task_id: str, entries) -> None:
+    from scripts.factory.defects import DefectEntry, append_defect
+    for e in entries:
+        append_defect(task_id, DefectEntry(**e), defects_dir)
+
+
+def test_patch_rounds_derived_from_defect_rounds(tmp_path: Path) -> None:
+    # events log no rework, but the defect log shows failures at rounds 0 and 1.
+    # patch_rounds must come from the defect log, not the (blind) event ledger.
+    s = _store(tmp_path)
+    ddir = tmp_path / "defects"
+    s.upsert_task("t-iter", "iter", "spec")
+    s.update_task("t-iter", status="done")
+    _write_defects(ddir, "t-iter", [
+        {"kind": "gate.failed", "gate_or_finding": "contract-presence", "round": 0, "phase": "impl", "persona": "d", "summary": "x"},
+        {"kind": "gate.failed", "gate_or_finding": "reports-present", "round": 1, "phase": "impl", "persona": "d", "summary": "x", "resolved_in_round": 2},
+    ])
+    r = compute_rollup(s, ddir)
+    task = next(t for t in r.tasks if t["id"] == "t-iter")
+    assert task["patch_rounds"] == 1            # max defect round
+    assert task["stop_reason"] == "completed_with_rework"
+    assert r.clean_rate == 0.0                  # the one done task was not clean
+    s.close()
+
+
+def test_named_gate_failures_come_from_defect_log(tmp_path: Path) -> None:
+    s = _store(tmp_path)
+    ddir = tmp_path / "defects"
+    s.upsert_task("t-gf", "gf", "spec")
+    s.update_task("t-gf", status="failed")
+    _write_defects(ddir, "t-gf", [
+        {"kind": "gate.failed", "gate_or_finding": "contract-presence", "round": 0, "phase": "impl", "persona": "d", "summary": "x"},
+        {"kind": "gate.failed", "gate_or_finding": "contract-presence", "round": 1, "phase": "impl", "persona": "d", "summary": "x"},
+        {"kind": "gate.failed", "gate_or_finding": "reports-present", "round": 1, "phase": "impl", "persona": "d", "summary": "x"},
+    ])
+    r = compute_rollup(s, ddir)
+    assert r.gate_failure_distribution == {"contract-presence": 2, "reports-present": 1}
+    s.close()
+
+
+def test_escaped_uses_resolved_in_round_on_done_tasks(tmp_path: Path) -> None:
+    s = _store(tmp_path)
+    ddir = tmp_path / "defects"
+    s.upsert_task("t-esc", "esc", "spec")
+    s.update_task("t-esc", status="done")
+    _write_defects(ddir, "t-esc", [
+        {"kind": "gate.failed", "gate_or_finding": "g1", "round": 0, "phase": "impl", "persona": "d", "summary": "x", "resolved_in_round": 1},
+        {"kind": "gate.failed", "gate_or_finding": "g2", "round": 0, "phase": "impl", "persona": "d", "summary": "x"},  # unresolved
+    ])
+    r = compute_rollup(s, ddir)
+    task = next(t for t in r.tasks if t["id"] == "t-esc")
+    assert task["defects_total"] == 2
+    assert task["defects_escaped"] == 1         # only the one without resolved_in_round
+    s.close()
+
+
+def test_escaped_not_counted_on_unfinished_task(tmp_path: Path) -> None:
+    # an unresolved defect on a still-running task has not escaped — nothing shipped.
+    s = _store(tmp_path)
+    ddir = tmp_path / "defects"
+    s.upsert_task("t-run", "run", "spec")
+    s.update_task("t-run", status="running")
+    _write_defects(ddir, "t-run", [
+        {"kind": "gate.failed", "gate_or_finding": "g1", "round": 0, "phase": "impl", "persona": "d", "summary": "x"},
+    ])
+    r = compute_rollup(s, ddir)
+    task = next(t for t in r.tasks if t["id"] == "t-run")
+    assert task["defects_total"] == 1
+    assert task["defects_escaped"] == 0
+    s.close()
