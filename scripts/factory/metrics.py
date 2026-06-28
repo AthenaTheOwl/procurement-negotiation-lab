@@ -23,26 +23,11 @@ from pathlib import Path
 from typing import Any
 
 from .state import Event, Store, TaskRow, now
-
-# Terminal stop reasons. The first group is derived today; the second is reserved
-# for the budget/blast-radius work and is populated once those emit a stop event.
-STOP_REASONS = (
-    "completed_clean",        # done, no rework, no gate failures
-    "completed_with_rework",  # done, but took >=1 patch round
-    "gate_failure",           # terminal: a must-pass gate failed
-    "review_rejected",        # terminal: reviewer rejected
-    "checkpoint_rejected",    # terminal: operator rejected at a checkpoint
-    "worktree_error",         # terminal: worktree/git setup failed
-    "blocked_other",          # terminal: blocked for another reason
-    "awaiting_approval",      # paused at a checkpoint, not terminal
-    "running",                # not terminal yet
-    # reserved for PR2 (budget) / PR3 (blast radius) — emitted via a `stop` event:
-    "budget_exhausted",
-    "provider_rate_limited",
-    "gate_flaky",
-    "scope_violation",
-    "unknown",
-)
+# The stop-reason taxonomy is owned by stop_reasons.py (the module PR2's budget /
+# stop emitter writes against). Import it so the ledger and the emitter can't
+# drift — a reason this ledger didn't know would be silently dropped to "derived"
+# in _explicit_stop.
+from .stop_reasons import STOP_REASONS
 
 # substrings in failure_reason that map to a reserved reason, so the schema is
 # populated best-effort even before PR2 emits explicit stop events.
