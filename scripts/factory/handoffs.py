@@ -19,6 +19,7 @@ def write_handoff_packet(
     target_repo: Path,
     handoff_dir: Path,
     triage: str | None = None,
+    stop_reason: str | None = None,
     defects: list[dict[str, Any]] | None = None,
     next_items: list[str] | None = None,
 ) -> Path:
@@ -34,6 +35,7 @@ def write_handoff_packet(
             f"Date: {now_iso()}",
             f"Title: {title}",
             f"Status: {status}",
+            f"Stop reason: {stop_reason or 'n/a'}",
             f"Triage: {triage or 'n/a'}",
             f"Trace: {trace_id or 'n/a'}",
             f"Target repo: {target_repo.as_posix()}",

@@ -6,7 +6,7 @@ Two parties agree to a substrate order. The deal is worth $35,000 if they coordi
 
 You play the buyer. Cinder is the simulated supplier. Each round of a long-lead procurement commitment turns one decision into a visible consequence before any math appears on screen — settle now, settle later, hold capacity, reveal a forecast band — and then the lab shows you what that decision cost against a centralized oracle that already knew the answer.
 
-The point is the gap, not the win. Two locally rational agents will reliably choose a globally worse plan, and the lab puts a dollar figure on how much worse. You can line up a dozen mechanisms — a JIT baseline, the oracle, ADMM-style price-and-residual coordination, menu contracts, alternating best response, plain consensus averaging, three weighted-Nash variants — and see which one closes the distance, without anyone crowning ADMM in advance. Some of them just don't converge. The output says so.
+The gap is the instrument. Two locally rational agents will reliably choose a globally worse plan, and the lab puts a dollar figure on how much worse. You can line up a dozen mechanisms — a JIT baseline, the oracle, ADMM-style price-and-residual coordination, menu contracts, alternating best response, plain consensus averaging, three weighted-Nash variants — and see which one closes the distance, without anyone crowning ADMM in advance. Some of them just don't converge. The output says so.
 
 This is an independent public demo built against the open-source [amzn/FloPro](https://github.com/amzn/FloPro) ADMM implementation. It uses synthetic data only — no purchase orders, no supplier records, no FloPro roadmap.
 
@@ -66,7 +66,7 @@ Run the multi-party weighted-Nash demo:
 python -m procurement_mechanism_sdk.demo --sample multi_party --mechanism weighted_nash_bounded
 ```
 
-The SDK wraps the deterministic Python engine rather than re-deriving the deployed simulator. See [`docs/mechanism-sdk.md`](docs/mechanism-sdk.md) for the exported API and boundary.
+The SDK wraps the deterministic Python engine and keeps the deployed simulator as the product surface. See [`docs/mechanism-sdk.md`](docs/mechanism-sdk.md) for the exported API and boundary.
 
 ## Live demo
 

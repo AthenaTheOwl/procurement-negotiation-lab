@@ -68,6 +68,55 @@ def unresolved_defects(task_id: str, defects_dir: Path) -> list[dict[str, Any]]:
     ]
 
 
+def mark_gate_defects_resolved(
+    task_id: str,
+    gate_names: list[str],
+    *,
+    resolved_in_round: int,
+    defects_dir: Path,
+) -> int:
+    """Backfill resolved_in_round for unresolved gate defects that now pass.
+
+    Defect rows are written as JSONL during each failed round. When a later
+    run or later patch round passes the same gate, the escaped-defect metric
+    needs the original row to carry its closing round. This helper rewrites
+    only that task's defect file and leaves unrelated rows unchanged.
+    """
+    if not gate_names:
+        return 0
+    path = defects_dir / f"{task_id}.jsonl"
+    if not path.is_file():
+        return 0
+    gate_set = set(gate_names)
+    rows = read_defects(task_id, defects_dir)
+    changed = 0
+    for row in rows:
+        if row.get("resolved_in_round") is not None:
+            continue
+        if row.get("kind") != "gate.failed":
+            continue
+        if row.get("gate_or_finding") not in gate_set:
+            continue
+        row["resolved_in_round"] = resolved_in_round
+        changed += 1
+    if not changed:
+        return 0
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    try:
+        with tmp_path.open("w", encoding="utf-8") as handle:
+            for row in rows:
+                handle.write(json.dumps(row, sort_keys=True) + "\n")
+        tmp_path.replace(path)
+    except OSError as exc:
+        print(f"factory defect log warning: {exc}", file=sys.stderr)
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        return 0
+    return changed
+
+
 def operator_defect_summary(defect: dict[str, Any], *, max_len: int = 180) -> str:
     """Return a concise, public-safe summary for STATUS and handoff surfaces."""
     summary = str(defect.get("summary") or defect.get("gate_or_finding") or "open defect")

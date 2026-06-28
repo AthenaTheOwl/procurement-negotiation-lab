@@ -15,7 +15,7 @@ import pytest
 
 from scripts.factory.pipeline import run_pipeline
 from scripts.factory.state import Store
-from scripts.factory.task import GateSpec, PRSpec, ReviewSpec, Task
+from scripts.factory.task import BudgetSpec, GateSpec, PRSpec, ReviewSpec, Task
 
 from .conftest import LedgerDirs, init_git_repo
 
@@ -54,6 +54,12 @@ def test_pipeline_dry_run_completes(tmp_repo: Path, tmp_path: Path) -> None:
         assert "implement.done" in events
         assert "review.done" in events
         assert "pipeline.done" in events
+        assert events[-1] == "stop"
+        stop_event = store.events_for(task.id)[-1]
+        assert stop_event.payload == {
+            "reason": "completed_clean",
+            "summary": "done: branch factory/dry-1",
+        }
     finally:
         store.close()
 
@@ -142,6 +148,42 @@ def test_pipeline_blocks_when_implementation_produces_no_diff(
     assert row is not None
     assert row.status == "blocked"
     assert row.failure_reason == "gates failing after max patch rounds"
+
+
+def test_pipeline_budget_gate_failure_cap_emits_stop_reason(
+    tmp_repo: Path, tmp_path: Path
+) -> None:
+    task = Task(
+        id="budget-gates",
+        title="budget gates",
+        target_repo=str(tmp_repo),
+        goal="create factory-validation/budget.md",
+        base_branch="main",
+        gates=[GateSpec(cmd='python -c "exit(0)"', name="noop")],
+        review=ReviewSpec(reviewer="stub", max_patch_rounds=3),
+        pr=PRSpec(open=False),
+        planner="stub",
+        implementer="stub",
+        budget=BudgetSpec(max_gate_failures=0),
+    )
+    store = Store(tmp_path / "factory.db")
+    try:
+        result = run_pipeline(task, store=store, dry_run=False)
+        row = store.get_task(task.id)
+        events = store.events_for(task.id)
+    finally:
+        store.close()
+
+    assert result.ok is False
+    assert result.final_status == "blocked"
+    assert result.stop_reason == "budget_exhausted"
+    assert row is not None
+    assert row.status == "blocked"
+    assert row.failure_reason == "budget exhausted: max_gate_failures"
+    stop_events = [event for event in events if event.kind == "stop"]
+    assert len(stop_events) == 1
+    assert stop_events[0].payload["reason"] == "budget_exhausted"
+    assert stop_events[0].payload["summary"] == "budget exhausted: max_gate_failures"
 
 
 def test_pipeline_dry_run_emits_run_evidence_files(

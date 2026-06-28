@@ -73,6 +73,44 @@ review:
     assert task.review.max_patch_rounds == 1
 
 
+def test_load_task_accepts_budget_spec(tmp_path: Path) -> None:
+    task_file = _write(
+        tmp_path / "budget.yaml",
+        """
+id: t-budget
+title: budget
+target_repo: .
+goal: stop before runaway
+budget:
+  max_wall_clock_seconds: 2.5
+  max_patch_rounds: 1
+  max_gate_failures: 0
+  max_cost_usd: 0.75
+""",
+    )
+    task = load_task(task_file)
+    assert task.budget.max_wall_clock_ms == 2500
+    assert task.budget.max_patch_rounds == 1
+    assert task.budget.max_gate_failures == 0
+    assert task.budget.max_cost_usd == 0.75
+
+
+def test_load_task_rejects_unknown_budget_field(tmp_path: Path) -> None:
+    task_file = _write(
+        tmp_path / "budget-bad.yaml",
+        """
+id: t-budget-bad
+title: budget bad
+target_repo: .
+goal: reject typo
+budget:
+  max_tokens: 100
+""",
+    )
+    with pytest.raises(ValueError, match="unknown budget field"):
+        load_task(task_file)
+
+
 def test_load_task_missing_required(tmp_path: Path) -> None:
     task_file = _write(
         tmp_path / "broken.yaml", "id: only\ntitle: only\n"

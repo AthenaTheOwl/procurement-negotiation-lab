@@ -103,6 +103,21 @@ class TriagePolicy:
 
 
 @dataclass
+class BudgetSpec:
+    """Optional stop caps for one factory task.
+
+    All fields default to None so old task YAMLs keep their historical
+    behavior. The pipeline checks these caps at stage boundaries and emits
+    a typed stop event when one is exhausted.
+    """
+
+    max_wall_clock_ms: int | None = None
+    max_patch_rounds: int | None = None
+    max_gate_failures: int | None = None
+    max_cost_usd: float | None = None
+
+
+@dataclass
 class ReviewSpec:
     reviewer: ReviewerChoice = "claude_code"
     reviewers: list[ReviewerChoice] = field(default_factory=lambda: ["claude_code"])
@@ -145,6 +160,7 @@ class Task:
     target_user: str = ""
     first_user_action: str = ""
     triage_policy: TriagePolicy = field(default_factory=TriagePolicy)
+    budget: BudgetSpec = field(default_factory=BudgetSpec)
     template: str | None = None
 
     def repo_path(self) -> Path:
@@ -271,6 +287,7 @@ def load_task(path: str | Path) -> Task:
     module_map = _parse_module_map(raw.get("module_map") or [], system_layers)
     persona_reviews = _parse_persona_reviews(raw.get("persona_reviews") or [])
     triage_policy = _parse_triage_policy(raw.get("triage_policy") or {})
+    budget = _parse_budget(raw.get("budget") or {})
     template = raw.get("template")
     if template is not None and not isinstance(template, str):
         raise ValueError("template must be a string when provided")
@@ -300,6 +317,7 @@ def load_task(path: str | Path) -> Task:
         target_user=target_user,
         first_user_action=first_user_action,
         triage_policy=triage_policy,
+        budget=budget,
         template=template,
     )
 
@@ -423,3 +441,68 @@ def _parse_triage_policy(value: Any) -> TriagePolicy:
     if unknown:
         raise ValueError(f"unknown triage_policy field(s): {', '.join(unknown)}")
     return TriagePolicy(**{key: bool(value[key]) for key in value})
+
+
+def _parse_budget(value: Any) -> BudgetSpec:
+    if value is None:
+        return BudgetSpec()
+    if not isinstance(value, dict):
+        raise ValueError("budget must be a mapping")
+    allowed = {
+        "max_wall_clock_ms",
+        "max_duration_ms",
+        "max_wall_clock_seconds",
+        "max_patch_rounds",
+        "max_gate_failures",
+        "max_cost_usd",
+    }
+    unknown = sorted(set(value) - allowed)
+    if unknown:
+        raise ValueError(f"unknown budget field(s): {', '.join(unknown)}")
+
+    max_wall_clock_ms = _optional_nonnegative_int(value, "max_wall_clock_ms")
+    duration_ms = _optional_nonnegative_int(value, "max_duration_ms")
+    duration_seconds = _optional_nonnegative_float(value, "max_wall_clock_seconds")
+    provided_wall_clock = [
+        item is not None for item in (max_wall_clock_ms, duration_ms, duration_seconds)
+    ].count(True)
+    if provided_wall_clock > 1:
+        raise ValueError(
+            "budget may set only one of max_wall_clock_ms, max_duration_ms, "
+            "or max_wall_clock_seconds"
+        )
+    if duration_ms is not None:
+        max_wall_clock_ms = duration_ms
+    if duration_seconds is not None:
+        max_wall_clock_ms = int(duration_seconds * 1000)
+
+    return BudgetSpec(
+        max_wall_clock_ms=max_wall_clock_ms,
+        max_patch_rounds=_optional_nonnegative_int(value, "max_patch_rounds"),
+        max_gate_failures=_optional_nonnegative_int(value, "max_gate_failures"),
+        max_cost_usd=_optional_nonnegative_float(value, "max_cost_usd"),
+    )
+
+
+def _optional_nonnegative_int(value: dict[str, Any], key: str) -> int | None:
+    raw = value.get(key)
+    if raw is None:
+        return None
+    if isinstance(raw, bool):
+        raise ValueError(f"budget.{key} must be a non-negative integer")
+    parsed = int(raw)
+    if parsed < 0:
+        raise ValueError(f"budget.{key} must be non-negative")
+    return parsed
+
+
+def _optional_nonnegative_float(value: dict[str, Any], key: str) -> float | None:
+    raw = value.get(key)
+    if raw is None:
+        return None
+    if isinstance(raw, bool):
+        raise ValueError(f"budget.{key} must be a non-negative number")
+    parsed = float(raw)
+    if parsed < 0:
+        raise ValueError(f"budget.{key} must be non-negative")
+    return parsed

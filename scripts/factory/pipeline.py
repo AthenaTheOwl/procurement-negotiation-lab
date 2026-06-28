@@ -9,6 +9,7 @@ group events by pipeline invocation.
 from __future__ import annotations
 
 import subprocess
+import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -29,10 +30,17 @@ from procurement_lab.run_evidence import (
 
 from .artifacts import ArtifactStore
 from .contract import ContractViolation, validate_contract
-from .defects import DefectEntry, append_defect, unresolved_defects
+from .defects import (
+    DefectEntry,
+    append_defect,
+    mark_gate_defects_resolved,
+    read_defects,
+    unresolved_defects,
+)
 from .handoffs import write_handoff_packet
 from .next_features import update_status_md
 from .state import Store
+from .stop_reasons import StopReason
 from .task import Task
 from .triage import Triage, classify_terminal_state
 from .workers import (
@@ -259,6 +267,7 @@ class PipelineResult:
     awaiting_checkpoint: str | None = None
     trace_id: str | None = None
     triage: Triage | None = None
+    stop_reason: StopReason | None = None
 
 
 # ------------------------------------------------------------------ run-evidence ledger
@@ -644,6 +653,7 @@ def _write_terminal_handoff(
     trace_id: str | None,
     target_repo: Path,
     triage: Triage | None,
+    stop_reason: StopReason | None,
     handoff_dir: Path,
     defects_dir: Path,
     next_items: list[str] | None = None,
@@ -658,6 +668,7 @@ def _write_terminal_handoff(
         target_repo=target_repo,
         handoff_dir=handoff_dir,
         triage=triage,
+        stop_reason=stop_reason,
         defects=defects,
         next_items=next_items,
     )
@@ -754,6 +765,9 @@ def _record_worker_event(
         "phase": getattr(task, "phase", None),
         "persona": getattr(task, "persona", None),
     }
+    cost_usd = _worker_cost_usd(result)
+    if cost_usd is not None:
+        payload["cost_usd"] = cost_usd
     if artifact_ref is not None:
         payload["artifact"] = artifact_ref
     store.append_event(task.id, kind, payload, trace_id=trace_id)
@@ -763,6 +777,97 @@ def _record_worker_event(
             last_thread_id=result.thread_id,
             last_run_id=result.run_id,
         )
+
+
+def _worker_cost_usd(result: WorkerResult) -> float | None:
+    for key in ("cost_usd", "total_cost_usd"):
+        value = result.metadata.get(key)
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, (int, float)):
+            return float(value)
+    return None
+
+
+def _emit_stop_event(
+    store: Store,
+    task: Task,
+    *,
+    trace_id: str | None,
+    reason: StopReason,
+    summary: str,
+    extra: dict[str, Any] | None = None,
+) -> None:
+    payload: dict[str, Any] = {
+        "reason": reason,
+        "summary": summary,
+    }
+    if extra:
+        payload.update(extra)
+    store.append_event(task.id, "stop", payload, trace_id=trace_id)
+
+
+def _effective_max_patch_rounds(task: Task) -> int:
+    if task.budget.max_patch_rounds is None:
+        return task.review.max_patch_rounds
+    return min(task.review.max_patch_rounds, task.budget.max_patch_rounds)
+
+
+def _budget_limit_hit(
+    task: Task,
+    *,
+    started_monotonic: float,
+    patch_rounds: int,
+    gate_failures: int,
+    cost_usd: float,
+) -> dict[str, Any] | None:
+    budget = task.budget
+    elapsed_ms = int((time.monotonic() - started_monotonic) * 1000)
+    if budget.max_wall_clock_ms is not None and elapsed_ms > budget.max_wall_clock_ms:
+        return {
+            "cap": "max_wall_clock_ms",
+            "limit": budget.max_wall_clock_ms,
+            "observed": elapsed_ms,
+        }
+    if budget.max_patch_rounds is not None and patch_rounds > budget.max_patch_rounds:
+        return {
+            "cap": "max_patch_rounds",
+            "limit": budget.max_patch_rounds,
+            "observed": patch_rounds,
+        }
+    if budget.max_gate_failures is not None and gate_failures > budget.max_gate_failures:
+        return {
+            "cap": "max_gate_failures",
+            "limit": budget.max_gate_failures,
+            "observed": gate_failures,
+        }
+    if budget.max_cost_usd is not None and cost_usd > budget.max_cost_usd:
+        return {
+            "cap": "max_cost_usd",
+            "limit": budget.max_cost_usd,
+            "observed": round(cost_usd, 6),
+        }
+    return None
+
+
+def _failure_stop_reason(failure_reason: str | None, *, default: StopReason) -> StopReason:
+    reason = (failure_reason or "").lower()
+    if "429" in reason or "rate limit" in reason or "rate-limited" in reason:
+        return "provider_rate_limited"
+    if "budget" in reason or "token limit" in reason:
+        return "budget_exhausted"
+    if "scope" in reason or "forbidden path" in reason or "allowed_paths" in reason:
+        return "scope_violation"
+    return default
+
+
+def _completion_stop_reason(task: Task, last_outcomes: list[GateOutcome], last_review: str) -> StopReason:
+    if read_defects(task.id, FACTORY_DEFECTS_DIR):
+        return "completed_with_rework"
+    if any(not outcome.ok for outcome in last_outcomes):
+        return "completed_with_rework"
+    review_status = _combined_review_status(last_review) if last_review else "CLEAN"
+    return "completed_clean" if review_status == "CLEAN" else "completed_with_rework"
 
 
 def _resolve_worktree(
@@ -825,6 +930,7 @@ def run_pipeline(
     keep fixture runs out of committed history.
     """
     trace_id = uuid.uuid4().hex
+    pipeline_started_monotonic = time.monotonic()
     artifacts = artifact_store or ArtifactStore()
     store.upsert_task(task.id, task.title, spec_path or task.id)
     store.append_event(
@@ -853,23 +959,34 @@ def run_pipeline(
     # --- worktree ---
     worktree, error = _resolve_worktree(task, dry_run=dry_run, store=store, trace_id=trace_id)
     if worktree is None or error is not None:
+        stop_reason: StopReason = "worktree_error"
+        summary = error or "worktree resolution failed"
         store.update_task(task.id, status="failed", failure_reason=error or "worktree")
+        _emit_stop_event(
+            store,
+            task,
+            trace_id=trace_id,
+            reason=stop_reason,
+            summary=summary,
+        )
         _write_terminal_handoff(
             task=task,
             status="failed",
-            summary=error or "worktree resolution failed",
+            summary=summary,
             trace_id=trace_id,
             target_repo=task.repo_path(),
             triage="HOLD",
+            stop_reason=stop_reason,
             handoff_dir=HANDOFFS_DIR,
             defects_dir=FACTORY_DEFECTS_DIR,
         )
         return PipelineResult(
             ok=False,
             final_status="failed",
-            summary=error or "worktree resolution failed",
+            summary=summary,
             trace_id=trace_id,
             triage="HOLD",
+            stop_reason=stop_reason,
         )
     store.update_task(
         task.id,
@@ -911,6 +1028,52 @@ def run_pipeline(
             "tool_schemas_snapshot_hash": initial_fields.fields["tool_schemas_snapshot_hash"],
         },
     )
+    budget_hit = _budget_limit_hit(
+        task,
+        started_monotonic=pipeline_started_monotonic,
+        patch_rounds=0,
+        gate_failures=0,
+        cost_usd=0.0,
+    )
+    if budget_hit is not None:
+        stop_reason = "budget_exhausted"
+        summary = f"budget exhausted before planning ({budget_hit['cap']})"
+        store.update_task(task.id, status="blocked", failure_reason=summary)
+        _emit_stop_event(
+            store,
+            task,
+            trace_id=trace_id,
+            reason=stop_reason,
+            summary=summary,
+            extra={"budget": budget_hit},
+        )
+        _persist_run_evidence(
+            evidence,
+            task=task,
+            spec_path=spec_path,
+            final_status="blocked",
+            plan_text="",
+            triage="HOLD",
+        )
+        _write_terminal_handoff(
+            task=task,
+            status="blocked",
+            summary=summary,
+            trace_id=trace_id,
+            target_repo=worktree.path,
+            triage="HOLD",
+            stop_reason=stop_reason,
+            handoff_dir=HANDOFFS_DIR,
+            defects_dir=FACTORY_DEFECTS_DIR,
+        )
+        return PipelineResult(
+            ok=False,
+            final_status="blocked",
+            summary=summary,
+            trace_id=trace_id,
+            triage="HOLD",
+            stop_reason=stop_reason,
+        )
 
     # --- plan ---
     if resume_from in (None, "plan_review"):
@@ -918,27 +1081,46 @@ def run_pipeline(
             # Plan was produced before the pause; load from artifacts.
             plan_refs = [ref for ref in artifacts.list(task.id) if ref.kind == "plan"]
             if not plan_refs:
+                stop_reason: StopReason = "blocked_other"
+                summary = "cannot resume: no stored plan"
                 store.update_task(
                     task.id,
                     status="failed",
                     failure_reason="resume plan_review but no plan artifact found",
                 )
+                _emit_stop_event(
+                    store,
+                    task,
+                    trace_id=trace_id,
+                    reason=stop_reason,
+                    summary=summary,
+                )
+                _persist_run_evidence(
+                    evidence,
+                    task=task,
+                    spec_path=spec_path,
+                    final_status="failed",
+                    plan_text="",
+                    triage="HOLD",
+                )
                 _write_terminal_handoff(
                     task=task,
                     status="failed",
-                    summary="cannot resume: no stored plan",
+                    summary=summary,
                     trace_id=trace_id,
                     target_repo=worktree.path,
                     triage="HOLD",
+                    stop_reason=stop_reason,
                     handoff_dir=HANDOFFS_DIR,
                     defects_dir=FACTORY_DEFECTS_DIR,
                 )
                 return PipelineResult(
                     ok=False,
                     final_status="failed",
-                    summary="cannot resume: no stored plan",
+                    summary=summary,
                     trace_id=trace_id,
                     triage="HOLD",
+                    stop_reason=stop_reason,
                 )
             plan_text = artifacts.read(plan_refs[0])
             store.append_event(
@@ -993,6 +1175,7 @@ def run_pipeline(
                 parent_event_id=started_event["event_id"],
             )
             if not plan_result.ok:
+                stop_reason = _failure_stop_reason(plan_result.stderr, default="blocked_other")
                 store.update_task(task.id, status="failed", failure_reason=plan_result.stderr)
                 store.append_event(
                     task.id,
@@ -1008,6 +1191,13 @@ def run_pipeline(
                     plan_text="",
                     triage="HOLD",
                 )
+                _emit_stop_event(
+                    store,
+                    task,
+                    trace_id=trace_id,
+                    reason=stop_reason,
+                    summary=plan_result.stderr,
+                )
                 _write_terminal_handoff(
                     task=task,
                     status="failed",
@@ -1015,6 +1205,7 @@ def run_pipeline(
                     trace_id=trace_id,
                     target_repo=worktree.path,
                     triage="HOLD",
+                    stop_reason=stop_reason,
                     handoff_dir=HANDOFFS_DIR,
                     defects_dir=FACTORY_DEFECTS_DIR,
                 )
@@ -1024,6 +1215,7 @@ def run_pipeline(
                     summary=plan_result.stderr,
                     trace_id=trace_id,
                     triage="HOLD",
+                    stop_reason=stop_reason,
                 )
             plan_text = plan_result.stdout
             plan_ref = artifacts.write(task.id, "plan", 0, plan_text)
@@ -1040,6 +1232,8 @@ def run_pipeline(
             store.update_task(task.id, plan=plan_text[:4000])
 
             if task.has_checkpoint("plan_review"):
+                stop_reason = "awaiting_approval"
+                summary = f"paused at plan_review (artifact {plan_ref.path})"
                 store.update_task(
                     task.id,
                     status="awaiting_approval",
@@ -1066,22 +1260,31 @@ def run_pipeline(
                     final_status="awaiting_approval",
                     plan_text=plan_text,
                 )
+                _emit_stop_event(
+                    store,
+                    task,
+                    trace_id=trace_id,
+                    reason=stop_reason,
+                    summary=summary,
+                )
                 _write_terminal_handoff(
                     task=task,
                     status="awaiting_approval",
-                    summary=f"paused at plan_review (artifact {plan_ref.path})",
+                    summary=summary,
                     trace_id=trace_id,
                     target_repo=worktree.path,
                     triage=None,
+                    stop_reason=stop_reason,
                     handoff_dir=HANDOFFS_DIR,
                     defects_dir=FACTORY_DEFECTS_DIR,
                 )
                 return PipelineResult(
                     ok=True,
                     final_status="awaiting_approval",
-                    summary=f"paused at plan_review (artifact {plan_ref.path})",
+                    summary=summary,
                     awaiting_checkpoint="plan_review",
                     trace_id=trace_id,
+                    stop_reason=stop_reason,
                 )
     else:
         # resume_from == diff_review or pre_pr; load existing plan
@@ -1104,8 +1307,11 @@ def run_pipeline(
             trace_id=trace_id,
             dry_run=dry_run,
             evidence=evidence,
+            started_monotonic=pipeline_started_monotonic,
         )
         if last_review == "__rejected__":
+            stop_reason: StopReason = "review_rejected"
+            summary = "reviewer returned REJECT"
             triage = classify_terminal_state(
                 final_status="rejected",
                 gate_outcomes=last_outcomes,
@@ -1119,25 +1325,39 @@ def run_pipeline(
                 final_status="rejected",
                 plan_text=plan_text,
                 triage=triage,
+            )
+            _emit_stop_event(
+                store,
+                task,
+                trace_id=trace_id,
+                reason=stop_reason,
+                summary=summary,
             )
             _write_terminal_handoff(
                 task=task,
                 status="rejected",
-                summary="reviewer returned REJECT",
+                summary=summary,
                 trace_id=trace_id,
                 target_repo=worktree.path,
                 triage=triage,
+                stop_reason=stop_reason,
                 handoff_dir=HANDOFFS_DIR,
                 defects_dir=FACTORY_DEFECTS_DIR,
             )
             return PipelineResult(
                 ok=False,
                 final_status="rejected",
-                summary="reviewer returned REJECT",
+                summary=summary,
                 trace_id=trace_id,
                 triage=triage,
+                stop_reason=stop_reason,
             )
-        if last_review == "__blocked__":
+        if last_review == "__budget_exhausted__":
+            stop_reason = "budget_exhausted"
+            summary = "budget exhausted"
+            row = store.get_task(task.id)
+            if row is not None and row.failure_reason:
+                summary = row.failure_reason
             triage = classify_terminal_state(
                 final_status="blocked",
                 gate_outcomes=last_outcomes,
@@ -1152,25 +1372,83 @@ def run_pipeline(
                 plan_text=plan_text,
                 triage=triage,
             )
+            _emit_stop_event(
+                store,
+                task,
+                trace_id=trace_id,
+                reason=stop_reason,
+                summary=summary,
+            )
             _write_terminal_handoff(
                 task=task,
                 status="blocked",
-                summary="exceeded max patch rounds",
+                summary=summary,
                 trace_id=trace_id,
                 target_repo=worktree.path,
                 triage=triage,
+                stop_reason=stop_reason,
                 handoff_dir=HANDOFFS_DIR,
                 defects_dir=FACTORY_DEFECTS_DIR,
             )
             return PipelineResult(
                 ok=False,
                 final_status="blocked",
-                summary="exceeded max patch rounds",
+                summary=summary,
                 trace_id=trace_id,
                 triage=triage,
+                stop_reason=stop_reason,
+            )
+        if last_review == "__blocked__":
+            row = store.get_task(task.id)
+            stop_reason = _failure_stop_reason(
+                row.failure_reason if row is not None else None,
+                default="gate_failure",
+            )
+            summary = "exceeded max patch rounds"
+            triage = classify_terminal_state(
+                final_status="blocked",
+                gate_outcomes=last_outcomes,
+                review_text=last_review,
+                triage_policy=task.triage_policy,
+            )
+            _persist_run_evidence(
+                evidence,
+                task=task,
+                spec_path=spec_path,
+                final_status="blocked",
+                plan_text=plan_text,
+                triage=triage,
+            )
+            _emit_stop_event(
+                store,
+                task,
+                trace_id=trace_id,
+                reason=stop_reason,
+                summary=summary,
+            )
+            _write_terminal_handoff(
+                task=task,
+                status="blocked",
+                summary=summary,
+                trace_id=trace_id,
+                target_repo=worktree.path,
+                triage=triage,
+                stop_reason=stop_reason,
+                handoff_dir=HANDOFFS_DIR,
+                defects_dir=FACTORY_DEFECTS_DIR,
+            )
+            return PipelineResult(
+                ok=False,
+                final_status="blocked",
+                summary=summary,
+                trace_id=trace_id,
+                triage=triage,
+                stop_reason=stop_reason,
             )
 
         if task.has_checkpoint("diff_review"):
+            stop_reason = "awaiting_approval"
+            summary = "paused at diff_review"
             review_refs = [ref for ref in artifacts.list(task.id) if ref.kind == "review"]
             last_ref = review_refs[-1].to_dict() if review_refs else None
             store.update_task(
@@ -1196,22 +1474,31 @@ def run_pipeline(
                 final_status="awaiting_approval",
                 plan_text=plan_text,
             )
+            _emit_stop_event(
+                store,
+                task,
+                trace_id=trace_id,
+                reason=stop_reason,
+                summary=summary,
+            )
             _write_terminal_handoff(
                 task=task,
                 status="awaiting_approval",
-                summary="paused at diff_review",
+                summary=summary,
                 trace_id=trace_id,
                 target_repo=worktree.path,
                 triage=None,
+                stop_reason=stop_reason,
                 handoff_dir=HANDOFFS_DIR,
                 defects_dir=FACTORY_DEFECTS_DIR,
             )
             return PipelineResult(
                 ok=True,
                 final_status="awaiting_approval",
-                summary="paused at diff_review",
+                summary=summary,
                 awaiting_checkpoint="diff_review",
                 trace_id=trace_id,
+                stop_reason=stop_reason,
             )
 
     if resume_from == "diff_review":
@@ -1248,6 +1535,8 @@ def run_pipeline(
 
     # --- pre_pr checkpoint ---
     if task.pr.open and task.has_checkpoint("pre_pr") and resume_from != "pre_pr":
+        stop_reason = "awaiting_approval"
+        summary = "paused at pre_pr"
         store.update_task(
             task.id,
             status="awaiting_approval",
@@ -1268,13 +1557,21 @@ def run_pipeline(
             final_status="awaiting_approval",
             plan_text=plan_text,
         )
+        _emit_stop_event(
+            store,
+            task,
+            trace_id=trace_id,
+            reason=stop_reason,
+            summary=summary,
+        )
         _write_terminal_handoff(
             task=task,
             status="awaiting_approval",
-            summary="paused at pre_pr",
+            summary=summary,
             trace_id=trace_id,
             target_repo=worktree.path,
             triage=None,
+            stop_reason=stop_reason,
             handoff_dir=HANDOFFS_DIR,
             defects_dir=FACTORY_DEFECTS_DIR,
             next_items=next_items,
@@ -1282,9 +1579,10 @@ def run_pipeline(
         return PipelineResult(
             ok=True,
             final_status="awaiting_approval",
-            summary="paused at pre_pr",
+            summary=summary,
             awaiting_checkpoint="pre_pr",
             trace_id=trace_id,
+            stop_reason=stop_reason,
         )
     if resume_from == "pre_pr":
         store.append_event(
@@ -1351,6 +1649,14 @@ def run_pipeline(
         triage=triage,
     )
     summary = f"done: branch {worktree.branch}" + (f"; PR {pr_url}" if pr_url else "")
+    stop_reason = _completion_stop_reason(task, last_outcomes, last_review)
+    _emit_stop_event(
+        store,
+        task,
+        trace_id=trace_id,
+        reason=stop_reason,
+        summary=summary,
+    )
     _write_terminal_handoff(
         task=task,
         status="done",
@@ -1358,6 +1664,7 @@ def run_pipeline(
         trace_id=trace_id,
         target_repo=worktree.path,
         triage=triage,
+        stop_reason=stop_reason,
         handoff_dir=HANDOFFS_DIR,
         defects_dir=FACTORY_DEFECTS_DIR,
         next_items=next_items,
@@ -1368,6 +1675,7 @@ def run_pipeline(
         summary=summary,
         trace_id=trace_id,
         triage=triage,
+        stop_reason=stop_reason,
     )
 
 
@@ -1384,13 +1692,16 @@ def _run_implement_loop(
     trace_id: str,
     dry_run: bool,
     evidence: _RunEvidence | None = None,
+    started_monotonic: float | None = None,
 ) -> tuple[str, list[GateOutcome]]:
     """Implement -> gates -> review, up to max_patch_rounds.
 
     Returns (last_review_text, last_gate_outcomes). Special sentinel values:
       "__rejected__" -> reviewer returned REJECT
       "__blocked__"  -> exceeded max patch rounds
+      "__budget_exhausted__" -> an explicit budget cap stopped the run
     """
+    started_monotonic = started_monotonic if started_monotonic is not None else time.monotonic()
     implementer = resolve_worker(task.implementer, allow_stub_fallback=True)
     reviewers = [
         resolve_worker(name, allow_stub_fallback=True)
@@ -1400,7 +1711,34 @@ def _run_implement_loop(
     gate_runner = GateWorker()
     last_review = ""
     last_outcomes: list[GateOutcome] = []
-    for round_idx in range(task.review.max_patch_rounds + 1):
+    max_patch_rounds = _effective_max_patch_rounds(task)
+    budget_sets_patch_cap = (
+        task.budget.max_patch_rounds is not None
+        and task.budget.max_patch_rounds < task.review.max_patch_rounds
+    )
+    gate_failure_count = 0
+    cost_usd = 0.0
+    for round_idx in range(max_patch_rounds + 1):
+        budget_hit = _budget_limit_hit(
+            task,
+            started_monotonic=started_monotonic,
+            patch_rounds=round_idx,
+            gate_failures=gate_failure_count,
+            cost_usd=cost_usd,
+        )
+        if budget_hit is not None:
+            store.update_task(
+                task.id,
+                status="blocked",
+                failure_reason=f"budget exhausted: {budget_hit['cap']}",
+            )
+            store.append_event(
+                task.id,
+                "budget.exhausted",
+                {"round": round_idx, **budget_hit},
+                trace_id=trace_id,
+            )
+            return "__budget_exhausted__", last_outcomes
         prompt = (
             IMPLEMENT_PROMPT.format(goal=task.goal, plan=plan_text, cwd=worktree.path)
             if round_idx == 0
@@ -1434,6 +1772,7 @@ def _run_implement_loop(
                 trace_id=trace_id,
             )
             return "__rejected__", []
+        cost_usd += _worker_cost_usd(impl_result) or 0.0
         impl_ref = artifacts.write(task.id, "implement-stdout", round_idx, impl_result.stdout)
         _record_worker_event(
             store,
@@ -1515,6 +1854,7 @@ def _run_implement_loop(
         # via the review loop; this event documents the symptom for the
         # ledger, not a control-flow change.
         if not gates_ok:
+            gate_failure_count += len([o for o in outcomes if not o.ok and o.must_pass])
             store.append_event(
                 task.id,
                 "gates.failed",
@@ -1530,6 +1870,33 @@ def _run_implement_loop(
                 task,
                 outcomes,
                 round_idx=round_idx,
+                defects_dir=FACTORY_DEFECTS_DIR,
+            )
+            budget_hit = _budget_limit_hit(
+                task,
+                started_monotonic=started_monotonic,
+                patch_rounds=round_idx,
+                gate_failures=gate_failure_count,
+                cost_usd=cost_usd,
+            )
+            if budget_hit is not None:
+                store.update_task(
+                    task.id,
+                    status="blocked",
+                    failure_reason=f"budget exhausted: {budget_hit['cap']}",
+                )
+                store.append_event(
+                    task.id,
+                    "budget.exhausted",
+                    {"round": round_idx, **budget_hit},
+                    trace_id=trace_id,
+                )
+                return "__budget_exhausted__", outcomes
+        else:
+            mark_gate_defects_resolved(
+                task.id,
+                [outcome.name for outcome in outcomes if outcome.ok],
+                resolved_in_round=round_idx,
                 defects_dir=FACTORY_DEFECTS_DIR,
             )
         if evidence is not None:
@@ -1583,13 +1950,18 @@ def _run_implement_loop(
                 round_idx=round_idx,
                 defects_dir=FACTORY_DEFECTS_DIR,
             )
-            if round_idx >= task.review.max_patch_rounds:
+            if round_idx >= max_patch_rounds:
+                failure_reason = (
+                    "budget exhausted: max_patch_rounds"
+                    if budget_sets_patch_cap
+                    else "gates failing after max patch rounds"
+                )
                 store.update_task(
                     task.id,
                     status="blocked",
-                    failure_reason="gates failing after max patch rounds",
+                    failure_reason=failure_reason,
                 )
-                return "__blocked__", outcomes
+                return "__budget_exhausted__" if budget_sets_patch_cap else "__blocked__", outcomes
             continue
 
         review_prompt = REVIEW_PROMPT.format(
@@ -1636,13 +2008,18 @@ def _run_implement_loop(
             round_idx=round_idx,
             defects_dir=FACTORY_DEFECTS_DIR,
         )
-        if round_idx >= task.review.max_patch_rounds:
+        if round_idx >= max_patch_rounds:
+            failure_reason = (
+                "budget exhausted: max_patch_rounds"
+                if budget_sets_patch_cap
+                else "reviewer kept asking for patches"
+            )
             store.update_task(
                 task.id,
                 status="blocked",
-                failure_reason="reviewer kept asking for patches",
+                failure_reason=failure_reason,
             )
-            return "__blocked__", outcomes
+            return "__budget_exhausted__" if budget_sets_patch_cap else "__blocked__", outcomes
 
     return last_review, last_outcomes
 

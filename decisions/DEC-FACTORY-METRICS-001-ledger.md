@@ -1,3 +1,56 @@
+---
+id: DEC-FACTORY-016-metrics-ledger
+spec: specs/0019-factory-active-mvp/
+requirement: R-FAM-V1-070
+date: 2026-06-21
+status: approved
+reversible: true
+decision: |
+  The factory records a metrics ledger that reads task state, events,
+  and defect rows into per-task and rollup quality numbers.
+alternatives:
+  - label: keep metrics as operator notes
+    rejected_because: |
+      Hand-counted clean rates are easy to misread and cannot gate later
+      factory changes.
+  - label: infer all metrics from SQLite events
+    rejected_because: |
+      The SQLite event stream under-recorded patch rounds and gate names;
+      the defect log carried the useful evidence.
+rationale: |
+  The factory needs durable evidence for clean rate, rework rate,
+  patch rounds, gate failures, stop reasons, and escaped defects.
+  Reading the defect log gives the rollup the same signal the operator
+  used during batch review.
+evidence:
+  - kind: test
+    ref: tests/factory/test_metrics.py
+  - kind: code
+    ref: scripts/factory/metrics.py
+rollback: |
+  Remove the metrics command and delete the rollup writer. Existing
+  ops/factory-metrics/rollup.jsonl snapshots can remain as historical
+  artifacts because they are append-only observations.
+systems_map: |
+  The factory is a production line with task state, gate outcomes, and
+  defect records as the control signals.
+transferable_principle: |
+  A software factory needs a typed quality ledger before its throughput
+  claims can be trusted.
+falsification_test: |
+  If rollup metrics disagree with replayed task events and defect rows
+  on a clean fixture, the ledger is not authoritative.
+adoption_ladder:
+  minimum_viable: Run factory --metrics after each batch.
+  mid_adoption: Emit explicit stop events from every terminal path.
+  full_adoption: Gate factory prompt and template changes on clean-rate
+    and escaped-defect thresholds.
+  monitoring_signals:
+    - clean_rate
+    - rework_rate
+    - defects_escaped
+    - stop_reason_distribution
+---
 # DEC-FACTORY-METRICS-001 — Factory metrics ledger
 
 **Date:** 2026-06-21
