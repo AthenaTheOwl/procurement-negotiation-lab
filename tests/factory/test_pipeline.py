@@ -13,9 +13,11 @@ from pathlib import Path
 
 import pytest
 
+import scripts.factory.pipeline as pipeline_module
 from scripts.factory.pipeline import run_pipeline
 from scripts.factory.state import Store
-from scripts.factory.task import BudgetSpec, GateSpec, PRSpec, ReviewSpec, Task
+from scripts.factory.task import BlastRadiusSpec, BudgetSpec, GateSpec, PRSpec, ReviewSpec, Task
+from scripts.factory.workers import WorkerResult
 
 from .conftest import LedgerDirs, init_git_repo
 
@@ -184,6 +186,61 @@ def test_pipeline_budget_gate_failure_cap_emits_stop_reason(
     assert len(stop_events) == 1
     assert stop_events[0].payload["reason"] == "budget_exhausted"
     assert stop_events[0].payload["summary"] == "budget exhausted: max_gate_failures"
+
+
+def test_pipeline_precommit_blocks_forbidden_path(
+    tmp_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class EnvWritingWorker:
+        name = "stub"
+
+        def run(self, prompt: str, *, cwd: Path, timeout: int = 1800) -> WorkerResult:
+            if "implementation agent" in prompt:
+                (cwd / ".env").write_text("DEBUG=true\n", encoding="utf-8")
+            stdout = "STATUS: CLEAN\nFINDINGS:\n- local test worker"
+            if "planning agent" in prompt:
+                stdout = "1. CREATE .env -- test forbidden path"
+            return WorkerResult(
+                ok=True,
+                stdout=stdout,
+                metadata={"thread_id": "t", "run_id": "r", "duration_ms": 0},
+            )
+
+    monkeypatch.setattr(
+        pipeline_module,
+        "resolve_worker",
+        lambda name, allow_stub_fallback=True: EnvWritingWorker(),
+    )
+    task = Task(
+        id="precommit-forbidden",
+        title="precommit forbidden",
+        target_repo=str(tmp_repo),
+        goal="write an env file",
+        base_branch="main",
+        gates=[],
+        review=ReviewSpec(reviewer="stub", max_patch_rounds=0),
+        pr=PRSpec(open=False),
+        planner="stub",
+        implementer="stub",
+        blast_radius=BlastRadiusSpec(forbidden_paths=[".env*"], secret_scan=False),
+    )
+    store = Store(tmp_path / "factory.db")
+    try:
+        result = run_pipeline(task, store=store, dry_run=False)
+        row = store.get_task(task.id)
+        events = store.events_for(task.id)
+    finally:
+        store.close()
+
+    assert result.ok is False
+    assert result.final_status == "blocked"
+    assert result.stop_reason == "scope_violation"
+    assert row is not None
+    assert row.status == "blocked"
+    assert row.failure_reason == "pre-commit hard gates failed"
+    assert any(event.kind == "precommit.done" for event in events)
+    stop = [event for event in events if event.kind == "stop"][-1]
+    assert stop.payload["reason"] == "scope_violation"
 
 
 def test_pipeline_dry_run_emits_run_evidence_files(

@@ -118,6 +118,17 @@ class BudgetSpec:
 
 
 @dataclass
+class BlastRadiusSpec:
+    """Optional pre-commit boundary for files the factory may change."""
+
+    allowed_paths: list[str] = field(default_factory=list)
+    forbidden_paths: list[str] = field(default_factory=list)
+    max_changed_files: int | None = None
+    max_diff_lines: int | None = None
+    secret_scan: bool = True
+
+
+@dataclass
 class ReviewSpec:
     reviewer: ReviewerChoice = "claude_code"
     reviewers: list[ReviewerChoice] = field(default_factory=lambda: ["claude_code"])
@@ -161,6 +172,7 @@ class Task:
     first_user_action: str = ""
     triage_policy: TriagePolicy = field(default_factory=TriagePolicy)
     budget: BudgetSpec = field(default_factory=BudgetSpec)
+    blast_radius: BlastRadiusSpec = field(default_factory=BlastRadiusSpec)
     template: str | None = None
 
     def repo_path(self) -> Path:
@@ -288,6 +300,7 @@ def load_task(path: str | Path) -> Task:
     persona_reviews = _parse_persona_reviews(raw.get("persona_reviews") or [])
     triage_policy = _parse_triage_policy(raw.get("triage_policy") or {})
     budget = _parse_budget(raw.get("budget") or {})
+    blast_radius = _parse_blast_radius(raw.get("blast_radius") or {})
     template = raw.get("template")
     if template is not None and not isinstance(template, str):
         raise ValueError("template must be a string when provided")
@@ -318,6 +331,7 @@ def load_task(path: str | Path) -> Task:
         first_user_action=first_user_action,
         triage_policy=triage_policy,
         budget=budget,
+        blast_radius=blast_radius,
         template=template,
     )
 
@@ -482,6 +496,47 @@ def _parse_budget(value: Any) -> BudgetSpec:
         max_gate_failures=_optional_nonnegative_int(value, "max_gate_failures"),
         max_cost_usd=_optional_nonnegative_float(value, "max_cost_usd"),
     )
+
+
+def _parse_blast_radius(value: Any) -> BlastRadiusSpec:
+    if value is None:
+        return BlastRadiusSpec()
+    if not isinstance(value, dict):
+        raise ValueError("blast_radius must be a mapping")
+    allowed = {
+        "allowed_paths",
+        "forbidden_paths",
+        "max_changed_files",
+        "max_diff_lines",
+        "secret_scan",
+    }
+    unknown = sorted(set(value) - allowed)
+    if unknown:
+        raise ValueError(f"unknown blast_radius field(s): {', '.join(unknown)}")
+    allowed_paths = _path_pattern_list(value.get("allowed_paths") or [], "allowed_paths")
+    forbidden_paths = _path_pattern_list(
+        value.get("forbidden_paths") or [], "forbidden_paths"
+    )
+    return BlastRadiusSpec(
+        allowed_paths=allowed_paths,
+        forbidden_paths=forbidden_paths,
+        max_changed_files=_optional_nonnegative_int(value, "max_changed_files"),
+        max_diff_lines=_optional_nonnegative_int(value, "max_diff_lines"),
+        secret_scan=bool(value.get("secret_scan", True)),
+    )
+
+
+def _path_pattern_list(value: Any, label: str) -> list[str]:
+    patterns = _string_list(value, f"blast_radius.{label}")
+    for pattern in patterns:
+        if "\\" in pattern:
+            raise ValueError(f"blast_radius.{label} entries must use forward slashes")
+        if pattern.startswith("/") or ":" in pattern:
+            raise ValueError(f"blast_radius.{label} entries must be repo-relative")
+        parts = [part for part in pattern.split("/") if part]
+        if ".." in parts:
+            raise ValueError(f"blast_radius.{label} entries must not contain ..")
+    return patterns
 
 
 def _optional_nonnegative_int(value: dict[str, Any], key: str) -> int | None:

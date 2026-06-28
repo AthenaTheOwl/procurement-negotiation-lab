@@ -29,6 +29,7 @@ from procurement_lab.run_evidence import (
 )
 
 from .artifacts import ArtifactStore
+from .blast_radius import BlastRadiusFinding, evaluate_blast_radius
 from .contract import ContractViolation, validate_contract
 from .defects import (
     DefectEntry,
@@ -596,6 +597,38 @@ def _violation_to_outcome(violation: ContractViolation) -> GateOutcome:
         must_pass=violation.required,
         stdout="",
         stderr=violation.message,
+    )
+
+
+def _run_pre_commit_hard_gates(task: Task, worktree: WorktreeInfo) -> list[GateOutcome]:
+    findings = evaluate_blast_radius(
+        worktree.path,
+        base_branch=worktree.base_branch,
+        spec=task.blast_radius,
+    )
+    if not findings:
+        return [
+            GateOutcome(
+                name="precommit:hard-gates",
+                cmd="factory pre-commit hard gates",
+                ok=True,
+                must_pass=True,
+                stdout="blast radius, diff size, and sensitive-disclosure checks passed",
+                stderr="",
+            )
+        ]
+    return [_blast_radius_finding_to_outcome(finding) for finding in findings]
+
+
+def _blast_radius_finding_to_outcome(finding: BlastRadiusFinding) -> GateOutcome:
+    suffix = _safe_kind(finding.path) if finding.path else "summary"
+    return GateOutcome(
+        name=f"precommit:{finding.code}:{suffix}",
+        cmd="factory pre-commit hard gates",
+        ok=False,
+        must_pass=True,
+        stdout="",
+        stderr=finding.message,
     )
 
 
@@ -1522,6 +1555,99 @@ def run_pipeline(
             worktree.path,
             deferred_items=[],
             open_defects=unresolved_defects(task.id, FACTORY_DEFECTS_DIR),
+        )
+
+    # --- pre-commit hard gates ---
+    precommit_outcomes = _run_pre_commit_hard_gates(task, worktree)
+    for outcome in precommit_outcomes:
+        artifacts.write(
+            task.id,
+            f"gate-{_safe_kind(outcome.name)}",
+            0,
+            _gate_results_for_artifact([outcome]),
+        )
+    store.append_event(
+        task.id,
+        "precommit.done",
+        {
+            "ok": all(outcome.ok or not outcome.must_pass for outcome in precommit_outcomes),
+            "outcomes": [
+                {"name": o.name, "ok": o.ok, "must_pass": o.must_pass}
+                for o in precommit_outcomes
+            ],
+        },
+        trace_id=trace_id,
+    )
+    if evidence is not None:
+        for outcome in precommit_outcomes:
+            if outcome.ok:
+                continue
+            payload: dict[str, Any] = {
+                "gate_name": outcome.name,
+                "details": {
+                    "cmd": outcome.cmd,
+                    "round": 0,
+                    "must_pass": outcome.must_pass,
+                },
+            }
+            if not outcome.ok:
+                payload["reason"] = (
+                    outcome.stderr.strip().splitlines()[0]
+                    if outcome.stderr.strip()
+                    else f"gate {outcome.name} failed"
+                )[:280]
+            evidence.emit(_gate_check_event_type(outcome), payload)
+    precommit_ok = all(outcome.ok or not outcome.must_pass for outcome in precommit_outcomes)
+    if not precommit_ok:
+        stop_reason: StopReason = "scope_violation"
+        summary = "pre-commit hard gates failed"
+        _append_gate_defects(
+            task,
+            precommit_outcomes,
+            round_idx=0,
+            defects_dir=FACTORY_DEFECTS_DIR,
+        )
+        triage = classify_terminal_state(
+            final_status="blocked",
+            gate_outcomes=precommit_outcomes,
+            review_text=last_review,
+            triage_policy=task.triage_policy,
+        )
+        store.update_task(task.id, status="blocked", failure_reason=summary)
+        _persist_run_evidence(
+            evidence,
+            task=task,
+            spec_path=spec_path,
+            final_status="blocked",
+            plan_text=plan_text,
+            triage=triage,
+        )
+        _emit_stop_event(
+            store,
+            task,
+            trace_id=trace_id,
+            reason=stop_reason,
+            summary=summary,
+        )
+        _write_terminal_handoff(
+            task=task,
+            status="blocked",
+            summary=summary,
+            trace_id=trace_id,
+            target_repo=worktree.path,
+            triage=triage,
+            stop_reason=stop_reason,
+            handoff_dir=HANDOFFS_DIR,
+            defects_dir=FACTORY_DEFECTS_DIR,
+            next_items=next_items,
+        )
+        return PipelineResult(
+            ok=False,
+            final_status="blocked",
+            summary=summary,
+            trace_id=trace_id,
+            triage=triage,
+            stop_reason=stop_reason,
         )
 
     # --- commit ---

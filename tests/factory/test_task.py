@@ -95,6 +95,34 @@ budget:
     assert task.budget.max_cost_usd == 0.75
 
 
+def test_load_task_accepts_blast_radius_spec(tmp_path: Path) -> None:
+    task_file = _write(
+        tmp_path / "blast.yaml",
+        """
+id: t-blast
+title: blast radius
+target_repo: .
+goal: keep the factory bounded
+blast_radius:
+  allowed_paths:
+    - src/**
+    - tests/**
+  forbidden_paths:
+    - .env*
+    - secrets/**
+  max_changed_files: 5
+  max_diff_lines: 200
+  secret_scan: true
+""",
+    )
+    task = load_task(task_file)
+    assert task.blast_radius.allowed_paths == ["src/**", "tests/**"]
+    assert task.blast_radius.forbidden_paths == [".env*", "secrets/**"]
+    assert task.blast_radius.max_changed_files == 5
+    assert task.blast_radius.max_diff_lines == 200
+    assert task.blast_radius.secret_scan is True
+
+
 def test_load_task_rejects_unknown_budget_field(tmp_path: Path) -> None:
     task_file = _write(
         tmp_path / "budget-bad.yaml",
@@ -108,6 +136,23 @@ budget:
 """,
     )
     with pytest.raises(ValueError, match="unknown budget field"):
+        load_task(task_file)
+
+
+def test_load_task_rejects_absolute_blast_radius_path(tmp_path: Path) -> None:
+    task_file = _write(
+        tmp_path / "blast-bad.yaml",
+        """
+id: t-blast-bad
+title: blast bad
+target_repo: .
+goal: reject absolute
+blast_radius:
+  allowed_paths:
+    - C:/tmp/secret
+""",
+    )
+    with pytest.raises(ValueError, match="repo-relative"):
         load_task(task_file)
 
 
