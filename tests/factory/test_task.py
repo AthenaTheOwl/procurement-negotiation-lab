@@ -168,3 +168,35 @@ def test_load_task_rejects_non_mapping(tmp_path: Path) -> None:
     task_file = _write(tmp_path / "list.yaml", "- 1\n- 2\n")
     with pytest.raises(ValueError, match="mapping"):
         load_task(task_file)
+
+
+def test_to_implement_brief_carries_contract_not_free_text_metadata():
+    """Fix #1: the brief hands the implementer the exact gate checklist, but keeps
+    the free-text framing (product_vision/target_user) out — that's the canary-
+    guarded metadata. first_user_action (a public command) IS included."""
+    from scripts.factory.task import Task, ExpectedArtifact, ModuleMapEntry, GateSpec
+    t = Task(
+        id="t", title="t", target_repo=".", goal="g", active=True,
+        product_vision="SECRET internal note", target_user="SECRET audience",
+        first_user_action="python -m pkg validate",
+        expected_artifacts=[ExpectedArtifact(path="reports/r.jsonl", kind="glob")],
+        module_map=[ModuleMapEntry(name="cli", source="src/pkg/cli.py", public_interfaces=["main(argv) -> int"])],
+        gates=[GateSpec(cmd="python -m pkg validate", name="first-action-runs")],
+    )
+    brief = t.to_implement_brief()
+    # carries the typed contract
+    assert "PRODUCT_BRIEF.md" in brief and "SYSTEM_MAP.md" in brief
+    assert "## Current state" in brief and "## Next feature queue" in brief
+    assert "reports/r.jsonl" in brief
+    assert "src/pkg/cli.py" in brief and "main(argv) -> int" in brief
+    assert "python -m pkg validate" in brief                     # first action + gate cmd
+    assert "first-action-runs" in brief
+    # does NOT leak the free-text framing metadata
+    assert "SECRET" not in brief
+    assert "internal note" not in brief and "audience" not in brief
+
+
+def test_to_implement_brief_empty_for_non_contract_task():
+    """Old non-active tasks with no contract get an empty brief — unaffected."""
+    from scripts.factory.task import Task
+    assert Task(id="y", title="y", target_repo=".", goal="g").to_implement_brief() == ""

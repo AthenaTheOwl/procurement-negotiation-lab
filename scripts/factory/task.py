@@ -185,6 +185,60 @@ class Task:
         """Gates plus test-matrix entries converted to GateSpec. Pipeline reads this."""
         return list(self.gates) + [entry.to_gate() for entry in self.test_matrix]
 
+    def to_implement_brief(self) -> str:
+        """Serialize the typed definition-of-done into a prompt block.
+
+        The implement prompt otherwise carries only the free-text ``goal``, so the
+        implementer never sees the typed contract (expected_artifacts, module_map,
+        first_user_action, STATUS sections) that the gates will enforce — and omits
+        artifacts it was never shown. That omission is the #1 rework source
+        (~90% of gate failures are a contract artifact that was declared upstream
+        but never communicated). Handing the agent the exact checklist closes it.
+
+        Returns "" when the task declares no contract, so old non-active tasks are
+        unaffected. The active-file names and STATUS headings mirror
+        contract.validate_active_repo_files / STATUS_REQUIRED_SECTIONS (kept literal
+        here to avoid a task<->contract import cycle).
+        """
+        lines: list[str] = []
+        if self.active:
+            lines.append("Required root files (the contract gate fails without them):")
+            lines.append("  - PRODUCT_BRIEF.md  (who it serves, what decision, what output)")
+            lines.append("  - SYSTEM_MAP.md  (modules + interfaces)")
+            lines.append("  - STATUS.md  with these EXACT H2 sections:")
+            for section in ("## Current state", "## Known limits", "## Next feature queue"):
+                lines.append(f"        {section}")
+        if self.expected_artifacts:
+            lines.append("Required artifacts (each must exist and be real, not a stub or placeholder):")
+            for a in self.expected_artifacts:
+                tag = "" if a.kind == "file" else f"  [{a.kind}]"
+                lines.append(f"  - {a.path}{tag}")
+        if self.module_map:
+            lines.append("Module map (create each source; the listed public interfaces must exist and be callable):")
+            for m in self.module_map:
+                ifaces = ("  ->  " + "; ".join(m.public_interfaces)) if m.public_interfaces else ""
+                lines.append(f"  - {m.source}{ifaces}")
+        if self.first_user_action:
+            lines.append(f"First user action (must run and exit 0 with no extra args): {self.first_user_action}")
+        if self.blast_radius.allowed_paths:
+            lines.append("Only change files under: " + ", ".join(self.blast_radius.allowed_paths))
+        if self.blast_radius.forbidden_paths:
+            lines.append("Never change: " + ", ".join(self.blast_radius.forbidden_paths))
+        gates = self.all_gates()
+        if gates:
+            lines.append("You will be graded by these gates — run them yourself and make them pass before declaring done:")
+            for g in gates:
+                name = getattr(g, "name", None) or g.cmd
+                lines.append(f"  - {name}: {g.cmd}")
+        if not lines:
+            return ""
+        return (
+            "## Definition of done (the exact checklist the gates enforce)\n"
+            + "\n".join(lines)
+            + "\n\nProduce ALL of the above on this pass. Before you declare done, run the gates "
+            "listed above yourself and fix anything they flag — a clean first pass is the whole point.\n"
+        )
+
 
 def load_task(path: str | Path) -> Task:
     """Parse a task YAML file into a Task object. Raises ValueError on missing fields."""

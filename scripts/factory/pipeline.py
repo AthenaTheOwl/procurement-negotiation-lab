@@ -98,6 +98,10 @@ in what is actually there.
 GOAL (what to ship):
 {goal}
 
+{contract}
+Your plan's FILES TO CREATE list must cover every required artifact and module
+source in the definition of done above.
+
 Produce a numbered plan (5-12 steps). Format each step as:
 
   N. <ACTION> <PATH> -- <one-sentence reason>
@@ -154,6 +158,7 @@ After making the edits, verify your own work:
 GOAL (what to ship):
 {goal}
 
+{contract}
 Constraints:
 - Stay within {cwd}.
 - Do not run `pip install`, `npm install`, or `uv sync` unless the plan
@@ -1166,6 +1171,7 @@ def run_pipeline(
             planner = resolve_worker(task.planner, allow_stub_fallback=True)
             plan_prompt = PLAN_PROMPT.format(
                 goal=task.goal,
+                contract=task.to_implement_brief(),
                 cwd=worktree.path,
                 branch=worktree.branch,
                 base_branch=worktree.base_branch,
@@ -1865,11 +1871,18 @@ def _run_implement_loop(
                 trace_id=trace_id,
             )
             return "__budget_exhausted__", last_outcomes
+        # The implementer must see the exact typed contract the gates will enforce,
+        # on round 0 AND on patch rounds. Without it the agent omits artifacts it
+        # was never shown — the #1 rework source (see docs/factory-gap-register.md).
+        contract_brief = task.to_implement_brief()
         prompt = (
-            IMPLEMENT_PROMPT.format(goal=task.goal, plan=plan_text, cwd=worktree.path)
+            IMPLEMENT_PROMPT.format(
+                goal=task.goal, contract=contract_brief, plan=plan_text, cwd=worktree.path
+            )
             if round_idx == 0
             else IMPLEMENT_PATCH_PROMPT.format(
                 goal=task.goal,
+                contract=contract_brief,
                 plan=plan_text,
                 cwd=worktree.path,
                 findings=last_review,

@@ -116,7 +116,13 @@ def _make_task(repo: Path) -> Task:
         template="data-report",
         product_vision=f"internal operator note {CANARY}",
         target_user=f"grid planning analyst {CANARY}",
-        first_user_action=f"run validation without exposing {CANARY}",
+        # first_user_action is, by the active-MVP contract, a PUBLIC no-arg command
+        # (e.g. `python -m <pkg> validate`). The implementer must be handed it
+        # verbatim so it wires a working entry point — keeping it out of the prompt
+        # is exactly what caused the first-action gap (13 repos shipped a broken
+        # command). So it is intentionally NOT a canary-guarded field; the canary
+        # stays in the genuinely free-text product_vision / target_user.
+        first_user_action="python -m binding_constraint validate",
         system_layers=["cli", "report"],
         expected_artifacts=[
             ExpectedArtifact(path="PRODUCT_BRIEF.md"),
