@@ -36,8 +36,9 @@ from .contract import (
     validate_contract,
     validate_first_action,
     validate_interfaces,
+    validate_test_bite,
+    validate_unhappy_path_actions,
 )
-from .learning import recurring_failures
 from .defects import (
     DefectEntry,
     append_defect,
@@ -46,6 +47,7 @@ from .defects import (
     unresolved_defects,
 )
 from .handoffs import write_handoff_packet
+from .learning import recurring_failures
 from .next_features import update_status_md
 from .state import Store
 from .stop_reasons import StopReason
@@ -554,10 +556,21 @@ def _format_gate_results(outcomes: list[GateOutcome]) -> str:
 
 
 def _task_has_contract_gates(task: Task) -> bool:
-    return bool(task.active or task.expected_artifacts or task.module_map)
+    return bool(
+        task.active
+        or task.expected_artifacts
+        or task.module_map
+        or task.test_bite.enabled
+        or task.unhappy_path_actions
+    )
 
 
-def _run_contract_gates(task: Task, repo_root: Path, *, behavioral: bool = True) -> list[GateOutcome]:
+def _run_contract_gates(
+    task: Task,
+    repo_root: Path,
+    *,
+    behavioral: bool = True,
+) -> list[GateOutcome]:
     """Convert active-MVP contract checks into ordinary gate outcomes.
 
     ``behavioral`` controls whether the behavioral validators (which import the
@@ -587,6 +600,10 @@ def _run_contract_gates(task: Task, repo_root: Path, *, behavioral: bool = True)
             found.extend(validate_artifact_content(repo_root, task.expected_artifacts))
         if task.first_user_action:
             found.extend(validate_first_action(repo_root, task.first_user_action))
+        if task.test_bite.enabled:
+            found.extend(validate_test_bite(repo_root, task.module_map, task.test_bite))
+        if task.unhappy_path_actions:
+            found.extend(validate_unhappy_path_actions(repo_root, task.unhappy_path_actions))
         if found:
             return [_violation_to_outcome(violation) for violation in found]
 
@@ -621,6 +638,28 @@ def _run_contract_gates(task: Task, repo_root: Path, *, behavioral: bool = True)
                 ok=True,
                 must_pass=True,
                 stdout="module sources present",
+                stderr="",
+            )
+        )
+    if task.test_bite.enabled:
+        outcomes.append(
+            GateOutcome(
+                name="contract:test-bite",
+                cmd="factory contract test-bite",
+                ok=True,
+                must_pass=True,
+                stdout="mutated module sources caused tests to fail",
+                stderr="",
+            )
+        )
+    if task.unhappy_path_actions:
+        outcomes.append(
+            GateOutcome(
+                name="contract:unhappy-path",
+                cmd="factory contract unhappy-path",
+                ok=True,
+                must_pass=True,
+                stdout="configured unhappy-path commands failed cleanly",
                 stderr="",
             )
         )
@@ -771,7 +810,14 @@ def _gate_results_for_artifact(outcomes: list[GateOutcome]) -> str:
     return "\n".join(chunks)
 
 
-def _open_pr(worktree: WorktreeInfo, task: Task, plan: str, review: str, *, triage: Triage = "PASS") -> str | None:
+def _open_pr(
+    worktree: WorktreeInfo,
+    task: Task,
+    plan: str,
+    review: str,
+    *,
+    triage: Triage = "PASS",
+) -> str | None:
     # An INVESTIGATE triage ships only as a draft with a do-not-merge banner
     # (gap-register fix #5): the work passed must-pass gates but carries review
     # caveats or advisory failures a human should clear before merge.
@@ -941,7 +987,11 @@ def _failure_stop_reason(failure_reason: str | None, *, default: StopReason) -> 
     return default
 
 
-def _completion_stop_reason(task: Task, last_outcomes: list[GateOutcome], last_review: str) -> StopReason:
+def _completion_stop_reason(
+    task: Task,
+    last_outcomes: list[GateOutcome],
+    last_review: str,
+) -> StopReason:
     if read_defects(task.id, FACTORY_DEFECTS_DIR):
         return "completed_with_rework"
     if any(not outcome.ok for outcome in last_outcomes):
@@ -2027,7 +2077,11 @@ def _run_implement_loop(
         else:
             gates_ok, outcomes = gate_runner.run_gates(task.all_gates(), cwd=worktree.path)
             if _task_has_contract_gates(task):
-                contract_outcomes = _run_contract_gates(task, worktree.path, behavioral=behavioral_contract)
+                contract_outcomes = _run_contract_gates(
+                    task,
+                    worktree.path,
+                    behavioral=behavioral_contract,
+                )
                 outcomes.extend(contract_outcomes)
                 gates_ok = gates_ok and all(
                     outcome.ok or not outcome.must_pass for outcome in contract_outcomes
@@ -2347,7 +2401,13 @@ def _review_is_ambiguous(review: str) -> bool:
     if len(text) < 40:
         return False
     upper = text.upper()
-    if any(marker in upper for marker in ("STATUS: CLEAN", "STATUS:CLEAN", "STATUS: NEEDS_PATCH", "STATUS: REJECT")):
+    terminal_markers = (
+        "STATUS: CLEAN",
+        "STATUS:CLEAN",
+        "STATUS: NEEDS_PATCH",
+        "STATUS: REJECT",
+    )
+    if any(marker in upper for marker in terminal_markers):
         return False
     return _parse_prose_verdict(text) is None
 
@@ -2460,7 +2520,10 @@ def _run_reviewers(
             if not dry_run
             else WorkerResult(
                 ok=True,
-                stdout=f"STATUS: {dry_run_status}\nFINDINGS:\n- [dry-run {persona.name} persona via {persona_worker.name}]",
+                stdout=(
+                    f"STATUS: {dry_run_status}\nFINDINGS:\n"
+                    f"- [dry-run {persona.name} persona via {persona_worker.name}]"
+                ),
                 metadata={
                     "thread_id": f"stub-{persona.name}-thread-{round_idx}",
                     "run_id": f"stub-{persona.name}-run-{round_idx}",
@@ -2474,9 +2537,15 @@ def _run_reviewers(
             store, task, "review.persona.done", round_idx, persona_worker, result, trace_id,
             artifact_ref=ref.to_dict(),
         )
-        chunks.append(f"=== persona reviewer: {persona.name} ({persona_worker.name}) ===\n{result.stdout.strip()}")
+        chunks.append(
+            f"=== persona reviewer: {persona.name} ({persona_worker.name}) ===\n"
+            f"{result.stdout.strip()}"
+        )
         if not result.ok:
-            chunks.append(f"STATUS: NEEDS_PATCH\nFINDINGS:\n- {persona.name} persona review failed: {result.stderr[:300]}")
+            chunks.append(
+                "STATUS: NEEDS_PATCH\nFINDINGS:\n"
+                f"- {persona.name} persona review failed: {result.stderr[:300]}"
+            )
 
     return "\n\n".join(chunks)
 

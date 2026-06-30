@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Literal
 
-
 StopReason = Literal[
     "completed_clean",
     "completed_with_rework",

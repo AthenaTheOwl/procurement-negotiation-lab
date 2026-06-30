@@ -129,6 +129,30 @@ class BlastRadiusSpec:
 
 
 @dataclass
+class TestBiteSpec:
+    """Optional mutation-style check that the repo tests catch bad logic."""
+
+    __test__ = False
+
+    enabled: bool = False
+    test_cmd: str = ""
+    max_modules: int = 3
+    timeout_seconds: int = 120
+
+
+@dataclass
+class UnhappyPathAction:
+    """A command that should fail cleanly on bad input."""
+
+    cmd: str
+    name: str | None = None
+    timeout_seconds: int = 60
+    forbidden_output_patterns: list[str] = field(
+        default_factory=lambda: [r"Traceback \(most recent call last\)"]
+    )
+
+
+@dataclass
 class ReviewSpec:
     reviewer: ReviewerChoice = "claude_code"
     reviewers: list[ReviewerChoice] = field(default_factory=lambda: ["claude_code"])
@@ -173,6 +197,8 @@ class Task:
     triage_policy: TriagePolicy = field(default_factory=TriagePolicy)
     budget: BudgetSpec = field(default_factory=BudgetSpec)
     blast_radius: BlastRadiusSpec = field(default_factory=BlastRadiusSpec)
+    test_bite: TestBiteSpec = field(default_factory=TestBiteSpec)
+    unhappy_path_actions: list[UnhappyPathAction] = field(default_factory=list)
     template: str | None = None
 
     def repo_path(self) -> Path:
@@ -209,24 +235,51 @@ class Task:
             for section in ("## Current state", "## Known limits", "## Next feature queue"):
                 lines.append(f"        {section}")
         if self.expected_artifacts:
-            lines.append("Required artifacts (each must exist and be real, not a stub or placeholder):")
+            lines.append(
+                "Required artifacts (each must exist and be real, not a stub or placeholder):"
+            )
             for a in self.expected_artifacts:
                 tag = "" if a.kind == "file" else f"  [{a.kind}]"
                 lines.append(f"  - {a.path}{tag}")
         if self.module_map:
-            lines.append("Module map (create each source; the listed public interfaces must exist and be callable):")
+            lines.append(
+                "Module map (create each source; the listed public interfaces must exist "
+                "and be callable):"
+            )
             for m in self.module_map:
                 ifaces = ("  ->  " + "; ".join(m.public_interfaces)) if m.public_interfaces else ""
                 lines.append(f"  - {m.source}{ifaces}")
         if self.first_user_action:
-            lines.append(f"First user action (must run and exit 0 with no extra args): {self.first_user_action}")
+            lines.append(
+                "First user action (must run and exit 0 with no extra args): "
+                f"{self.first_user_action}"
+            )
         if self.blast_radius.allowed_paths:
             lines.append("Only change files under: " + ", ".join(self.blast_radius.allowed_paths))
         if self.blast_radius.forbidden_paths:
             lines.append("Never change: " + ", ".join(self.blast_radius.forbidden_paths))
+        if self.test_bite.enabled:
+            command = self.test_bite.test_cmd or "the repo test command"
+            lines.append(
+                "Test-bite gate: the factory will temporarily mutate declared module "
+                f"sources and run `{command}`. At least one test must fail for each "
+                "mutated source, so write tests against fixed expected values or "
+                "external fixtures, not values regenerated from the same code path."
+            )
+        if self.unhappy_path_actions:
+            lines.append(
+                "Unhappy-path gates: these commands must fail cleanly with a non-zero "
+                "exit and no Python traceback."
+            )
+            for action in self.unhappy_path_actions:
+                name = f"{action.name}: " if action.name else ""
+                lines.append(f"  - {name}{action.cmd}")
         gates = self.all_gates()
         if gates:
-            lines.append("You will be graded by these gates — run them yourself and make them pass before declaring done:")
+            lines.append(
+                "You will be graded by these gates - run them yourself and make "
+                "them pass before declaring done:"
+            )
             for g in gates:
                 name = getattr(g, "name", None) or g.cmd
                 lines.append(f"  - {name}: {g.cmd}")
@@ -236,7 +289,8 @@ class Task:
             "## Definition of done (the exact checklist the gates enforce)\n"
             + "\n".join(lines)
             + "\n\nProduce ALL of the above on this pass. Before you declare done, run the gates "
-            "listed above yourself and fix anything they flag — a clean first pass is the whole point.\n"
+            "listed above yourself and fix anything they flag - a clean first pass "
+            "is the whole point.\n"
         )
 
 
@@ -355,6 +409,8 @@ def load_task(path: str | Path) -> Task:
     triage_policy = _parse_triage_policy(raw.get("triage_policy") or {})
     budget = _parse_budget(raw.get("budget") or {})
     blast_radius = _parse_blast_radius(raw.get("blast_radius") or {})
+    test_bite = _parse_test_bite(raw.get("test_bite"))
+    unhappy_path_actions = _parse_unhappy_path_actions(raw.get("unhappy_path_actions") or [])
     template = raw.get("template")
     if template is not None and not isinstance(template, str):
         raise ValueError("template must be a string when provided")
@@ -386,6 +442,8 @@ def load_task(path: str | Path) -> Task:
         triage_policy=triage_policy,
         budget=budget,
         blast_radius=blast_radius,
+        test_bite=test_bite,
+        unhappy_path_actions=unhappy_path_actions,
         template=template,
     )
 
@@ -580,6 +638,78 @@ def _parse_blast_radius(value: Any) -> BlastRadiusSpec:
     )
 
 
+def _parse_test_bite(value: Any) -> TestBiteSpec:
+    if value is None:
+        return TestBiteSpec()
+    if isinstance(value, bool):
+        return TestBiteSpec(enabled=value)
+    if not isinstance(value, dict):
+        raise ValueError("test_bite must be a boolean or mapping")
+    allowed = {"enabled", "test_cmd", "max_modules", "timeout_seconds"}
+    unknown = sorted(set(value) - allowed)
+    if unknown:
+        raise ValueError(f"unknown test_bite field(s): {', '.join(unknown)}")
+    test_cmd = value.get("test_cmd", "")
+    if test_cmd is None:
+        test_cmd = ""
+    if not isinstance(test_cmd, str):
+        raise ValueError("test_bite.test_cmd must be a string")
+    return TestBiteSpec(
+        enabled=bool(value.get("enabled", True)),
+        test_cmd=test_cmd.strip(),
+        max_modules=_positive_int(value, "max_modules", default=3, label="test_bite"),
+        timeout_seconds=_positive_int(value, "timeout_seconds", default=120, label="test_bite"),
+    )
+
+
+def _parse_unhappy_path_actions(value: Any) -> list[UnhappyPathAction]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValueError("unhappy_path_actions must be a list")
+    actions: list[UnhappyPathAction] = []
+    for item in value:
+        if isinstance(item, str):
+            cmd = item.strip()
+            if not cmd:
+                raise ValueError("unhappy_path_actions entries must not be empty")
+            actions.append(UnhappyPathAction(cmd=cmd))
+            continue
+        if not isinstance(item, dict):
+            raise ValueError(
+                f"unhappy_path_actions entry must be string or mapping: {item!r}"
+            )
+        allowed = {"cmd", "name", "timeout_seconds", "forbidden_output_patterns"}
+        unknown = sorted(set(item) - allowed)
+        if unknown:
+            raise ValueError(f"unknown unhappy_path_actions field(s): {', '.join(unknown)}")
+        cmd = item.get("cmd")
+        if not isinstance(cmd, str) or not cmd.strip():
+            raise ValueError(f"unhappy_path_actions entry requires cmd: {item!r}")
+        name = item.get("name")
+        if name is not None and not isinstance(name, str):
+            raise ValueError("unhappy_path_actions.name must be a string")
+        raw_patterns = item.get("forbidden_output_patterns")
+        if raw_patterns is None:
+            forbidden_output_patterns = UnhappyPathAction(cmd=cmd).forbidden_output_patterns
+        else:
+            forbidden_output_patterns = _string_list(
+                raw_patterns,
+                f"unhappy_path_actions[{name or cmd}].forbidden_output_patterns",
+            )
+        actions.append(
+            UnhappyPathAction(
+                cmd=cmd.strip(),
+                name=name.strip() if isinstance(name, str) and name.strip() else None,
+                timeout_seconds=_positive_int(
+                    item, "timeout_seconds", default=60, label="unhappy_path_actions"
+                ),
+                forbidden_output_patterns=forbidden_output_patterns,
+            )
+        )
+    return actions
+
+
 def _path_pattern_list(value: Any, label: str) -> list[str]:
     patterns = _string_list(value, f"blast_radius.{label}")
     for pattern in patterns:
@@ -591,6 +721,16 @@ def _path_pattern_list(value: Any, label: str) -> list[str]:
         if ".." in parts:
             raise ValueError(f"blast_radius.{label} entries must not contain ..")
     return patterns
+
+
+def _positive_int(value: dict[str, Any], key: str, *, default: int, label: str) -> int:
+    raw = value.get(key, default)
+    if isinstance(raw, bool):
+        raise ValueError(f"{label}.{key} must be a positive integer")
+    parsed = int(raw)
+    if parsed <= 0:
+        raise ValueError(f"{label}.{key} must be positive")
+    return parsed
 
 
 def _optional_nonnegative_int(value: dict[str, Any], key: str) -> int | None:

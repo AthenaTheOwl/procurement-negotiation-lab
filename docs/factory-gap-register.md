@@ -218,3 +218,10 @@ not presence** — here, that the tests *bite* and that failure paths *fail clea
 The clean four dimensions say the factory now produces real, readable,
 audience-safe code that does something; these two gates close the gap between
 "passes its own tests" and "its tests are worth passing."
+
+Implementation status, 2026-06-30: FAC-013 and FAC-014 now run as typed
+contract gates. Task YAML can set `test_bite` and `unhappy_path_actions`;
+`scripts/factory/contract.py` mutates declared Python module sources and
+requires configured tests to fail, then runs configured bad-input commands and
+requires clean non-zero exits with no traceback. The data-report and
+product-control-plane templates enable both gates by default.

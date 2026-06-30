@@ -8,6 +8,7 @@ existing review/patch loop can handle fixes.
 
 from __future__ import annotations
 
+import ast
 import importlib
 import importlib.util
 import json
@@ -19,7 +20,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from .task import ExpectedArtifact, ModuleMapEntry
+from .task import ExpectedArtifact, ModuleMapEntry, TestBiteSpec, UnhappyPathAction
 from .workers import resolve_uv
 
 STATUS_REQUIRED_SECTIONS: tuple[str, ...] = (
@@ -277,6 +278,235 @@ def validate_first_action(
             ),
         )
     ]
+
+
+def validate_unhappy_path_actions(
+    repo_root: Path, actions: list[UnhappyPathAction]
+) -> list[ContractViolation]:
+    """Run commands that should fail cleanly on bad input."""
+    repo_root = repo_root.resolve()
+    violations: list[ContractViolation] = []
+    for idx, action in enumerate(actions, start=1):
+        label = action.name or f"unhappy-path-{idx}"
+        result = _run_behavior_command(
+            repo_root,
+            action.cmd,
+            timeout_seconds=action.timeout_seconds,
+            wrap_with_uv=True,
+        )
+        if isinstance(result, ContractViolation):
+            violations.append(
+                ContractViolation(
+                    code="unhappy-path-error",
+                    path=label,
+                    message=f"unhappy path {label!r} could not run: {result.message}",
+                )
+            )
+            continue
+        output = result.stdout + result.stderr
+        if result.returncode == 0:
+            violations.append(
+                ContractViolation(
+                    code="unhappy-path-did-not-fail",
+                    path=label,
+                    message=(
+                        f"unhappy path {label!r} exited 0, but it should fail cleanly: "
+                        f"{action.cmd}"
+                    ),
+                )
+            )
+            continue
+        for pattern in action.forbidden_output_patterns:
+            if re.search(pattern, output):
+                tail = "\n".join(output.strip().splitlines()[-5:])
+                violations.append(
+                    ContractViolation(
+                        code="unhappy-path-unclean-error",
+                        path=label,
+                        message=(
+                            f"unhappy path {label!r} output matched forbidden pattern "
+                            f"{pattern!r}: {action.cmd}"
+                            + (f"\n{tail}" if tail else "")
+                        ),
+                    )
+                )
+                break
+    return violations
+
+
+def validate_test_bite(
+    repo_root: Path,
+    modules: list[ModuleMapEntry],
+    spec: TestBiteSpec,
+) -> list[ContractViolation]:
+    """Mutate declared Python modules and require the repo tests to catch it."""
+    if not spec.enabled:
+        return []
+    repo_root = repo_root.resolve()
+    command = spec.test_cmd or _default_test_command(repo_root)
+    candidates = [
+        module
+        for module in modules
+        if module.source.endswith(".py") and (repo_root / module.source).is_file()
+    ][: spec.max_modules]
+    if not candidates:
+        return [
+            ContractViolation(
+                code="test-bite-no-python-modules",
+                path="module_map",
+                message="test_bite is enabled but no declared Python module source exists",
+            )
+        ]
+    violations: list[ContractViolation] = []
+    for module in candidates:
+        source = repo_root / module.source
+        original = source.read_text(encoding="utf-8")
+        mutation = _mutate_python_source(original)
+        if mutation is None:
+            violations.append(
+                ContractViolation(
+                    code="test-bite-no-mutation-target",
+                    path=module.source,
+                    message=(
+                        f"{module.source} has no simple literal/comparison target for "
+                        "the test-bite mutation gate"
+                    ),
+                )
+            )
+            continue
+        try:
+            source.write_text(mutation, encoding="utf-8")
+            result = _run_behavior_command(
+                repo_root,
+                command,
+                timeout_seconds=spec.timeout_seconds,
+                wrap_with_uv=False,
+            )
+        finally:
+            source.write_text(original, encoding="utf-8")
+        if isinstance(result, ContractViolation):
+            violations.append(
+                ContractViolation(
+                    code="test-bite-error",
+                    path=module.source,
+                    message=(
+                        f"test-bite command could not run for {module.source}: "
+                        f"{result.message}"
+                    ),
+                )
+            )
+            continue
+        if result.returncode == 0:
+            violations.append(
+                ContractViolation(
+                    code="test-bite-missed-mutation",
+                    path=module.source,
+                    message=(
+                        f"{command!r} still passed after mutating {module.source}; "
+                        "tests may be self-confirming or not exercising this module"
+                    ),
+                )
+            )
+    return violations
+
+
+def _run_behavior_command(
+    repo_root: Path,
+    command_text: str,
+    *,
+    timeout_seconds: int,
+    wrap_with_uv: bool,
+) -> subprocess.CompletedProcess[str] | ContractViolation:
+    command = _split_command(command_text)
+    if not command:
+        return ContractViolation(code="command-empty", path=".", message="command is empty")
+    if wrap_with_uv and (repo_root / "pyproject.toml").is_file() and "uv" not in command[:3]:
+        uv = resolve_uv()
+        if uv:
+            command = [uv, "run", *command]
+    try:
+        return subprocess.run(  # noqa: S603
+            command,
+            cwd=str(repo_root),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            stdin=subprocess.DEVNULL,
+            timeout=timeout_seconds,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return ContractViolation(
+            code="command-timeout",
+            path=".",
+            message=f"command timed out after {exc.timeout}s: {command_text}",
+        )
+    except OSError as exc:
+        return ContractViolation(
+            code="command-failed-to-start",
+            path=".",
+            message=f"command could not start: {exc}",
+        )
+
+
+def _default_test_command(repo_root: Path) -> str:
+    if (repo_root / "pyproject.toml").is_file():
+        return "python -m uv run pytest -q"
+    return f"{sys.executable} -m pytest -q"
+
+
+class _FirstUsefulMutation(ast.NodeTransformer):
+    def __init__(self) -> None:
+        self.mutated = False
+
+    def visit_Constant(self, node: ast.Constant) -> ast.AST:
+        if self.mutated:
+            return node
+        value = node.value
+        if isinstance(value, bool):
+            self.mutated = True
+            return ast.copy_location(ast.Constant(value=not value), node)
+        if isinstance(value, int) and not isinstance(value, bool):
+            self.mutated = True
+            return ast.copy_location(ast.Constant(value=value + 1), node)
+        if isinstance(value, float):
+            self.mutated = True
+            delta = 0.1 if value == 0 else abs(value) * 0.1
+            return ast.copy_location(ast.Constant(value=value + delta), node)
+        return node
+
+    def visit_Compare(self, node: ast.Compare) -> ast.AST:
+        if self.mutated:
+            return self.generic_visit(node)
+        if node.ops:
+            replacements: dict[type[ast.cmpop], ast.cmpop] = {
+                ast.Lt: ast.GtE(),
+                ast.LtE: ast.Gt(),
+                ast.Gt: ast.LtE(),
+                ast.GtE: ast.Lt(),
+                ast.Eq: ast.NotEq(),
+                ast.NotEq: ast.Eq(),
+            }
+            replacement = replacements.get(type(node.ops[0]))
+            if replacement is not None:
+                node.ops[0] = replacement
+                self.mutated = True
+                return node
+        return self.generic_visit(node)
+
+
+def _mutate_python_source(source: str) -> str | None:
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return None
+    mutator = _FirstUsefulMutation()
+    mutated = mutator.visit(tree)
+    if not mutator.mutated:
+        return None
+    ast.fix_missing_locations(mutated)
+    return ast.unparse(mutated) + "\n"
 
 
 def validate_contract(

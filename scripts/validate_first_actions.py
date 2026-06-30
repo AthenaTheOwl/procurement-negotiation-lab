@@ -26,6 +26,12 @@ import sys
 import tomllib
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.factory.workers import resolve_uv  # noqa: E402
+
 PORTFOLIO_ROOT = Path(r"e:/claude_code/random-apps")
 
 # Active-MVP repos with a python package + a `python -m <pkg> validate` first
@@ -98,6 +104,17 @@ def _run(cmd: list[str], cwd: Path, timeout: int = 180) -> tuple[int, str]:
     return result.returncode, "\n".join(tail[-3:])
 
 
+def _uv_prefix() -> list[str] | None:
+    uv = resolve_uv()
+    if uv is not None:
+        return [uv]
+    probe = [sys.executable, "-m", "uv", "--version"]
+    code, _tail = _run(probe, REPO_ROOT, timeout=10)
+    if code == 0:
+        return [sys.executable, "-m", "uv"]
+    return None
+
+
 def check_repo(slug: str, override: str | None) -> tuple[bool, str]:
     repo = PORTFOLIO_ROOT / slug
     if not repo.is_dir():
@@ -105,17 +122,21 @@ def check_repo(slug: str, override: str | None) -> tuple[bool, str]:
     pkg = _package_name(repo)
     if pkg is None:
         return False, f"{slug}: no pyproject package name"
+    uv = _uv_prefix()
+    if uv is None:
+        return False, f"{slug}: uv binary not found"
     # one-time sync (idempotent, cached)
-    sync_code, sync_tail = _run(["python", "-m", "uv", "sync"], repo, timeout=240)
+    sync_code, sync_tail = _run([*uv, "sync"], repo, timeout=240)
     if sync_code != 0:
         return False, f"{slug}: uv sync failed ({sync_code}): {sync_tail}"
     if override:
-        cmd = ["python", "-m", "uv", "run", *override.split()]
+        cmd = [*uv, "run", *override.split()]
     else:
-        cmd = ["python", "-m", "uv", "run", "python", "-m", pkg, "validate"]
+        cmd = [*uv, "run", "python", "-m", pkg, "validate"]
     code, tail = _run(cmd, repo)
     if code == 0:
-        return True, f"{slug}: OK (`{' '.join(cmd[3:])}`)"
+        shown = cmd[cmd.index("run") + 1 :]
+        return True, f"{slug}: OK (`{' '.join(shown)}`)"
     return False, f"{slug}: exit {code} — {tail}"
 
 

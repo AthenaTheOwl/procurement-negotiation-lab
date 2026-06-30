@@ -85,10 +85,29 @@ def test_patch_rounds_derived_from_defect_rounds(tmp_path: Path) -> None:
     ddir = tmp_path / "defects"
     s.upsert_task("t-iter", "iter", "spec")
     s.update_task("t-iter", status="done")
-    _write_defects(ddir, "t-iter", [
-        {"kind": "gate.failed", "gate_or_finding": "contract-presence", "round": 0, "phase": "impl", "persona": "d", "summary": "x"},
-        {"kind": "gate.failed", "gate_or_finding": "reports-present", "round": 1, "phase": "impl", "persona": "d", "summary": "x", "resolved_in_round": 2},
-    ])
+    _write_defects(
+        ddir,
+        "t-iter",
+        [
+            {
+                "kind": "gate.failed",
+                "gate_or_finding": "contract-presence",
+                "round": 0,
+                "phase": "impl",
+                "persona": "d",
+                "summary": "x",
+            },
+            {
+                "kind": "gate.failed",
+                "gate_or_finding": "reports-present",
+                "round": 1,
+                "phase": "impl",
+                "persona": "d",
+                "summary": "x",
+                "resolved_in_round": 2,
+            },
+        ],
+    )
     r = compute_rollup(s, ddir)
     task = next(t for t in r.tasks if t["id"] == "t-iter")
     assert task["patch_rounds"] == 1            # max defect round
@@ -102,11 +121,36 @@ def test_named_gate_failures_come_from_defect_log(tmp_path: Path) -> None:
     ddir = tmp_path / "defects"
     s.upsert_task("t-gf", "gf", "spec")
     s.update_task("t-gf", status="failed")
-    _write_defects(ddir, "t-gf", [
-        {"kind": "gate.failed", "gate_or_finding": "contract-presence", "round": 0, "phase": "impl", "persona": "d", "summary": "x"},
-        {"kind": "gate.failed", "gate_or_finding": "contract-presence", "round": 1, "phase": "impl", "persona": "d", "summary": "x"},
-        {"kind": "gate.failed", "gate_or_finding": "reports-present", "round": 1, "phase": "impl", "persona": "d", "summary": "x"},
-    ])
+    _write_defects(
+        ddir,
+        "t-gf",
+        [
+            {
+                "kind": "gate.failed",
+                "gate_or_finding": "contract-presence",
+                "round": 0,
+                "phase": "impl",
+                "persona": "d",
+                "summary": "x",
+            },
+            {
+                "kind": "gate.failed",
+                "gate_or_finding": "contract-presence",
+                "round": 1,
+                "phase": "impl",
+                "persona": "d",
+                "summary": "x",
+            },
+            {
+                "kind": "gate.failed",
+                "gate_or_finding": "reports-present",
+                "round": 1,
+                "phase": "impl",
+                "persona": "d",
+                "summary": "x",
+            },
+        ],
+    )
     r = compute_rollup(s, ddir)
     assert r.gate_failure_distribution == {"contract-presence": 2, "reports-present": 1}
     s.close()
@@ -117,10 +161,29 @@ def test_escaped_uses_resolved_in_round_on_done_tasks(tmp_path: Path) -> None:
     ddir = tmp_path / "defects"
     s.upsert_task("t-esc", "esc", "spec")
     s.update_task("t-esc", status="done")
-    _write_defects(ddir, "t-esc", [
-        {"kind": "gate.failed", "gate_or_finding": "g1", "round": 0, "phase": "impl", "persona": "d", "summary": "x", "resolved_in_round": 1},
-        {"kind": "gate.failed", "gate_or_finding": "g2", "round": 0, "phase": "impl", "persona": "d", "summary": "x"},  # unresolved
-    ])
+    _write_defects(
+        ddir,
+        "t-esc",
+        [
+            {
+                "kind": "gate.failed",
+                "gate_or_finding": "g1",
+                "round": 0,
+                "phase": "impl",
+                "persona": "d",
+                "summary": "x",
+                "resolved_in_round": 1,
+            },
+            {
+                "kind": "gate.failed",
+                "gate_or_finding": "g2",
+                "round": 0,
+                "phase": "impl",
+                "persona": "d",
+                "summary": "x",
+            },  # unresolved
+        ],
+    )
     r = compute_rollup(s, ddir)
     task = next(t for t in r.tasks if t["id"] == "t-esc")
     assert task["defects_total"] == 2
@@ -134,9 +197,20 @@ def test_escaped_not_counted_on_unfinished_task(tmp_path: Path) -> None:
     ddir = tmp_path / "defects"
     s.upsert_task("t-run", "run", "spec")
     s.update_task("t-run", status="running")
-    _write_defects(ddir, "t-run", [
-        {"kind": "gate.failed", "gate_or_finding": "g1", "round": 0, "phase": "impl", "persona": "d", "summary": "x"},
-    ])
+    _write_defects(
+        ddir,
+        "t-run",
+        [
+            {
+                "kind": "gate.failed",
+                "gate_or_finding": "g1",
+                "round": 0,
+                "phase": "impl",
+                "persona": "d",
+                "summary": "x",
+            },
+        ],
+    )
     r = compute_rollup(s, ddir)
     task = next(t for t in r.tasks if t["id"] == "t-run")
     assert task["defects_total"] == 1

@@ -9,8 +9,15 @@ from scripts.factory.contract import (
     validate_artifact_content,
     validate_first_action,
     validate_interfaces,
+    validate_test_bite,
+    validate_unhappy_path_actions,
 )
-from scripts.factory.task import ExpectedArtifact, ModuleMapEntry
+from scripts.factory.task import (
+    ExpectedArtifact,
+    ModuleMapEntry,
+    TestBiteSpec,
+    UnhappyPathAction,
+)
 
 
 def _write(path: Path, text: str) -> Path:
@@ -128,3 +135,87 @@ def test_validate_first_action_reports_broken_command(tmp_path: Path) -> None:
 
     assert [violation.code for violation in violations] == ["first-action-failed"]
     assert "exit" in violations[0].message
+
+
+def test_validate_unhappy_path_accepts_clean_nonzero_error(tmp_path: Path) -> None:
+    _write(
+        tmp_path / "bad_input.py",
+        "import sys\nprint('error: missing report', file=sys.stderr)\nraise SystemExit(2)\n",
+    )
+
+    violations = validate_unhappy_path_actions(
+        tmp_path,
+        [UnhappyPathAction(cmd=f"{sys.executable} bad_input.py", name="missing-report")],
+    )
+
+    assert violations == []
+
+
+def test_validate_unhappy_path_reports_traceback(tmp_path: Path) -> None:
+    _write(tmp_path / "traceback.py", "raise RuntimeError('raw crash')\n")
+
+    violations = validate_unhappy_path_actions(
+        tmp_path,
+        [UnhappyPathAction(cmd=f"{sys.executable} traceback.py", name="traceback")],
+    )
+
+    assert [violation.code for violation in violations] == ["unhappy-path-unclean-error"]
+    assert "Traceback" in violations[0].message
+
+
+def test_validate_unhappy_path_reports_accidental_success(tmp_path: Path) -> None:
+    _write(tmp_path / "success.py", "raise SystemExit(0)\n")
+
+    violations = validate_unhappy_path_actions(
+        tmp_path,
+        [UnhappyPathAction(cmd=f"{sys.executable} success.py", name="success")],
+    )
+
+    assert [violation.code for violation in violations] == ["unhappy-path-did-not-fail"]
+
+
+def test_validate_test_bite_accepts_tests_that_catch_mutation(tmp_path: Path) -> None:
+    _write(tmp_path / "pkg" / "__init__.py", "")
+    _write(tmp_path / "pkg" / "model.py", "def score():\n    return 3\n")
+    _write(
+        tmp_path / "tests" / "test_model.py",
+        "from pkg.model import score\n\n\ndef test_score():\n    assert score() == 3\n",
+    )
+
+    violations = validate_test_bite(
+        tmp_path,
+        [ModuleMapEntry(name="model", source="pkg/model.py")],
+        TestBiteSpec(
+            enabled=True,
+            test_cmd=f"{sys.executable} -m pytest -q",
+            timeout_seconds=60,
+        ),
+    )
+
+    assert violations == []
+
+
+def test_validate_test_bite_reports_self_confirming_tests(tmp_path: Path) -> None:
+    _write(tmp_path / "pkg" / "__init__.py", "")
+    _write(tmp_path / "pkg" / "model.py", "def score():\n    return 3\n")
+    _write(
+        tmp_path / "tests" / "test_model.py",
+        "from pkg.model import score\n\n\n"
+        "def test_score_is_stable():\n"
+        "    assert score() == score()\n",
+    )
+
+    violations = validate_test_bite(
+        tmp_path,
+        [ModuleMapEntry(name="model", source="pkg/model.py")],
+        TestBiteSpec(
+            enabled=True,
+            test_cmd=f"{sys.executable} -m pytest -q",
+            timeout_seconds=60,
+        ),
+    )
+
+    assert [violation.code for violation in violations] == ["test-bite-missed-mutation"]
+    assert (tmp_path / "pkg" / "model.py").read_text(encoding="utf-8") == (
+        "def score():\n    return 3\n"
+    )

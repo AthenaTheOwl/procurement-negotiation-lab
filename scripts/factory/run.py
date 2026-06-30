@@ -145,8 +145,22 @@ def main(argv: list[str] | None = None) -> int:
         help="record planned steps without invoking agents or gates",
     )
     parser.add_argument("--status", action="store_true", help="print all recorded tasks and exit")
-    parser.add_argument("--metrics", action="store_true", help="print factory metrics (clean rate, rework, stop reasons, gate failures) and exit; read-only, does not write")
-    parser.add_argument("--metrics-record", action="store_true", help="like --metrics, and append a rollup snapshot to ops/factory-metrics/rollup.jsonl")
+    parser.add_argument(
+        "--metrics",
+        action="store_true",
+        help=(
+            "print factory metrics (clean rate, rework, stop reasons, gate failures) "
+            "and exit; read-only, does not write"
+        ),
+    )
+    parser.add_argument(
+        "--metrics-record",
+        action="store_true",
+        help=(
+            "like --metrics, and append a rollup snapshot to "
+            "ops/factory-metrics/rollup.jsonl"
+        ),
+    )
     parser.add_argument("--show", type=str, help="print a task's events and exit")
     parser.add_argument(
         "--trace",

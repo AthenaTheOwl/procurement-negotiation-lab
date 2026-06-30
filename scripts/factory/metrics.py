@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from .state import Event, Store, TaskRow, now
+
 # The stop-reason taxonomy is owned by stop_reasons.py (the module PR2's budget /
 # stop emitter writes against). Import it so the ledger and the emitter can't
 # drift — a reason this ledger didn't know would be silently dropped to "derived"
@@ -120,7 +121,9 @@ def _sum_payload_number(events: list[Event], *keys: str) -> float:
 
 def _has_payload_number(events: list[Event], *keys: str) -> bool:
     for e in events:
-        if isinstance(e.payload, dict) and any(isinstance(e.payload.get(k), (int, float)) for k in keys):
+        if isinstance(e.payload, dict) and any(
+            isinstance(e.payload.get(k), (int, float)) for k in keys
+        ):
             return True
     return False
 
@@ -157,9 +160,15 @@ def derive_stop_reason(task: TaskRow, events: list[Event], patch_rounds: int) ->
 
 def compute_task_metrics(store: Store, task: TaskRow, defects_dir: Path | None) -> TaskMetrics:
     events = store.events_for(task.id)
-    review_caveats = sum(1 for e in events if e.kind in ("review.needs_patch", "review.rejected"))
+    review_caveats = sum(
+        1 for e in events if e.kind in ("review.needs_patch", "review.rejected")
+    )
     duration_ms = int(_sum_payload_number(events, "duration_ms"))
-    cost_usd = _sum_payload_number(events, "total_cost_usd", "cost_usd") if _has_payload_number(events, "total_cost_usd", "cost_usd") else None
+    cost_usd = (
+        _sum_payload_number(events, "total_cost_usd", "cost_usd")
+        if _has_payload_number(events, "total_cost_usd", "cost_usd")
+        else None
+    )
 
     # The defect log is the authoritative source for gate-failure NAMES
     # (gate_or_finding) and for whether a defect is resolved (resolved_in_round
@@ -271,21 +280,36 @@ def write_rollup(rollup: FactoryRollup, metrics_dir: str | Path = "ops/factory-m
 def format_summary(r: FactoryRollup) -> str:
     lines = []
     lines.append(f"factory metrics  @ {r.at}")
-    lines.append(f"  tasks: {r.tasks_total}  ({', '.join(f'{k}={v}' for k, v in sorted(r.by_status.items()))})")
-    pct = lambda x: "n/a" if x is None else f"{x * 100:.0f}%"
-    lines.append(f"  clean rate (done, 0 rework): {pct(r.clean_rate)}    "
-                 f"first-attempt pass: {pct(r.first_attempt_pass_rate)}    rework: {pct(r.rework_rate)}")
-    lines.append(f"  avg patch rounds (done): {r.avg_patch_rounds if r.avg_patch_rounds is not None else 'n/a'}")
+    by_status = ", ".join(f"{k}={v}" for k, v in sorted(r.by_status.items()))
+    lines.append(f"  tasks: {r.tasks_total}  ({by_status})")
+
+    def pct(value: float | None) -> str:
+        return "n/a" if value is None else f"{value * 100:.0f}%"
+
+    lines.append(
+        f"  clean rate (done, 0 rework): {pct(r.clean_rate)}    "
+        f"first-attempt pass: {pct(r.first_attempt_pass_rate)}    "
+        f"rework: {pct(r.rework_rate)}"
+    )
+    avg_patch_rounds = r.avg_patch_rounds if r.avg_patch_rounds is not None else "n/a"
+    lines.append(f"  avg patch rounds (done): {avg_patch_rounds}")
     if r.gate_failure_distribution:
         ranked = sorted(r.gate_failure_distribution.items(), key=lambda kv: -kv[1])
         top = ", ".join(f"{k}:{v}" for k, v in ranked[:8])
         more = len(ranked) - 8
-        lines.append(f"  top gate failures: {top}" + (f"  (+{more} more, see rollup.jsonl)" if more > 0 else ""))
-    sr = ", ".join(f"{k}:{v}" for k, v in sorted(r.stop_reason_distribution.items(), key=lambda kv: -kv[1]))
+        suffix = f"  (+{more} more, see rollup.jsonl)" if more > 0 else ""
+        lines.append(f"  top gate failures: {top}{suffix}")
+    sr = ", ".join(
+        f"{k}:{v}" for k, v in sorted(r.stop_reason_distribution.items(), key=lambda kv: -kv[1])
+    )
     lines.append(f"  stop reasons: {sr}")
     dur_s = r.duration_ms_total / 1000
-    lines.append(f"  duration: {dur_s:.0f}s total" + (f", {r.duration_ms_avg / 1000:.1f}s avg/task" if r.duration_ms_avg else ""))
+    avg_duration = f", {r.duration_ms_avg / 1000:.1f}s avg/task" if r.duration_ms_avg else ""
+    lines.append(f"  duration: {dur_s:.0f}s total{avg_duration}")
     if r.cost_usd_total is not None:
         lines.append(f"  cost: ${r.cost_usd_total:.4f} total")
-    lines.append(f"  defects: {r.defects_total} logged, {r.defects_escaped} escaped (unresolved on a done task)")
+    lines.append(
+        f"  defects: {r.defects_total} logged, {r.defects_escaped} escaped "
+        "(unresolved on a done task)"
+    )
     return "\n".join(lines)

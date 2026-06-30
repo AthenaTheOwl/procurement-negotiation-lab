@@ -33,11 +33,25 @@ goal: |
     raises ModuleNotFoundError even though the package exists on disk.
   - Build backend can be hatchling or setuptools — either works once
     the two uv blocks above are present.
+  Unhappy-path convention (REQUIRED - adversary gate fails otherwise):
+  - The `validate` subcommand MUST accept `--ledger <path>`.
+  - If the ledger path is missing, a directory, or malformed, exit non-zero
+    with a short typed error message. Do not raise a raw Python traceback.
+  - The factory will run `python -m {SLUG} validate --ledger __factory_missing_ledger__.jsonl`
+    and require a clean non-zero exit.
 active: true
 template: product-control-plane
 product_vision: "Turns a periodic question about a portfolio repo's outputs into a typed score plus a memo a human acts on."
 target_user: "operator running the portfolio who needs the verdict, not the dashboard"
 first_user_action: "python -m {SLUG} validate"
+test_bite:
+  enabled: true
+  test_cmd: python -m uv run pytest -q
+  max_modules: 3
+  timeout_seconds: 120
+unhappy_path_actions:
+  - name: missing-ledger
+    cmd: python -m {SLUG} validate --ledger __factory_missing_ledger__.jsonl
 system_layers:
   - score
   - ledger

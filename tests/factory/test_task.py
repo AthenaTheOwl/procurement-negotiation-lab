@@ -123,6 +123,52 @@ blast_radius:
     assert task.blast_radius.secret_scan is True
 
 
+def test_load_task_accepts_behavioral_adversary_gates(tmp_path: Path) -> None:
+    task_file = _write(
+        tmp_path / "behavioral.yaml",
+        """
+id: t-behavior
+title: behavioral gates
+target_repo: .
+goal: catch shallow tests and bad-input crashes
+test_bite:
+  enabled: true
+  test_cmd: python -m uv run pytest -q
+  max_modules: 2
+  timeout_seconds: 30
+unhappy_path_actions:
+  - name: missing-report
+    cmd: python -m pkg validate --report missing.jsonl
+    timeout_seconds: 15
+    forbidden_output_patterns:
+      - "Traceback"
+""",
+    )
+    task = load_task(task_file)
+    assert task.test_bite.enabled is True
+    assert task.test_bite.max_modules == 2
+    assert task.test_bite.timeout_seconds == 30
+    assert len(task.unhappy_path_actions) == 1
+    assert task.unhappy_path_actions[0].name == "missing-report"
+    assert task.unhappy_path_actions[0].timeout_seconds == 15
+
+
+def test_load_task_rejects_unknown_test_bite_field(tmp_path: Path) -> None:
+    task_file = _write(
+        tmp_path / "behavioral-bad.yaml",
+        """
+id: t-behavior-bad
+title: behavioral bad
+target_repo: .
+goal: reject typo
+test_bite:
+  mutation_depth: 4
+""",
+    )
+    with pytest.raises(ValueError, match="unknown test_bite field"):
+        load_task(task_file)
+
+
 def test_load_task_rejects_unknown_budget_field(tmp_path: Path) -> None:
     task_file = _write(
         tmp_path / "budget-bad.yaml",
@@ -174,13 +220,19 @@ def test_to_implement_brief_carries_contract_not_free_text_metadata():
     """Fix #1: the brief hands the implementer the exact gate checklist, but keeps
     the free-text framing (product_vision/target_user) out — that's the canary-
     guarded metadata. first_user_action (a public command) IS included."""
-    from scripts.factory.task import Task, ExpectedArtifact, ModuleMapEntry, GateSpec
+    from scripts.factory.task import ExpectedArtifact, GateSpec, ModuleMapEntry, Task
     t = Task(
         id="t", title="t", target_repo=".", goal="g", active=True,
         product_vision="SECRET internal note", target_user="SECRET audience",
         first_user_action="python -m pkg validate",
         expected_artifacts=[ExpectedArtifact(path="reports/r.jsonl", kind="glob")],
-        module_map=[ModuleMapEntry(name="cli", source="src/pkg/cli.py", public_interfaces=["main(argv) -> int"])],
+        module_map=[
+            ModuleMapEntry(
+                name="cli",
+                source="src/pkg/cli.py",
+                public_interfaces=["main(argv) -> int"],
+            )
+        ],
         gates=[GateSpec(cmd="python -m pkg validate", name="first-action-runs")],
     )
     brief = t.to_implement_brief()

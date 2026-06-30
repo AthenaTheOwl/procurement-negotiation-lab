@@ -327,7 +327,10 @@ def test_review_ambiguity_fails_closed():
         "- the validate command was not exercised against the negative case"
     ) is True
     # explicit clean verdict -> not ambiguous
-    assert _review_is_ambiguous("STATUS: CLEAN\nFINDINGS:\n- checked the diff, looks right") is False
+    assert (
+        _review_is_ambiguous("STATUS: CLEAN\nFINDINGS:\n- checked the diff, looks right")
+        is False
+    )
     # trivial/empty -> trust the gates, not ambiguous
     assert _review_is_ambiguous("ok") is False
     assert _review_is_ambiguous("") is False
@@ -347,7 +350,7 @@ def test_open_pr_drafts_on_investigate(monkeypatch):
         return _R()
 
     monkeypatch.setattr(pl.subprocess, "run", fake_run)
-    from scripts.factory.task import Task, PRSpec
+    from scripts.factory.task import PRSpec, Task
     from scripts.factory.worktree import WorktreeInfo
     task = Task(id="t", title="t", target_repo=".", goal="g", pr=PRSpec(open=True, draft=False))
     wt = WorktreeInfo(path=Path("."), branch="b", base_branch="main")

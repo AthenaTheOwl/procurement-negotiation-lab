@@ -33,6 +33,13 @@ goal: |
     repos shipped a CLI that needed args, breaking the promised first
     action. The defaults should always work for the v0.1 artifact.
 
+  Unhappy-path convention (REQUIRED - adversary gate fails otherwise):
+  - The `validate` subcommand MUST also accept `--report <path>`.
+  - If the report path is missing, a directory, or malformed, exit non-zero
+    with a short typed error message. Do not raise a raw Python traceback.
+  - The factory will run `python -m {SLUG} validate --report __factory_missing_report__.jsonl`
+    and require a clean non-zero exit.
+
   Python packaging convention (REQUIRED — `python -m uv sync` + tests
   silently break otherwise):
   - In `pyproject.toml`, declare dev deps under `[dependency-groups]`,
@@ -50,6 +57,14 @@ template: data-report
 product_vision: "Turns one public-data question into a small runnable report with a clear next action."
 target_user: "operator or analyst who needs a first-pass data report"
 first_user_action: "python -m {SLUG} validate"
+test_bite:
+  enabled: true
+  test_cmd: python -m uv run pytest -q
+  max_modules: 3
+  timeout_seconds: 120
+unhappy_path_actions:
+  - name: missing-report
+    cmd: python -m {SLUG} validate --report __factory_missing_report__.jsonl
 system_layers:
   - ingest
   - model
