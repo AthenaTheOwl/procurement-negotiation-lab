@@ -315,3 +315,42 @@ def test_pipeline_dry_run_emits_run_evidence_files(
     # URI so the post-commit finalize step can rewrite it.
     assert run["workspace_id"] == "procurement-negotiation-lab"
     assert run["sandbox_image_ref"] == "repo://procurement-negotiation-lab@PENDING/"
+
+
+def test_review_ambiguity_fails_closed():
+    """Fix #4c: a substantive review with no explicit verdict is ambiguous (ships
+    as a draft); an explicit CLEAN or a trivial/empty review is not."""
+    from scripts.factory.pipeline import _review_is_ambiguous
+    # substantive, no verdict -> ambiguous (fail closed)
+    assert _review_is_ambiguous(
+        "FINDINGS:\n- the cli imports fine but the report only has one row\n"
+        "- the validate command was not exercised against the negative case"
+    ) is True
+    # explicit clean verdict -> not ambiguous
+    assert _review_is_ambiguous("STATUS: CLEAN\nFINDINGS:\n- checked the diff, looks right") is False
+    # trivial/empty -> trust the gates, not ambiguous
+    assert _review_is_ambiguous("ok") is False
+    assert _review_is_ambiguous("") is False
+
+
+def test_open_pr_drafts_on_investigate(monkeypatch):
+    """Fix #5: an INVESTIGATE triage forces a draft PR with a do-not-merge banner."""
+    import scripts.factory.pipeline as pl
+    captured = {}
+
+    class _R:
+        returncode = 0
+        stdout = "https://github.com/x/y/pull/1\n"
+
+    def fake_run(argv, **kwargs):
+        captured["argv"] = argv
+        return _R()
+
+    monkeypatch.setattr(pl.subprocess, "run", fake_run)
+    from scripts.factory.task import Task, PRSpec
+    from scripts.factory.worktree import WorktreeInfo
+    task = Task(id="t", title="t", target_repo=".", goal="g", pr=PRSpec(open=True, draft=False))
+    wt = WorktreeInfo(path=Path("."), branch="b", base_branch="main")
+    pl._open_pr(wt, task, "plan", "review text", triage="INVESTIGATE")
+    assert "--draft" in captured["argv"]                 # forced draft even though pr.draft=False
+    assert any("INVESTIGATE" in a for a in captured["argv"])  # banner in body

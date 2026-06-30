@@ -771,9 +771,18 @@ def _gate_results_for_artifact(outcomes: list[GateOutcome]) -> str:
     return "\n".join(chunks)
 
 
-def _open_pr(worktree: WorktreeInfo, task: Task, plan: str, review: str) -> str | None:
+def _open_pr(worktree: WorktreeInfo, task: Task, plan: str, review: str, *, triage: Triage = "PASS") -> str | None:
+    # An INVESTIGATE triage ships only as a draft with a do-not-merge banner
+    # (gap-register fix #5): the work passed must-pass gates but carries review
+    # caveats or advisory failures a human should clear before merge.
+    banner = (
+        "> **INVESTIGATE** — the factory flagged review caveats or advisory gate "
+        "failures. Do not merge without a human check.\n\n"
+        if triage == "INVESTIGATE"
+        else ""
+    )
     body_parts = [
-        f"## Goal\n\n{task.goal}\n",
+        f"{banner}## Goal\n\n{task.goal}\n",
         f"## Plan\n\n{plan or '(no plan recorded)'}\n",
         f"## Review\n\n{review or '(no review recorded)'}\n",
         "## Provenance\n\nfactory: scripts/factory\n",
@@ -791,7 +800,7 @@ def _open_pr(worktree: WorktreeInfo, task: Task, plan: str, review: str) -> str 
         "--base",
         task.pr.base,
     ]
-    if task.pr.draft:
+    if task.pr.draft or triage == "INVESTIGATE":
         argv.append("--draft")
     try:
         result = subprocess.run(  # noqa: S603
@@ -1759,11 +1768,34 @@ def run_pipeline(
             trace_id=trace_id,
         )
 
-    # --- push + PR ---
+    # --- triage BEFORE push/PR (gap-register fix #5) ---
+    # Classify once, up front, and let the result gate the PR: a HOLD must not
+    # ship at all; an INVESTIGATE ships only as a draft for a human to clear.
+    # Previously triage was computed AFTER the PR was already opened, so it
+    # gated nothing.
+    triage = classify_terminal_state(
+        final_status="done",
+        gate_outcomes=last_outcomes,
+        review_text=last_review,
+        triage_policy=task.triage_policy,
+    )
+    # Fix #4c: a substantive-but-unparseable review fell through to CLEAN in the
+    # patch loop (correctly, so it doesn't burn a round), but at the terminal it
+    # fails closed — ship as a draft, not merge-ready.
+    if triage == "PASS" and _review_is_ambiguous(last_review):
+        triage = "INVESTIGATE"
+
     pr_url: str | None = None
-    if task.pr.open and not dry_run:
+    if triage == "HOLD":
+        store.append_event(
+            task.id,
+            "triage.hold",
+            {"reason": "triage HOLD — branch not pushed; needs human review"},
+            trace_id=trace_id,
+        )
+    elif task.pr.open and not dry_run:
         if push_branch(worktree.path, worktree.branch):
-            pr_url = _open_pr(worktree, task, plan_text, last_review)
+            pr_url = _open_pr(worktree, task, plan_text, last_review, triage=triage)
             if pr_url:
                 store.update_task(task.id, pr_url=pr_url)
 
@@ -1777,27 +1809,13 @@ def run_pipeline(
     store.append_event(
         task.id,
         "pipeline.done",
-        {
-            "pr_url": pr_url,
-            "triage": classify_terminal_state(
-                final_status="done",
-                gate_outcomes=last_outcomes,
-                review_text=last_review,
-                triage_policy=task.triage_policy,
-            ),
-        },
+        {"pr_url": pr_url, "triage": triage},
         trace_id=trace_id,
     )
     # pipeline.done payload requires `status` (schema enum: done|failed|cancelled)
     # and carries `gate_results_summary` cloned from the run's aggregated gate
     # outcomes — this is the cross-check source the Round 3 validator
     # extension enforces against the Run record.
-    triage = classify_terminal_state(
-        final_status="done",
-        gate_outcomes=last_outcomes,
-        review_text=last_review,
-        triage_policy=task.triage_policy,
-    )
     done_payload: dict[str, Any] = {
         "status": "done",
         "pr_url": pr_url,
@@ -2290,6 +2308,24 @@ def _has_blocking_signals(text: str) -> bool:
         "schema violation",
     ]
     return any(b in lower for b in blockers)
+
+
+def _review_is_ambiguous(review: str) -> bool:
+    """A review with real content but no explicit verdict (gap-register fix #4c).
+
+    Such a review is substantive enough to warrant a human look but not clean
+    enough to auto-merge. The patch-loop status correctly tilts it to CLEAN (so it
+    doesn't burn a round), but at the terminal it should fail closed: ship only as
+    a draft (INVESTIGATE), never as merge-ready (PASS). A trivial/empty review is
+    not ambiguous — trust the gates and PASS.
+    """
+    text = (review or "").strip()
+    if len(text) < 40:
+        return False
+    upper = text.upper()
+    if any(marker in upper for marker in ("STATUS: CLEAN", "STATUS:CLEAN", "STATUS: NEEDS_PATCH", "STATUS: REJECT")):
+        return False
+    return _parse_prose_verdict(text) is None
 
 
 def _combined_review_status(review: str) -> Literal["CLEAN", "NEEDS_PATCH", "REJECT"]:
