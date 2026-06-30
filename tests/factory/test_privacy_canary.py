@@ -201,6 +201,12 @@ def test_active_task_metadata_canary_does_not_leak_to_persisted_sinks(
             _make_task(repo),
             store=store,
             dry_run=False,
+            # Metadata-leakage test with stub fixtures: exercise the real gate
+            # flow but skip the behavioral validators (they import the real
+            # modules / run the first-user-action, which a stub fixture can't
+            # satisfy). The leakage surface — prompts + persisted sinks — is
+            # unaffected by this flag.
+            behavioral_contract=False,
             artifact_store=artifact_store,
             spec_path="ops/factory-tasks/privacy-canary.yaml",
             event_ledger_dir=_redirect_run_evidence_dirs.events,

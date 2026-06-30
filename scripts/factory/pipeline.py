@@ -30,7 +30,14 @@ from procurement_lab.run_evidence import (
 
 from .artifacts import ArtifactStore
 from .blast_radius import BlastRadiusFinding, evaluate_blast_radius
-from .contract import ContractViolation, validate_contract
+from .contract import (
+    ContractViolation,
+    validate_artifact_content,
+    validate_contract,
+    validate_first_action,
+    validate_interfaces,
+)
+from .learning import recurring_failures
 from .defects import (
     DefectEntry,
     append_defect,
@@ -546,8 +553,15 @@ def _task_has_contract_gates(task: Task) -> bool:
     return bool(task.active or task.expected_artifacts or task.module_map)
 
 
-def _run_contract_gates(task: Task, repo_root: Path) -> list[GateOutcome]:
-    """Convert active-MVP contract checks into ordinary gate outcomes."""
+def _run_contract_gates(task: Task, repo_root: Path, *, behavioral: bool = True) -> list[GateOutcome]:
+    """Convert active-MVP contract checks into ordinary gate outcomes.
+
+    ``behavioral`` controls whether the behavioral validators (which import the
+    real modules and execute the first-user-action) run. They need a real
+    implementation, so orchestration tests that use stub fixtures pass
+    behavioral=False to exercise the gate flow without real execution; real
+    factory runs keep it True.
+    """
     violations = validate_contract(
         repo_root,
         active=task.active,
@@ -556,6 +570,21 @@ def _run_contract_gates(task: Task, repo_root: Path) -> list[GateOutcome]:
     )
     if violations:
         return [_violation_to_outcome(violation) for violation in violations]
+
+    # Presence passed -> behavioral checks (gap-register fix #3). A presence gate
+    # is satisfied by a 1-byte stub with the right name; these catch the slop it
+    # misses: declared interfaces must actually exist, committed artifacts must be
+    # real (not stub/placeholder), and the first-user-action must run.
+    if behavioral:
+        found: list[ContractViolation] = []
+        if task.module_map:
+            found.extend(validate_interfaces(repo_root, task.module_map))
+        if task.expected_artifacts:
+            found.extend(validate_artifact_content(repo_root, task.expected_artifacts))
+        if task.first_user_action:
+            found.extend(validate_first_action(repo_root, task.first_user_action))
+        if found:
+            return [_violation_to_outcome(violation) for violation in found]
 
     outcomes: list[GateOutcome] = []
     if task.active:
@@ -948,6 +977,7 @@ def run_pipeline(
     *,
     store: Store,
     dry_run: bool = False,
+    behavioral_contract: bool = True,
     resume_from: str | None = None,
     resume_comment: str | None = None,
     artifact_store: ArtifactStore | None = None,
@@ -1345,6 +1375,7 @@ def run_pipeline(
             artifacts=artifacts,
             trace_id=trace_id,
             dry_run=dry_run,
+            behavioral_contract=behavioral_contract,
             evidence=evidence,
             started_monotonic=pipeline_started_monotonic,
         )
@@ -1823,6 +1854,7 @@ def _run_implement_loop(
     artifacts: ArtifactStore,
     trace_id: str,
     dry_run: bool,
+    behavioral_contract: bool = True,
     evidence: _RunEvidence | None = None,
     started_monotonic: float | None = None,
 ) -> tuple[str, list[GateOutcome]]:
@@ -1875,19 +1907,29 @@ def _run_implement_loop(
         # on round 0 AND on patch rounds. Without it the agent omits artifacts it
         # was never shown — the #1 rework source (see docs/factory-gap-register.md).
         contract_brief = task.to_implement_brief()
-        prompt = (
-            IMPLEMENT_PROMPT.format(
-                goal=task.goal, contract=contract_brief, plan=plan_text, cwd=worktree.path
+        if round_idx == 0:
+            # Fix #2: close the learning loop. Inject the most common misses on
+            # this kind of task (from the defect log) into the round-0 brief so the
+            # factory stops re-making the same omissions every batch.
+            round0_brief = contract_brief
+            recurring = recurring_failures(FACTORY_DEFECTS_DIR, kind=task.template, top_n=8)
+            if recurring:
+                round0_brief += (
+                    "\n## The most common misses on this kind of task — do NOT repeat them:\n"
+                    + "\n".join(f"  - {item}" for item in recurring)
+                    + "\n"
+                )
+            prompt = IMPLEMENT_PROMPT.format(
+                goal=task.goal, contract=round0_brief, plan=plan_text, cwd=worktree.path
             )
-            if round_idx == 0
-            else IMPLEMENT_PATCH_PROMPT.format(
+        else:
+            prompt = IMPLEMENT_PATCH_PROMPT.format(
                 goal=task.goal,
                 contract=contract_brief,
                 plan=plan_text,
                 cwd=worktree.path,
                 findings=last_review,
             )
-        )
         impl_result = (
             _run_worker(implementer, prompt, worktree.path)
             if not dry_run
@@ -1960,7 +2002,7 @@ def _run_implement_loop(
         else:
             gates_ok, outcomes = gate_runner.run_gates(task.all_gates(), cwd=worktree.path)
             if _task_has_contract_gates(task):
-                contract_outcomes = _run_contract_gates(task, worktree.path)
+                contract_outcomes = _run_contract_gates(task, worktree.path, behavioral=behavioral_contract)
                 outcomes.extend(contract_outcomes)
                 gates_ok = gates_ok and all(
                     outcome.ok or not outcome.must_pass for outcome in contract_outcomes
