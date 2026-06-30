@@ -1889,8 +1889,11 @@ def _run_implement_loop(
     """
     started_monotonic = started_monotonic if started_monotonic is not None else time.monotonic()
     implementer = resolve_worker(task.implementer, allow_stub_fallback=True)
+    # Fix #4a: review must be independent of the implementer. If a configured
+    # reviewer is the same worker family as the implementer, swap it to the other
+    # family so the implementer never reviews its own work.
     reviewers = [
-        resolve_worker(name, allow_stub_fallback=True)
+        resolve_worker(_cross_model(name, task.implementer), allow_stub_fallback=True)
         for name in task.review.reviewers
         if name != "none"
     ]
@@ -2029,6 +2032,12 @@ def _run_implement_loop(
                 gates_ok = gates_ok and all(
                     outcome.ok or not outcome.must_pass for outcome in contract_outcomes
                 )
+            # Note (#6b): a per-round blast-radius check was considered here but
+            # dropped — it collides with the terminal pre-commit gate's clean
+            # `scope_violation` stop reason, and the prevention is already handled
+            # upstream: fix #1's contract brief tells the implementer the
+            # forbidden paths ("Never change: ...") so it doesn't drift into them,
+            # and the terminal pre-commit gate is the authoritative final guard.
         for outcome in outcomes:
             artifacts.write(
                 task.id,
@@ -2310,6 +2319,21 @@ def _has_blocking_signals(text: str) -> bool:
     return any(b in lower for b in blockers)
 
 
+_OTHER_FAMILY = {"claude_code": "codex", "codex": "claude_code"}
+
+
+def _cross_model(reviewer: str, implementer: str) -> str:
+    """Force the reviewer to a different worker family than the implementer.
+
+    Same-family self-review is weaker — a model is poor at catching its own blind
+    spots. If the configured reviewer matches the implementer, swap to the other
+    family; otherwise leave it (e.g. an explicit third option or a stub).
+    """
+    if reviewer == implementer and reviewer in _OTHER_FAMILY:
+        return _OTHER_FAMILY[reviewer]
+    return reviewer
+
+
 def _review_is_ambiguous(review: str) -> bool:
     """A review with real content but no explicit verdict (gap-register fix #4c).
 
@@ -2349,6 +2373,22 @@ def _combined_review_status(review: str) -> Literal["CLEAN", "NEEDS_PATCH", "REJ
     if not _has_blocking_signals(review):
         return "CLEAN"
     return "NEEDS_PATCH"
+
+
+# Fix #4d: the lens each persona reviewer judges by. persona_reviews were parsed
+# (architecture, security) but never run; these give each a focused extra pass.
+PERSONA_LENS = {
+    "architecture": (
+        "module boundaries and layering, coupling, whether the declared public "
+        "interfaces are coherent and minimal, and whether new code lands in the "
+        "right layer."
+    ),
+    "security": (
+        "input validation, injection, secret/credential handling, unsafe "
+        "subprocess/file/network operations, and anything that widens the attack "
+        "surface or leaks data."
+    ),
+}
 
 
 def _run_reviewers(
@@ -2398,6 +2438,46 @@ def _run_reviewers(
         chunks.append(f"=== reviewer: {reviewer.name} ===\n{result.stdout.strip()}")
         if not result.ok:
             chunks.append(f"STATUS: REJECT\nFINDINGS:\n- reviewer failed: {result.stderr[:400]}")
+
+    # Fix #4d: run each configured persona review as a focused extra pass with its
+    # own lens and a cross-model reviewer. A security or architecture problem the
+    # generalist review missed gets its own verdict, which folds into the combined
+    # transcript (and so into _combined_review_status).
+    for persona in task.persona_reviews:
+        lens = PERSONA_LENS.get(persona.name)
+        if not lens:
+            continue
+        persona_worker = resolve_worker(
+            _cross_model(persona.reviewer, task.implementer), allow_stub_fallback=True
+        )
+        persona_prompt = (
+            f"{prompt}\n\nREVIEW LENS — judge ONLY {persona.name}: {lens}\n"
+            "Use the same STATUS header format. NEEDS_PATCH only for a real "
+            f"{persona.name} problem in the diff."
+        )
+        result = (
+            _run_worker(persona_worker, persona_prompt, worktree.path)
+            if not dry_run
+            else WorkerResult(
+                ok=True,
+                stdout=f"STATUS: {dry_run_status}\nFINDINGS:\n- [dry-run {persona.name} persona via {persona_worker.name}]",
+                metadata={
+                    "thread_id": f"stub-{persona.name}-thread-{round_idx}",
+                    "run_id": f"stub-{persona.name}-run-{round_idx}",
+                    "model": "stub-model",
+                    "duration_ms": 0,
+                },
+            )
+        )
+        ref = artifacts.write(task.id, f"review-{persona.name}", round_idx, result.stdout)
+        _record_worker_event(
+            store, task, "review.persona.done", round_idx, persona_worker, result, trace_id,
+            artifact_ref=ref.to_dict(),
+        )
+        chunks.append(f"=== persona reviewer: {persona.name} ({persona_worker.name}) ===\n{result.stdout.strip()}")
+        if not result.ok:
+            chunks.append(f"STATUS: NEEDS_PATCH\nFINDINGS:\n- {persona.name} persona review failed: {result.stderr[:300]}")
+
     return "\n\n".join(chunks)
 
 

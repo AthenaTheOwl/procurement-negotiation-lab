@@ -354,3 +354,20 @@ def test_open_pr_drafts_on_investigate(monkeypatch):
     pl._open_pr(wt, task, "plan", "review text", triage="INVESTIGATE")
     assert "--draft" in captured["argv"]                 # forced draft even though pr.draft=False
     assert any("INVESTIGATE" in a for a in captured["argv"])  # banner in body
+
+
+def test_cross_model_forces_independent_reviewer():
+    """Fix #4a: a reviewer in the same family as the implementer is swapped to the
+    other; a cross-family or unknown reviewer is left alone."""
+    from scripts.factory.pipeline import _cross_model
+    assert _cross_model("codex", "codex") == "claude_code"        # self-review -> swap
+    assert _cross_model("claude_code", "claude_code") == "codex"  # self-review -> swap
+    assert _cross_model("claude_code", "codex") == "claude_code"  # already cross -> keep
+    assert _cross_model("stub", "codex") == "stub"                # unknown -> keep
+
+
+def test_persona_lens_defined_for_parsed_personas():
+    """Fix #4d: every persona the loader accepts has a review lens to run with."""
+    from scripts.factory.pipeline import PERSONA_LENS
+    from scripts.factory.task import VALID_PERSONA_REVIEWS
+    assert set(VALID_PERSONA_REVIEWS) <= set(PERSONA_LENS)
