@@ -7,6 +7,7 @@ The factory falls back to `stub` when the requested CLI is not on PATH.
 from __future__ import annotations
 
 import json as _json
+import os
 import re
 import shutil
 import subprocess
@@ -539,6 +540,50 @@ class GateOutcome:
     stderr: str
 
 
+def resolve_uv() -> str | None:
+    """Locate the ``uv`` binary from inside an arbitrary interpreter.
+
+    The factory is launched via ``python -m uv run ...``, so the factory
+    process — and every gate subprocess it spawns — runs inside the project
+    ``.venv``, whose interpreter has no ``uv`` *module* and whose PATH does not
+    include uv's install dir. Two facts make uv locatable anyway, in priority
+    order:
+
+    1. ``uv run`` exports ``UV=<path-to-uv.exe>`` into the child environment.
+       This is the reliable signal when the factory was launched under uv.
+    2. ``shutil.which("uv")`` works when uv happens to be on PATH.
+
+    Returns ``None`` when neither resolves, so callers can fall back to the
+    original command (which then surfaces its own error honestly).
+    """
+    from_env = os.environ.get("UV")
+    if from_env and Path(from_env).exists():
+        return from_env
+    return shutil.which("uv")
+
+
+def _normalize_uv_invocation(cmd: str) -> str:
+    """Rewrite ``python -m uv`` to the resolved ``uv`` binary (FAC-012).
+
+    Gate commands run with ``shell=True`` inside whatever venv the gate
+    subprocess inherits — typically the factory's own ``.venv``, whose
+    interpreter has no ``uv`` *module* (uv ships as a standalone binary, not as
+    a venv package). So the generated ``python -m uv run ...`` convention fails
+    with "No module named uv" even though uv is installed. Resolving the binary
+    keeps that convention portable regardless of which interpreter the gate
+    inherits. This is the configured-gate twin of the FAC-011 fix in
+    ``contract.validate_first_action``. No-op when the cmd doesn't invoke uv or
+    when uv can't be resolved (let the original command surface its own error).
+    """
+    if "python -m uv" not in cmd:
+        return cmd
+    uv = resolve_uv()
+    if not uv:
+        return cmd
+    quoted = f'"{uv}"' if " " in uv else uv
+    return cmd.replace("python -m uv", quoted)
+
+
 class GateWorker:
     """Runs a list of shell commands. Each is a separate subprocess.
 
@@ -555,9 +600,10 @@ class GateWorker:
         aggregate_ok = True
         for gate in gates:
             gate_cwd = Path(gate.cwd) if gate.cwd else cwd
+            run_cmd = _normalize_uv_invocation(gate.cmd)
             try:
                 result = subprocess.run(  # noqa: S602 - intentional shell=True for gate convenience
-                    gate.cmd,
+                    run_cmd,
                     cwd=str(gate_cwd),
                     capture_output=True,
                     text=True,

@@ -14,13 +14,13 @@ import json
 import os
 import re
 import shlex
-import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from .task import ExpectedArtifact, ModuleMapEntry
+from .workers import resolve_uv
 
 STATUS_REQUIRED_SECTIONS: tuple[str, ...] = (
     "## Current state",
@@ -228,10 +228,12 @@ def validate_first_action(
     # Run inside the repo's uv environment when it has a pyproject, using the uv
     # BINARY. `sys.executable -m uv` fails when the factory's interpreter has no
     # uv module ("No module named uv") — a false first-action failure even though
-    # the command works under `uv run`. Skip the wrap if the command already
-    # invokes uv (avoid double-wrapping).
+    # the command works under `uv run`. resolve_uv prefers the UV env var that
+    # `uv run` exports (uv's install dir is usually not on PATH inside the
+    # .venv), falling back to PATH. Skip the wrap if the command already invokes
+    # uv (avoid double-wrapping). (FAC-011 / FAC-012)
     if (repo_root / "pyproject.toml").is_file() and "uv" not in command[:3]:
-        uv = shutil.which("uv")
+        uv = resolve_uv()
         if uv:
             command = [uv, "run", *command]
     try:

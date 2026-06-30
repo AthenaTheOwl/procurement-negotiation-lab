@@ -15,6 +15,8 @@ from scripts.factory.workers import (
     StubWorker,
     WorkerResult,
     _looks_like_unsupported_flag,
+    _normalize_uv_invocation,
+    resolve_uv,
     resolve_worker,
 )
 
@@ -154,6 +156,53 @@ def test_gate_worker_aggregate_respects_must_pass(tmp_path: Path) -> None:
     ok, outcomes = GateWorker().run_gates(gates, cwd=tmp_path)
     assert ok is True
     assert outcomes[0].ok is False and outcomes[0].must_pass is False
+
+
+# ----- FAC-012 fix tests: uv resolution for gate commands -----------------
+
+
+def test_resolve_uv_prefers_uv_env_var(tmp_path: Path, monkeypatch) -> None:
+    # uv run exports UV=<path-to-uv.exe>; inside the .venv that is the only
+    # reliable handle on the binary (its install dir is not on PATH).
+    fake_uv = tmp_path / "uv.exe"
+    fake_uv.write_text("", encoding="utf-8")
+    monkeypatch.setenv("UV", str(fake_uv))
+    assert resolve_uv() == str(fake_uv)
+
+
+def test_resolve_uv_ignores_stale_env_and_falls_back_to_path(monkeypatch) -> None:
+    # A UV var pointing at a vanished binary must not shadow PATH resolution.
+    monkeypatch.setenv("UV", r"C:\nope\uv.exe")
+    monkeypatch.setattr(
+        "scripts.factory.workers.shutil.which", lambda name: "/usr/bin/uv"
+    )
+    assert resolve_uv() == "/usr/bin/uv"
+
+
+def test_normalize_uv_invocation_rewrites_python_m_uv(tmp_path, monkeypatch) -> None:
+    fake_uv = tmp_path / "uv.exe"
+    fake_uv.write_text("", encoding="utf-8")
+    monkeypatch.setenv("UV", str(fake_uv))
+    cmd = "python -m uv run python -m hbm_supply_tracker validate"
+    out = _normalize_uv_invocation(cmd)
+    # the outer `python -m uv` is replaced; the inner `python -m <pkg>` is not
+    assert str(fake_uv) in out
+    assert out.endswith("run python -m hbm_supply_tracker validate")
+    assert "python -m uv" not in out
+
+
+def test_normalize_uv_invocation_noop_without_uv_token() -> None:
+    assert _normalize_uv_invocation("pytest -q") == "pytest -q"
+
+
+def test_normalize_uv_invocation_noop_when_uv_unresolvable(monkeypatch) -> None:
+    monkeypatch.delenv("UV", raising=False)
+    monkeypatch.setattr(
+        "scripts.factory.workers.shutil.which", lambda name: None
+    )
+    cmd = "python -m uv run pytest"
+    # unresolved → leave the command alone so it surfaces its own honest error
+    assert _normalize_uv_invocation(cmd) == cmd
 
 
 # ----- FAC-002/003 fix tests: headless tool perms + stdin-for-long-prompts ----
