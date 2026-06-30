@@ -14,6 +14,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -224,8 +225,15 @@ def validate_first_action(
     command = _split_command(first_user_action)
     if not command:
         return []
-    if (repo_root / "pyproject.toml").is_file():
-        command = [sys.executable, "-m", "uv", "run", *command]
+    # Run inside the repo's uv environment when it has a pyproject, using the uv
+    # BINARY. `sys.executable -m uv` fails when the factory's interpreter has no
+    # uv module ("No module named uv") — a false first-action failure even though
+    # the command works under `uv run`. Skip the wrap if the command already
+    # invokes uv (avoid double-wrapping).
+    if (repo_root / "pyproject.toml").is_file() and "uv" not in command[:3]:
+        uv = shutil.which("uv")
+        if uv:
+            command = [uv, "run", *command]
     try:
         result = subprocess.run(  # noqa: S603
             command,
