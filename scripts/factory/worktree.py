@@ -90,6 +90,25 @@ def diff_stat(worktree: Path, base_branch: str) -> str:
     return result.stdout.strip()
 
 
+def diff_content(worktree: Path, base_branch: str, *, max_lines: int = 600) -> str:
+    """Full diff against base, truncated to a line budget.
+
+    The reviewer needs the actual changed code, not just --stat filenames — a
+    review of a diff summary is a review of nothing. Truncated so the prompt
+    stays within budget; the reviewer can run the full diff via Bash if needed.
+    """
+    result = _git(worktree, "diff", f"{base_branch}...HEAD", check=False)
+    lines = result.stdout.splitlines()
+    if len(lines) > max_lines:
+        kept = lines[:max_lines]
+        kept.append(
+            f"... [diff truncated: {len(lines) - max_lines} more lines; "
+            f"run `git diff {base_branch}...HEAD` for the rest]"
+        )
+        return "\n".join(kept)
+    return result.stdout.strip()
+
+
 def has_uncommitted_changes(worktree: Path) -> bool:
     result = _git(worktree, "status", "--porcelain", check=False)
     return bool(result.stdout.strip())

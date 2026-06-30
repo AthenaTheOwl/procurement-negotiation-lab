@@ -63,6 +63,7 @@ from .worktree import (
     WorktreeInfo,
     commit_all,
     create_worktree,
+    diff_content,
     diff_stat,
     has_uncommitted_changes,
     push_branch,
@@ -211,14 +212,17 @@ You are the review agent. The implementer edited the worktree at {cwd}.
 Diff summary against base {base_branch}:
 {diff_stat}
 
+Full diff (read the actual code — do not approve a change you have not read):
+{diff_body}
+
 Gate results:
 {gate_results}
 
 Original goal:
 {goal}
 
-Use Bash to run `git status --porcelain` and `git diff --stat HEAD` if you
-need more detail than the diff summary above.
+The diff above is the change. Use Bash for `git status --porcelain` or the full
+`git diff {base_branch}...HEAD` only if the diff was truncated and you need more.
 
 Task: read the changes against the goal and the gate results, then report
 in this EXACT shape. The FIRST LINE of your reply MUST be one of:
@@ -2108,6 +2112,7 @@ def _run_implement_loop(
                 cwd=worktree.path,
                 base_branch=worktree.base_branch,
                 diff_stat=diff_stat(worktree.path, worktree.base_branch) or "(no diff yet)",
+                diff_body=diff_content(worktree.path, worktree.base_branch) or "(no diff yet)",
                 gate_results=_format_gate_results(outcomes),
                 goal=task.goal,
             )
@@ -2149,6 +2154,7 @@ def _run_implement_loop(
             cwd=worktree.path,
             base_branch=worktree.base_branch,
             diff_stat=diff_stat(worktree.path, worktree.base_branch) or "(no diff yet)",
+            diff_body=diff_content(worktree.path, worktree.base_branch) or "(no diff yet)",
             gate_results=_format_gate_results(outcomes),
             goal=task.goal,
         )
