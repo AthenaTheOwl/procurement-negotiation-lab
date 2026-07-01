@@ -225,3 +225,28 @@ contract gates. Task YAML can set `test_bite` and `unhappy_path_actions`;
 requires configured tests to fail, then runs configured bad-input commands and
 requires clean non-zero exits with no traceback. The data-report and
 product-control-plane templates enable both gates by default.
+
+### FAC-015 — content-hardening gate (the portfolio sweep found the class)
+
+Applying FAC-013/014 across the portfolio surfaced a class none of them catch:
+**9 repos shipped READMEs ending in Claude tool-call XML (`</content></invoke>`)**,
+8 of them past *green test suites* — because no test reads the README. Same shape
+as ornamental output (exits 0, prints nothing) and leaked secrets: a defect the
+repo's own tests structurally cannot see.
+→ **Gate** (`scripts/factory/content_gates.py`, wired into `_run_contract_gates`):
+- `validate_no_tool_markup` — repo-wide `git ls-files` scan for tool-call XML +
+  template residue in any committed text file.
+- `validate_disclosure` — secret shapes (openai/aws/github/google/slack keys,
+  private-key blocks, inline `api_key=`). Narrowed to zero-false-positive: a
+  marketing-word check was built and **removed** after validating 100% FP on this
+  portfolio ("operating leverage", AGENTS.md quoting the banned list). Voice stays
+  with the per-repo `voice_lint`.
+- `validate_does_something` — the first action must produce *structured* output, not
+  just exit 0.
+
+The meta-lesson, and why this is factory-enforced not test-delegated: **"tests pass"
+≠ "no defects."** 8 of the 9 corrupted repos had green suites. A content gate must
+run regardless of the generated repo's own (possibly weak) tests. Validated: 10 unit
+tests, detection proven against a corrupted `main`, zero findings across all 43
+current branches, no false positive on the pilot. Ships a `main` runner so the same
+checks sweep existing repos.
