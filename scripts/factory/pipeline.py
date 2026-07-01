@@ -30,6 +30,7 @@ from procurement_lab.run_evidence import (
 
 from .artifacts import ArtifactStore
 from .blast_radius import BlastRadiusFinding, evaluate_blast_radius
+from .content_gates import run_all as content_gates_run_all
 from .contract import (
     ContractViolation,
     validate_artifact_content,
@@ -604,6 +605,11 @@ def _run_contract_gates(
             found.extend(validate_test_bite(repo_root, task.module_map, task.test_bite))
         if task.unhappy_path_actions:
             found.extend(validate_unhappy_path_actions(repo_root, task.unhappy_path_actions))
+        # Content-hardening gates: tool-markup / secrets repo-wide, and
+        # non-ornamental first-action output. The classes the 2026-06-30 portfolio
+        # sweep proved slip past presence/exit-0 gates and a repo's own tests (9
+        # repos shipped READMEs with tool-call XML, past green suites).
+        found.extend(content_gates_run_all(repo_root, task.first_user_action))
         if found:
             return [_violation_to_outcome(violation) for violation in found]
 
