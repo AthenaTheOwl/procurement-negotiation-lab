@@ -14,6 +14,7 @@ from procurement_mechanism_sdk.api import (
     compare_mechanisms,
     compute_participation_report,
     sample_scenario,
+    select_mechanism,
 )
 
 
@@ -52,6 +53,12 @@ def main() -> int:
         report_run,
         oracle_run=comparison.oracle_run,
     )
+    selection = select_mechanism(
+        scenario,
+        mechanisms=mechanisms,
+        max_iter=80,
+        tolerance=0.5,
+    )
     payload = {
         "scenario_id": scenario.id,
         "participant_count": len(scenario.participants),
@@ -73,6 +80,27 @@ def main() -> int:
             "no_worse_off": report.no_worse_off,
             "surplus": round(report.transfer.surplus, 2),
             "oracle_gap": None if report.oracle_gap is None else round(report.oracle_gap, 2),
+        },
+        "selection": {
+            "recommended": None
+            if selection.recommended is None
+            else selection.recommended.mechanism,
+            "ranking": [
+                {
+                    "rank": score.rank,
+                    "mechanism": score.mechanism,
+                    "eligible": score.eligible,
+                    "convergence": score.convergence,
+                    "global_utility": round(score.global_utility, 2),
+                    "oracle_gap": None
+                    if score.oracle_gap is None
+                    else round(score.oracle_gap, 2),
+                    "final_residual": round(score.final_residual, 4),
+                    "transfer_feasible": score.transfer_feasible,
+                    "reasons": list(score.reasons),
+                }
+                for score in selection.ranking
+            ],
         },
     }
     print(json.dumps(payload, indent=2, sort_keys=True))

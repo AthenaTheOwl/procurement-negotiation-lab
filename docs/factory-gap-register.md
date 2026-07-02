@@ -239,7 +239,7 @@ repo's own tests structurally cannot see.
 - `validate_disclosure` — secret shapes (openai/aws/github/google/slack keys,
   private-key blocks, inline `api_key=`). Narrowed to zero-false-positive: a
   marketing-word check was built and **removed** after validating 100% FP on this
-  portfolio ("operating leverage", AGENTS.md quoting the banned list). Voice stays
+  portfolio (ordinary finance phrasing, AGENTS.md quoting the banned list). Voice stays
   with the per-repo `voice_lint`.
 - `validate_does_something` — the first action must produce *structured* output, not
   just exit 0.

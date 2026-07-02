@@ -21,6 +21,7 @@ from procurement_lab.algorithms.weighted_nash_mpc import WeightedNashMPC
 from procurement_lab.engine.cbt import compute_transfer
 from procurement_lab.engine.schemas import (
     AlgorithmRun,
+    Convergence,
     InformationMode,
     Participant,
     Product,
@@ -92,6 +93,31 @@ class ParticipationReport:
     transfer: TransferPlan
     no_worse_off: dict[str, bool]
     feasible: bool
+
+
+@dataclass(frozen=True)
+class MechanismScore:
+    """Selector-facing score for one mechanism run."""
+
+    rank: int
+    mechanism: str
+    eligible: bool
+    convergence: str
+    global_utility: float
+    oracle_gap: float | None
+    final_residual: float
+    transfer_feasible: bool
+    reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class MechanismSelection:
+    """Deterministic recommendation over a mechanism comparison."""
+
+    scenario_id: str
+    recommended: MechanismScore | None
+    ranking: tuple[MechanismScore, ...]
+    oracle_global_utility: float
 
 
 def build_procurement_scenario(
@@ -312,6 +338,61 @@ def compute_participation_report(
     )
 
 
+def select_mechanism(
+    scenario: Scenario,
+    *,
+    mechanisms: Sequence[MechanismName] | None = None,
+    information_mode: InformationMode | None = None,
+    max_iter: int = 50,
+    tolerance: float = 0.01,
+    require_converged: bool = True,
+    require_transfer_feasible: bool = True,
+) -> MechanismSelection:
+    """Rank mechanisms for a scenario without hard-coding a winner.
+
+    The selector is deterministic and deliberately plain: non-oracle mechanisms
+    are eligible only when they satisfy the requested convergence and transfer
+    constraints, then ranked by oracle gap, residual, and utility. The web
+    surface can explain this ranking instead of hiding another mechanism behind
+    a dropdown label.
+    """
+
+    comparison = compare_mechanisms(
+        scenario,
+        mechanisms=mechanisms,
+        information_mode=information_mode,
+        max_iter=max_iter,
+        tolerance=tolerance,
+    )
+    candidate_runs = [
+        run for run in comparison.runs if run.algorithm != "centralized_oracle"
+    ]
+    ordered = sorted(
+        candidate_runs,
+        key=lambda run: _selection_sort_key(
+            run,
+            require_converged=require_converged,
+            require_transfer_feasible=require_transfer_feasible,
+        ),
+    )
+    ranking = tuple(
+        _score_run(
+            run,
+            rank=index,
+            require_converged=require_converged,
+            require_transfer_feasible=require_transfer_feasible,
+        )
+        for index, run in enumerate(ordered, start=1)
+    )
+    recommended = next((score for score in ranking if score.eligible), None)
+    return MechanismSelection(
+        scenario_id=scenario.id,
+        recommended=recommended,
+        ranking=ranking,
+        oracle_global_utility=comparison.oracle_run.ledger.global_utility,
+    )
+
+
 def _with_gap_and_transfer(
     run: AlgorithmRun,
     oracle_run: AlgorithmRun,
@@ -326,6 +407,95 @@ def _with_gap_and_transfer(
             "utility_gap_vs_oracle": gap,
         }
     )
+
+
+def _score_run(
+    run: AlgorithmRun,
+    *,
+    rank: int,
+    require_converged: bool,
+    require_transfer_feasible: bool,
+) -> MechanismScore:
+    transfer_feasible = run.transfer.feasible if run.transfer is not None else False
+    eligible = _run_is_eligible(
+        run,
+        require_converged=require_converged,
+        require_transfer_feasible=require_transfer_feasible,
+    )
+    return MechanismScore(
+        rank=rank,
+        mechanism=run.algorithm,
+        eligible=eligible,
+        convergence=run.convergence.value,
+        global_utility=run.ledger.global_utility,
+        oracle_gap=run.utility_gap_vs_oracle,
+        final_residual=run.final_residual,
+        transfer_feasible=transfer_feasible,
+        reasons=_selection_reasons(
+            run,
+            eligible=eligible,
+            require_converged=require_converged,
+            require_transfer_feasible=require_transfer_feasible,
+        ),
+    )
+
+
+def _selection_sort_key(
+    run: AlgorithmRun,
+    *,
+    require_converged: bool,
+    require_transfer_feasible: bool,
+) -> tuple[bool, float, float, float, str]:
+    eligible = _run_is_eligible(
+        run,
+        require_converged=require_converged,
+        require_transfer_feasible=require_transfer_feasible,
+    )
+    gap = run.utility_gap_vs_oracle
+    normalized_gap = float("inf") if gap is None else max(gap, 0.0)
+    return (
+        not eligible,
+        normalized_gap,
+        run.final_residual,
+        -run.ledger.global_utility,
+        run.algorithm,
+    )
+
+
+def _run_is_eligible(
+    run: AlgorithmRun,
+    *,
+    require_converged: bool,
+    require_transfer_feasible: bool,
+) -> bool:
+    if run.failure is not None:
+        return False
+    if require_converged and run.convergence != Convergence.CONVERGED:
+        return False
+    if require_transfer_feasible and (run.transfer is None or not run.transfer.feasible):
+        return False
+    return True
+
+
+def _selection_reasons(
+    run: AlgorithmRun,
+    *,
+    eligible: bool,
+    require_converged: bool,
+    require_transfer_feasible: bool,
+) -> tuple[str, ...]:
+    reasons: list[str] = []
+    if run.failure is not None:
+        reasons.append(f"failure:{run.failure.reason.value}")
+    if require_converged and run.convergence != Convergence.CONVERGED:
+        reasons.append(f"not_converged:{run.convergence.value}")
+    if require_transfer_feasible and (run.transfer is None or not run.transfer.feasible):
+        reasons.append("transfer_infeasible")
+    if run.utility_gap_vs_oracle is not None:
+        reasons.append(f"oracle_gap:{run.utility_gap_vs_oracle:.2f}")
+    reasons.append(f"residual:{run.final_residual:.4f}")
+    reasons.append("eligible" if eligible else "ineligible")
+    return tuple(reasons)
 
 
 def _algorithm_for(mechanism: MechanismName) -> _AlgorithmRunner:

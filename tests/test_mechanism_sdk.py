@@ -15,6 +15,7 @@ from procurement_mechanism_sdk import (
     compare_mechanisms,
     compute_participation_report,
     sample_scenario,
+    select_mechanism,
     solve_allocation,
 )
 
@@ -129,6 +130,43 @@ def test_participation_report_uses_existing_cbt_logic() -> None:
     assert all(report.no_worse_off.values())
 
 
+def test_select_mechanism_recommends_best_eligible_non_oracle() -> None:
+    scenario = sample_scenario()
+
+    selection = select_mechanism(
+        scenario,
+        mechanisms=("centralized_oracle", "admm", "consensus_averaging"),
+        max_iter=80,
+        tolerance=0.5,
+    )
+
+    assert selection.scenario_id == "sdk-substrate-crunch"
+    assert selection.recommended is not None
+    assert selection.recommended.mechanism == "admm"
+    assert selection.recommended.eligible is True
+    assert selection.ranking[0].oracle_gap == pytest.approx(0.0)
+    assert selection.ranking[-1].mechanism == "consensus_averaging"
+    assert selection.ranking[-1].eligible is False
+    assert "not_converged:not_converged" in selection.ranking[-1].reasons
+
+
+def test_select_mechanism_can_rank_non_converged_when_allowed() -> None:
+    scenario = sample_scenario()
+
+    selection = select_mechanism(
+        scenario,
+        mechanisms=("consensus_averaging",),
+        max_iter=80,
+        tolerance=0.5,
+        require_converged=False,
+    )
+
+    assert selection.recommended is not None
+    assert selection.recommended.mechanism == "consensus_averaging"
+    assert selection.recommended.eligible is True
+    assert "eligible" in selection.recommended.reasons
+
+
 def test_cli_demo_runs_without_web_app() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     env = os.environ.copy()
@@ -152,6 +190,11 @@ def test_cli_demo_runs_without_web_app() -> None:
         "consensus_averaging",
     }
     assert payload["participation"]["feasible"] is True
+    assert payload["selection"]["recommended"] == "admm"
+    assert [row["mechanism"] for row in payload["selection"]["ranking"]][:2] == [
+        "admm",
+        "consensus_averaging",
+    ]
 
 
 def test_cli_demo_exercises_multi_party_weighted_nash() -> None:

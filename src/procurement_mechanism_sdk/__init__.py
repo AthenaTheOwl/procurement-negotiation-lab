@@ -10,12 +10,15 @@ from procurement_mechanism_sdk.api import (
     DEFAULT_MECHANISMS,
     MechanismComparison,
     MechanismName,
+    MechanismScore,
+    MechanismSelection,
     ParticipationReport,
     ScenarioKind,
     build_procurement_scenario,
     compare_mechanisms,
     compute_participation_report,
     sample_scenario,
+    select_mechanism,
     solve_allocation,
 )
 
@@ -25,6 +28,8 @@ __all__ = [
     "InformationMode",
     "MechanismComparison",
     "MechanismName",
+    "MechanismScore",
+    "MechanismSelection",
     "ParticipationReport",
     "Scenario",
     "ScenarioKind",
@@ -33,5 +38,6 @@ __all__ = [
     "compare_mechanisms",
     "compute_participation_report",
     "sample_scenario",
+    "select_mechanism",
     "solve_allocation",
 ]

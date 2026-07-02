@@ -29,6 +29,7 @@ from procurement_mechanism_sdk import (
     compare_mechanisms,
     compute_participation_report,
     sample_scenario,
+    select_mechanism,
 )
 
 scenario = sample_scenario("base")
@@ -43,6 +44,14 @@ report = compute_participation_report(admm, oracle_run=comparison.oracle_run)
 
 print(admm.utility_gap_vs_oracle)
 print(report.no_worse_off)
+
+selection = select_mechanism(
+    scenario,
+    mechanisms=("centralized_oracle", "admm", "consensus_averaging"),
+    max_iter=80,
+    tolerance=0.5,
+)
+print(selection.recommended.mechanism)
 ```
 
 Standalone demo:
@@ -58,7 +67,11 @@ procurement-mechanism-sdk-demo
 ```
 
 The demo prints JSON with scenario id, mechanism results, oracle gap, residual,
-and no-worse-off transfer status.
+no-worse-off transfer status, and a selector block ranking the non-oracle
+mechanisms. The selector is intentionally simple: an eligible mechanism must
+converge and produce a feasible transfer, then the ranking sorts by oracle gap,
+residual, and global utility. That makes the recommendation explainable enough
+for the web mechanism selector instead of hiding the choice behind a label.
 
 Weighted-Nash mechanisms are available through the same selector:
 
