@@ -125,3 +125,9 @@ and QA evidence (`ops/qa-evidence/`) round out the scope.
 | Week | Date | Modes run | Candidates | Folder |
 |---|---|---|---|---|
 | 2026-W21 | 2026-05-24 | memory_consolidation, skill_extraction, eval_generation | 5 | [2026-W21](2026-W21/report.md) |
+| 2026-W22 | 2026-05-29 | memory_consolidation, architecture_drift_detection, adversarial_simulation | 6 | [2026-W22](2026-W22/report.md) |
+| 2026-W23 | 2026-07-05 | memory_consolidation, architecture_drift_detection, golden_test_generation | 1 | [2026-W23](2026-W23/report.md) |
+| 2026-W24 | 2026-07-05 | memory_consolidation | 0 | [2026-W24](2026-W24/report.md) |
+| 2026-W25 | 2026-07-05 | memory_consolidation, architecture_drift_detection | 0 | [2026-W25](2026-W25/report.md) |
+| 2026-W26 | 2026-07-05 | failure_clustering, architecture_drift_detection | 0 | [2026-W26](2026-W26/report.md) |
+| 2026-W27 | 2026-07-05 | memory_consolidation, architecture_drift_detection | 1 | [2026-W27](2026-W27/report.md) |

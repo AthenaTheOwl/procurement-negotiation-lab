@@ -1,0 +1,53 @@
+# dream-job meta record, late backfill for the 2026-W26 weekly pass.
+# Generated on 2026-07-05 because the Friday cadence lapsed after W22.
+
+week: 2026-W26
+generated_at: 2026-07-05T16:00:00Z
+generated_by: learning.dream-orchestrator.backfill
+lookback_days: 7
+window_start: 2026-06-22
+window_end: 2026-06-28
+
+scope_sources:
+  - kind: git
+    ref: "git log --date=short --pretty='%h %ad %s' --since=2026-06-22 --until=2026-06-29"
+  - kind: commit
+    ref: "3b9fc05 DEC batch-4 close: 10 of 10 batch-4 repos shipped; 29 of 42 at v0.1"
+  - kind: commit
+    ref: "4fa4118 DEC batch-5 close + Claude lane evidence: 41 of 42 at v0.1"
+  - kind: commit
+    ref: "8fe8921 ci: repair procurement factory gates"
+  - kind: commit
+    ref: "d0f0774 feat(factory): metrics ledger (PR1 of the hardening lane)"
+  - kind: commit
+    ref: "a5be974 feat(factory): add budget caps and stop reasons"
+  - kind: commit
+    ref: "8c27a32 feat(factory): add blast-radius precommit gates"
+  - kind: commit
+    ref: "cb85688 docs: rewrite README in the author's voice (dry-wit register)"
+
+modes_run:
+  - failure_clustering
+  - architecture_drift_detection
+
+modes_skipped:
+  - id: memory_consolidation
+    reopen_when: product learning, not factory hardening, creates reusable procurement memory
+  - id: adversarial_simulation
+    reopen_when: a changed procurement mechanism has a known fragile edge
+  - id: counterfactual
+    reopen_when: a product run can be replayed against a different mechanism or prompt
+  - id: skill_extraction
+    reopen_when: the operator chooses to route factory lessons into a factory skill
+  - id: prompt_patch_generation
+    reopen_when: prompt text changes are in scope for the task
+  - id: golden_test_generation
+    reopen_when: a procurement algorithm or learning workflow lands without tests
+
+candidate_tally:
+  total: 0
+
+candidate_files: []
+
+human_review_required: true
+auto_promoted: false

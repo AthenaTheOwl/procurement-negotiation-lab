@@ -1,0 +1,55 @@
+# dream-job meta record, late backfill for the 2026-W27 weekly pass.
+# Generated on 2026-07-05 as part of restoring the weekly cadence.
+
+week: 2026-W27
+generated_at: 2026-07-05T16:00:00Z
+generated_by: learning.dream-orchestrator.backfill
+lookback_days: 7
+window_start: 2026-06-29
+window_end: 2026-07-05
+
+scope_sources:
+  - kind: git
+    ref: "git log --date=short --pretty='%h %ad %s' --since=2026-06-29 --until=2026-07-06"
+  - kind: commit
+    ref: "a7a303d feat(factory): fix #3 + #2 - behavioral gates + learning loop wired"
+  - kind: commit
+    ref: "1a681b5 feat(factory): add behavioral contract leaf validators"
+  - kind: commit
+    ref: "247eb71 feat(factory): fix #4a + #4d - independent review + persona wiring (campaign close)"
+  - kind: commit
+    ref: "4027540 factory: content-hardening gates - tool-markup, secrets, does-something (FAC-015)"
+  - kind: commit
+    ref: "f45b5ef sdk: add explainable mechanism selector"
+  - kind: commit
+    ref: "b400ca2 merge: cross-scenario mechanism benchmark scorecard (backlog Now #12)"
+  - kind: doc
+    ref: dreams/README.md
+
+modes_run:
+  - memory_consolidation
+  - architecture_drift_detection
+
+modes_skipped:
+  - id: failure_clustering
+    reopen_when: the restored cadence records new red gates rather than backfill debt
+  - id: adversarial_simulation
+    reopen_when: mechanism-selector behavior has a fragile edge to probe
+  - id: counterfactual
+    reopen_when: selector evidence can be replayed against another mechanism set
+  - id: skill_extraction
+    reopen_when: dream cadence recovery repeats across repos
+  - id: prompt_patch_generation
+    reopen_when: a prompt defect contributes to missed dreams
+  - id: golden_test_generation
+    reopen_when: the mechanism selector lacks benchmark or trace tests after review
+
+candidate_tally:
+  backlog_item: 1
+  total: 1
+
+candidate_files:
+  - candidates/backlog-001-restore-weekly-retro-cadence.md
+
+human_review_required: true
+auto_promoted: false
