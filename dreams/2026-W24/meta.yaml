@@ -1,0 +1,42 @@
+# dream-job meta record, late backfill for the 2026-W24 weekly pass.
+# Generated on 2026-07-05 because the Friday cadence lapsed after W22.
+
+week: 2026-W24
+generated_at: 2026-07-05T16:00:00Z
+generated_by: learning.dream-orchestrator.backfill
+lookback_days: 7
+window_start: 2026-06-08
+window_end: 2026-06-14
+
+scope_sources:
+  - kind: git
+    ref: "git log --date=short --pretty='%h %ad %s' --since=2026-06-08 --until=2026-06-15 (no commits)"
+  - kind: doc
+    ref: dreams/2026-W22/report.md
+
+modes_run:
+  - memory_consolidation
+
+modes_skipped:
+  - id: failure_clustering
+    reopen_when: commits or gate failures exist in the lookback window
+  - id: adversarial_simulation
+    reopen_when: a fragile product path changes during the window
+  - id: counterfactual
+    reopen_when: a run or mechanism replay artifact lands during the window
+  - id: skill_extraction
+    reopen_when: repeated operator behavior appears in actual runs
+  - id: prompt_patch_generation
+    reopen_when: a prompt-driven factory run is present in the window
+  - id: golden_test_generation
+    reopen_when: a new requirement or algorithm lands without coverage
+  - id: architecture_drift_detection
+    reopen_when: a changed spec, route, registry, or artifact creates drift
+
+candidate_tally:
+  total: 0
+
+candidate_files: []
+
+human_review_required: true
+auto_promoted: false

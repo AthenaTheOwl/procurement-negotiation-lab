@@ -1,0 +1,53 @@
+# dream-job meta record, late backfill for the 2026-W23 weekly pass.
+# Pairs with report.md (narrative) and candidates/ (typed proposals).
+# Generated on 2026-07-05 because the Friday cadence lapsed after W22.
+
+week: 2026-W23
+generated_at: 2026-07-05T16:00:00Z
+generated_by: learning.dream-orchestrator.backfill
+lookback_days: 7
+window_start: 2026-06-01
+window_end: 2026-06-07
+
+scope_sources:
+  - kind: git
+    ref: "git log --date=short --pretty='%h %ad %s' --since=2026-06-01 --until=2026-06-08"
+  - kind: commit
+    ref: "52d6b1c W2: weighted-Nash solver + bounded-leakage protocol (DEC-NASH-001/002 impl)"
+  - kind: commit
+    ref: "e7b0500 scenarios: scaffold 5 canonical YAMLs + loader + schema-validation tests"
+  - kind: commit
+    ref: "20e8456 W5: BGW MPC weighted-Nash mechanism (DEC-MPC-001)"
+  - kind: commit
+    ref: "da4e7cb property: complete the R-PROP-* invariant battery (4 new tests, 20 cases)"
+  - kind: doc
+    ref: dreams/2026-W22/report.md
+  - kind: doc
+    ref: tests/test_weighted_nash_mpc.py
+  - kind: doc
+    ref: specs/0016-negotiate-surface-engine-reconnect/traceability.md
+
+modes_run:
+  - memory_consolidation
+  - architecture_drift_detection
+  - golden_test_generation
+
+modes_skipped:
+  - id: failure_clustering
+    reopen_when: a week contains multiple failing gates or rejected dream candidates
+  - id: counterfactual
+    reopen_when: a prior mechanism run has a comparable replay harness
+  - id: skill_extraction
+    reopen_when: the same mechanism-test pattern recurs in another learning lab
+  - id: prompt_patch_generation
+    reopen_when: factory prompts, not product implementation, are the week's load-bearing work
+
+candidate_tally:
+  backlog_item: 1
+  total: 1
+
+candidate_files:
+  - candidates/backlog-001-bgw-mpc-needs-golden-test-coverage.md
+
+human_review_required: true
+auto_promoted: false

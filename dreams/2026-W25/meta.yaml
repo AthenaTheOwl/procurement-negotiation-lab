@@ -1,0 +1,51 @@
+# dream-job meta record, late backfill for the 2026-W25 weekly pass.
+# Generated on 2026-07-05 because the Friday cadence lapsed after W22.
+
+week: 2026-W25
+generated_at: 2026-07-05T16:00:00Z
+generated_by: learning.dream-orchestrator.backfill
+lookback_days: 7
+window_start: 2026-06-15
+window_end: 2026-06-21
+
+scope_sources:
+  - kind: git
+    ref: "git log --date=short --pretty='%h %ad %s' --since=2026-06-15 --until=2026-06-22"
+  - kind: commit
+    ref: "76260ee docs: update mechanism workbench documentation"
+  - kind: commit
+    ref: "ee9b0ab engine: clarify transcript-exposure reporting"
+  - kind: commit
+    ref: "cfafc79 factory: add v2-lite multi-phase scaffolding + 9 pilot task YAMLs"
+  - kind: commit
+    ref: "df8551a spec 0019 + DEC-FACTORY-V2-FULL-001: factory active-MVP contract"
+  - kind: commit
+    ref: "44eacc0 factory: run binding-constraint active MVP pilot"
+  - kind: commit
+    ref: "03f0821 spec 0019 Lane B: product-control-plane template + brief-calibration pilot shipped"
+
+modes_run:
+  - memory_consolidation
+  - architecture_drift_detection
+
+modes_skipped:
+  - id: failure_clustering
+    reopen_when: repeated red gate evidence exists in the window
+  - id: adversarial_simulation
+    reopen_when: a product mechanism changes in a way that creates a break target
+  - id: counterfactual
+    reopen_when: a comparable product run can be replayed with a changed prompt or mechanism
+  - id: skill_extraction
+    reopen_when: factory behavior repeats across enough repos to justify a skill patch
+  - id: prompt_patch_generation
+    reopen_when: a factory prompt defect is visible in this repo's own run artifacts
+  - id: golden_test_generation
+    reopen_when: a procurement requirement lands without a covering test
+
+candidate_tally:
+  total: 0
+
+candidate_files: []
+
+human_review_required: true
+auto_promoted: false
