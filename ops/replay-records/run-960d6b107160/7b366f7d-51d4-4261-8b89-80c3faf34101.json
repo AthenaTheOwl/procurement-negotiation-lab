@@ -1,0 +1,64 @@
+{
+  "compared_fields": [
+    "prompt_snapshot_hash",
+    "tool_schemas_snapshot_hash",
+    "gate_results_summary"
+  ],
+  "field_comparison": {
+    "gate_results_summary": {
+      "equal": true,
+      "fresh": {
+        "all_passed": true,
+        "gates_failed": [],
+        "gates_passed": [
+          "typecheck",
+          "vitest",
+          "spec_check"
+        ]
+      },
+      "recorded": {
+        "all_passed": true,
+        "gates_failed": [],
+        "gates_passed": [
+          "typecheck",
+          "vitest",
+          "spec_check"
+        ]
+      }
+    },
+    "prompt_snapshot_hash": {
+      "equal": true,
+      "fresh": "eb599443822c3aa2abb21160bb3cb234e196ce768ad7072db99fc9be8f2293f5",
+      "recorded": "eb599443822c3aa2abb21160bb3cb234e196ce768ad7072db99fc9be8f2293f5"
+    },
+    "tool_schemas_snapshot_hash": {
+      "equal": true,
+      "fresh": "0051bdbb230ae794642e42a0033aca8e30f200c59c51a9f4899e6e90a6b42965",
+      "recorded": "0051bdbb230ae794642e42a0033aca8e30f200c59c51a9f4899e6e90a6b42965"
+    }
+  },
+  "finished_at": "2026-07-25T15:20:54Z",
+  "fresh_run_summary": {
+    "finished_at": "2026-07-25T15:20:54Z",
+    "id": "run-eb7b6383bc02",
+    "sandbox_image_ref": "repo://procurement-negotiation-lab@PENDING/",
+    "started_at": "2026-07-25T15:20:53Z",
+    "status": "done"
+  },
+  "head_sha": "a76e3370314610d38e56c0d2392dedc5cbe58564",
+  "recorded_run_summary": {
+    "finished_at": "2026-06-21T14:31:17Z",
+    "id": "run-960d6b107160",
+    "sandbox_image_ref": "repo://procurement-negotiation-lab@a76e3370314610d38e56c0d2392dedc5cbe58564/",
+    "started_at": "2026-06-21T14:31:16Z",
+    "status": "done"
+  },
+  "recorded_sha": "a76e3370314610d38e56c0d2392dedc5cbe58564",
+  "replay_equivalent": true,
+  "replay_event_id": "7b366f7d-51d4-4261-8b89-80c3faf34101",
+  "replay_method": "equivalence",
+  "run_id": "run-960d6b107160",
+  "schema_version": 1,
+  "started_at": "2026-07-25T15:20:52Z",
+  "task_path": "e:\\claude_code\\random-apps\\procurement-negotiation-lab\\ops\\factory-tasks\\example-rename-fc-count.yaml"
+}

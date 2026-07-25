@@ -31,8 +31,8 @@ selector to the SDK on 2026-07-02. Commit `b46d31c` and merge
 on 2026-07-05. Those are procurement-facing mechanism-comparison
 improvements, and they should anchor the next normal weekly pass.
 
-The process lesson is separate. The README claimed a weekly Friday
-dream cadence, but before this backfill the `dreams/` folder only
+Separately, the README claimed a weekly Friday dream cadence, but
+before this backfill the `dreams/` folder only
 held W21 and W22. W23 through W27 were missing, and the Published
 table did not even list the existing W22 entry. This report restores
 the artifact trail, but it does not erase the lapse.

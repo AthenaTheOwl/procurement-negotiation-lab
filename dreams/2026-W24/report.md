@@ -17,14 +17,13 @@ result in the repository history to mine for a typed candidate.
 
 That absence matters because W22's report named W23 as the next pass.
 W23 had enough product activity to justify a real retro, but W24 then
-went silent. A weekly cadence that depends on memory rather than an
-artifact gate can disappear without leaving a failing check.
+went silent. A weekly cadence gated only by memory can disappear
+without leaving a failing check.
 
 ## modes run
 
 Only `memory_consolidation` ran, and it produced no promotion
-candidate. The result is an explicit empty record rather than a
-fabricated backlog item.
+candidate. The explicit empty record avoids inventing a backlog item.
 
 ## candidate index
 

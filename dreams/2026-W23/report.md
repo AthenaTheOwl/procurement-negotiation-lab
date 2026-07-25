@@ -75,5 +75,5 @@ W23.
 
 The next weekly pass should have checked whether the product pace
 continued or whether the repo pivoted into factory work. In reality,
-W24 had no commits, and W25 restarted around factory v2-lite rather
-than procurement narrative progress.
+W24 had no commits. W25 restarted around factory v2-lite; procurement
+narrative work did not resume.

@@ -45,8 +45,8 @@ Before this backfill, the repository had W21 and W22 dream folders,
 but no W23, W24, W25, W26, or W27 folders. The Published table listed
 only W21. That made the docs claim stronger than the artifact trail.
 
-The lapse also hid a real product story. W23 shipped substantial
-weighted-Nash, MPC, scenario, and property-test work. W24 had no
+The lapse also hid a real product story. W23 shipped weighted-Nash,
+MPC, scenario, and property-test work. W24 had no
 commits. W25 and W26 were mostly factory-control-plane work. W27
 finally brought product momentum back with `f45b5ef` and the benchmark
 scorecard merge `b400ca2`. A weekly retrospective exists to preserve
@@ -62,8 +62,8 @@ automatic if this lapse repeats.
 ## risk
 
 Low. The risk is adding a noisy gate that fails during intentional
-pauses. Avoid that by checking for an explicit skipped-week record
-rather than requiring every week to contain candidates.
+pauses. Check for an explicit skipped-week record and allow weeks with
+zero candidates.
 
 ## promotion path
 
