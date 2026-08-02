@@ -84,7 +84,7 @@ What it teaches, in order: why two locally rational agents pick a bad plan, how 
 
 ## How it connects
 
-The repo runs the [Cognitive Delivery Control Plane](https://github.com/AthenaTheOwl/athena-site/blob/main/ops/control-plane.md) operating model — 17 specs with R-PREFIX requirements, 36 decisions under `decisions/`, weekly dream-job retrospectives, and seven executable gate scripts that fail the build when any record drifts. The factory subsystem under `scripts/factory/` is a durable agent-orchestration runtime (checkpoint interrupts, per-task git worktrees, artifact-as-refs, trace IDs); Spec 0009 and DEC-FACTORY-001..005 document the contract, and [`docs/factory.md`](docs/factory.md) is the adoption guide for other repos.
+The repo runs the [Cognitive Delivery Control Plane](https://github.com/AthenaTheOwl/athena-site/blob/main/ops/control-plane.md) operating model — 19 specs with R-PREFIX requirements, 42 decisions under `decisions/`, weekly dream-job retrospectives, and twelve executable gate scripts that fail the build when any record drifts. The factory subsystem under `scripts/factory/` is a durable agent-orchestration runtime (checkpoint interrupts, per-task git worktrees, artifact-as-refs, trace IDs); Spec 0009 and DEC-FACTORY-001..005 document the contract, and [`docs/factory.md`](docs/factory.md) is the adoption guide for other repos.
 
 ## Local run
 
