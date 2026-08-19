@@ -8,7 +8,7 @@ license = { text = "Apache-2.0" }
 authors = [{ name = "Vignesh Gopalakrishnan" }]
 dependencies = [
     "altair>=5.5.0",
-    "gitpython>=3.1.55",
+    "gitpython>=3.1.58",
     "numpy>=2.1.0",
     "pandas>=2.2.0",
     "plotly>=5.24.0",
