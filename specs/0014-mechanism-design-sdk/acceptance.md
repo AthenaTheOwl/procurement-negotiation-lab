@@ -25,3 +25,15 @@
 - `npm.cmd run build`
 - Browser QA remains required before production readiness, but this SDK change
   does not add a new browser surface.
+
+## Sensitivity report
+
+- `python -m uv run python -m procurement_lab.sensitivity` writes 64 JSONL rows
+  for the current eight-cell grid and eight-mechanism registry.
+- Repeating the command with identical inputs produces byte-identical JSONL and
+  Markdown artifacts.
+- The Markdown rollup is recomputable from the JSONL rows.
+- Recommendation eligibility depends only on all-cell convergence and transfer
+  feasibility. Allocation feasibility and typed capacity failures remain
+  visible as separate evidence.
+- An invalid report path exits one with `ERROR[sensitivity]:` and no traceback.

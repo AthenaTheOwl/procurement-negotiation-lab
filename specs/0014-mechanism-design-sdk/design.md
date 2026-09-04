@@ -43,3 +43,17 @@ containers are used only for comparison and participation reports.
 the centralized oracle, ADMM, and consensus averaging, then prints JSON. It has
 no web app or Streamlit dependency at runtime beyond the package dependencies
 already present in the project.
+
+## Sensitivity report
+
+`procurement_lab.sensitivity` composes `build_procurement_scenario()` and
+`compare_mechanisms()` without adding a solver or parser. It evaluates the
+default mechanism registry over a fixed 2 x 2 x 2 grid, then writes a sorted
+JSONL evidence stream and a Markdown rollup under `reports/`.
+
+Recommendation is a narrow decision rule. A non-oracle mechanism qualifies
+only when every cell converges and every transfer is feasible. Allocation
+feasibility is recorded independently so a reader can see capacity failures
+without silently changing the ratified recommendation rule. Ranking among
+qualifying mechanisms uses worst oracle gap, mean oracle gap, then mechanism
+name.
