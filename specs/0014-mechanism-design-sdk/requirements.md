@@ -41,3 +41,22 @@ Acceptance:
 - `python -m procurement_mechanism_sdk.demo` prints a deterministic JSON demo.
 - Pytest covers the SDK API and demo command.
 - README or docs show an import example and the extraction boundary.
+
+### R-SDK-004: mechanism sensitivity is reported across a deterministic stress grid
+
+WHEN a practitioner needs to compare coordination mechanisms under uncertainty,
+THE SYSTEM SHALL run every default mechanism across a deterministic stress grid
+and publish both cell-level evidence and a mechanism rollup.
+
+Acceptance:
+- The grid is the Cartesian product of two demand-volatility values, two
+  capacity values, and two supplier-risk values.
+- Each cell records convergence, transfer feasibility, allocation feasibility,
+  global utility, residual, oracle gap, and a typed failure field.
+- The rollup reports scenario count, convergence and transfer-feasibility
+  rates, mean and worst oracle gap, and mean utility.
+- A non-oracle mechanism is recommended only when it converges and has feasible
+  transfers in every stress cell. Allocation feasibility remains visible as
+  separate evidence and does not change that qualification rule.
+- The JSONL and Markdown reports are byte-for-byte deterministic for identical
+  inputs, and operational failures return a typed error without a traceback.
