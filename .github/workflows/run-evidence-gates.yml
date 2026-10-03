@@ -36,13 +36,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out procurement-negotiation-lab
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: procurement-negotiation-lab
           fetch-depth: 0
 
       - name: Check out trace-to-eval-harness (sibling for packet gates)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: AthenaTheOwl/trace-to-eval-harness
           path: trace-to-eval-harness
@@ -128,7 +128,7 @@ jobs:
     # continue-on-error.
     steps:
       - name: Check out procurement-negotiation-lab
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -167,7 +167,7 @@ jobs:
     # continue-on-error.
     steps:
       - name: Check out procurement-negotiation-lab
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v5
