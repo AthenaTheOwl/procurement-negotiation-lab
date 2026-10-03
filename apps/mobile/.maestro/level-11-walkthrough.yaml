@@ -24,13 +24,15 @@ tags:
     id: "level-shell-1"
 - tapOn:
     id: "settle-button"
-- assertVisible:
-    id: "level-reveal"
+- extendedWaitUntil:
+    visible:
+      id: "level-reveal"
     timeout: 5000
 - tapOn:
     id: "level-continue"
-- assertVisible:
-    id: "level-shell-2"
+- extendedWaitUntil:
+    visible:
+      id: "level-shell-2"
     timeout: 5000
 - tapOn:
     id: "quantity-knob-increase"
@@ -40,8 +42,9 @@ tags:
     id: "predict-reveal-truth"
 - tapOn:
     id: "level-continue"
-- assertVisible:
-    id: "level-shell-3"
+- extendedWaitUntil:
+    visible:
+      id: "level-shell-3"
     timeout: 5000
 - tapOn:
     id: "info-stop-cost-band"
@@ -55,8 +58,9 @@ tags:
     id: "predict-reveal-truth"
 - tapOn:
     id: "level-continue"
-- assertVisible:
-    id: "level-shell-4"
+- extendedWaitUntil:
+    visible:
+      id: "level-shell-4"
     timeout: 5000
 - repeat:
     times: 10
@@ -69,8 +73,9 @@ tags:
     id: "predict-reveal-truth"
 - tapOn:
     id: "level-continue"
-- assertVisible:
-    id: "level-shell-5"
+- extendedWaitUntil:
+    visible:
+      id: "level-shell-5"
     timeout: 5000
 - tapOn:
     id: "run-all"
@@ -78,15 +83,17 @@ tags:
     id: "level5-reveal"
 - tapOn:
     id: "level-continue"
-- assertVisible:
-    id: "level-shell-6"
+- extendedWaitUntil:
+    visible:
+      id: "level-shell-6"
     timeout: 5000
 - tapOn:
     id: "split-rule-equal"
 - tapOn:
     id: "level-continue"
-- assertVisible:
-    id: "level-shell-7"
+- extendedWaitUntil:
+    visible:
+      id: "level-shell-7"
     timeout: 5000
 - tapOn:
     id: "honesty-toggle"
@@ -94,8 +101,9 @@ tags:
     id: "level7-reveal"
 - tapOn:
     id: "level-continue"
-- assertVisible:
-    id: "level-shell-8"
+- extendedWaitUntil:
+    visible:
+      id: "level-shell-8"
     timeout: 5000
 - scrollUntilVisible:
     element:
@@ -110,8 +118,9 @@ tags:
     timeout: 5000
 - tapOn:
     id: "level-continue"
-- assertVisible:
-    id: "level-shell-9"
+- extendedWaitUntil:
+    visible:
+      id: "level-shell-9"
     timeout: 5000
 - tapOn:
     id: "preset-optimal"
@@ -128,8 +137,9 @@ tags:
     id: "level-continue"
 
 # Level 10.
-- assertVisible:
-    id: "level-shell-10"
+- extendedWaitUntil:
+    visible:
+      id: "level-shell-10"
     timeout: 5000
 - scrollUntilVisible:
     element:
@@ -144,8 +154,9 @@ tags:
     id: "level-continue"
 
 # Level 11 under test.
-- assertVisible:
-    id: "level-shell-11"
+- extendedWaitUntil:
+    visible:
+      id: "level-shell-11"
     timeout: 5000
 - assertVisible:
     id: "level11-intro"

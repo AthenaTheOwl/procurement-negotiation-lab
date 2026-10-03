@@ -18,4 +18,4 @@ jobs:
       - name: bandit
         run: uv run bandit -q -r src
       - name: pip-audit
-        run: uv run pip-audit
+        run: uv run pip-audit --skip-editable

@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#f7f7f4"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.athenatheowl.proclab"
@@ -27,10 +29,6 @@
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "plugins": ["expo-router"],
-    "scheme": "proclab",
-    "experiments": {
-      "typedRoutes": true
-    }
+    "scheme": "proclab"
   }
 }

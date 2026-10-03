@@ -2,7 +2,7 @@
   "name": "@lab/mobile",
   "version": "0.1.0",
   "private": true,
-  "main": "expo-router/entry",
+  "main": "index.js",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -21,6 +21,8 @@
     "@lab/engine": "*",
     "@react-native-async-storage/async-storage": "1.23.1",
     "expo": "~51.0.0",
+    "expo-constants": "~16.0.2",
+    "expo-linking": "~6.3.1",
     "expo-router": "~3.5.0",
     "expo-status-bar": "~1.12.0",
     "react": "18.2.0",

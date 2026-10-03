@@ -7,6 +7,10 @@
     "packages/*",
     "apps/*"
   ],
+  "overrides": {
+    "expo-constants": "~16.0.2",
+    "expo-linking": "~6.3.1"
+  },
   "scripts": {
     "dev": "npm run dev --workspace=@lab/web",
     "build": "npm run build --workspace=@lab/web",

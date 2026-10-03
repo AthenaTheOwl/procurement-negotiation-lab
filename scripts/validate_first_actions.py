@@ -58,7 +58,10 @@ ACTIVE_REPOS: dict[str, str | None] = {
     "portfolio-thesis-plane": None,
     # batch 5 claude
     "review-queue": None,
-    "brief-matrix": None,
+    # brief-matrix is multi-tenant by design: a bare `validate` refuses to guess
+    # between tenants/procurement-analyst and tenants/municipal-budget-watch, and
+    # its README documents the --tenant form as the first action.
+    "brief-matrix": "python -m brief_matrix validate --tenant tenants/procurement-analyst",
     "dream-replay-cli": None,
     "oulipo-memory-deck": None,
     "trace-ledger-spec": None,
