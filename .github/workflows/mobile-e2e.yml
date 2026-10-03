@@ -112,13 +112,20 @@ jobs:
             # bare `cd apps/mobile` on the previous line does not carry over and maestro
             # looked for .maestro/ at the repo root ("Flow path does not exist"). Keep the
             # cd and the test in one command.
-            cd apps/mobile && maestro test .maestro/level-1-walkthrough.yaml --debug-output maestro-debug-output
+            adb logcat -c
+            cd apps/mobile && maestro test .maestro/level-1-walkthrough.yaml --debug-output maestro-debug-output || MAESTRO_FAILED=1
+            # On failure the JS exception is only in logcat; without this the job
+            # reports a missing element and gives no way to tell why.
+            adb logcat -d -t 2000 > apps/mobile/maestro-debug-output/logcat.txt 2>&1 || true
+            exit ${MAESTRO_FAILED:-0}
 
       - name: upload maestro debug output
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: maestro-debug-output-api-${{ matrix.api-level }}
-          path: apps/mobile/maestro-debug-output
+          path: |
+            apps/mobile/maestro-debug-output
+            apps/mobile/*.log
           if-no-files-found: ignore
           retention-days: 14
