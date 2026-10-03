@@ -18,7 +18,17 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, "node_modules"),
 ];
 
-// 3. Force a single React copy across the monorepo.
-config.resolver.disableHierarchicalLookup = true;
+// 3. Leave Metro's hierarchical node_modules lookup on. It used to be disabled
+//    here to force a single React copy, but npm installs some transitive
+//    packages nested rather than hoisted — react-native 0.74.0 keeps its
+//    @react-native/virtualized-lists at
+//    apps/mobile/node_modules/react-native/node_modules/@react-native/virtualized-lists
+//    — and with the walk-up disabled, nodeModulesPaths above is the only search
+//    path, so that nested copy is unreachable. The release bundle failed with
+//    "Unable to resolve module @react-native/virtualized-lists". The debug build
+//    never caught it because a debug APK does not bundle at all.
+//    disableHierarchicalLookup suits strict-isolation installers (pnpm); with
+//    npm workspaces, hoisting plus the nodeModulesPaths order above already
+//    keeps one React copy.
 
 module.exports = config;
