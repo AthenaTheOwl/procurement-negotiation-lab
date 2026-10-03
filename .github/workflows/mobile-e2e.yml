@@ -2,7 +2,7 @@
 #
 # NOTE on approach:
 # This workflow runs `npx expo prebuild` to generate the native `android/`
-# project on the runner, then `./gradlew assembleDebug` to produce a debug
+# project on the runner, then `./gradlew assembleRelease` to produce a release
 # APK. The APK is installed on a KVM-accelerated hosted Android emulator
 # via reactivecircus/android-emulator-runner@v2, and Maestro is invoked
 # against `apps/mobile/.maestro/`. This avoids depending on EAS Cloud
@@ -73,18 +73,24 @@ jobs:
         run: |
           npx expo prebuild --platform android --no-install --non-interactive
 
-      - name: gradle assembleDebug
+      # Release, not debug, on purpose. A React Native debug APK loads its JS
+      # bundle from a Metro dev server at runtime; nothing here starts Metro, so
+      # a debug build launched to an empty surface and every flow failed on its
+      # first assertion. A release build embeds the bundle, which is what an
+      # unattended E2E run needs. Expo's android template signs release with the
+      # debug keystore unless a real one is configured, so no secret is required.
+      - name: gradle assembleRelease
         working-directory: apps/mobile/android
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: locate apk
         id: locate-apk
         run: |
-          APK=$(find apps/mobile/android/app/build/outputs/apk/debug -name "*.apk" | head -n1)
+          APK=$(find apps/mobile/android/app/build/outputs/apk/release -name "*.apk" | head -n1)
           if [ -z "$APK" ]; then
-            echo "no debug apk found"
+            echo "no release apk found"
             exit 1
           fi
           echo "apk=$APK" >> "$GITHUB_OUTPUT"
