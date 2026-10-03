@@ -44,8 +44,9 @@ tags:
 
 # 5. The reveal beat (REVEAL_BEAT_MS = 600ms) flips the Continue button to
 #    enabled state. We wait briefly, then assert the reveal copy + Continue.
-- assertVisible:
-    id: "level-reveal"
+- extendedWaitUntil:
+    visible:
+      id: "level-reveal"
     timeout: 5000
 - assertVisible:
     id: "level-continue"
