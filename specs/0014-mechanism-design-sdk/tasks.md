@@ -11,6 +11,10 @@
 - [x] **A4**: Add module demo command. *(R-SDK-003)*
 - [x] **A5**: Include the package and command in `pyproject.toml`.
   *(R-SDK-001, R-SDK-003)*
+- [x] **A6**: Add the deterministic mechanism-sensitivity grid and report
+  command over the existing SDK. *(R-SDK-004)*
+- [x] **A7**: Commit canonical JSONL and Markdown sensitivity artifacts.
+  *(R-SDK-004)*
 
 ## Documentation and decisions
 
@@ -27,3 +31,6 @@
   *(R-SDK-001, R-SDK-002, R-SDK-003)*
 - [x] **V2**: Run the full requested local gate sweep before commit.
   *(R-SDK-001, R-SDK-002, R-SDK-003)*
+- [x] **V3**: Verify report determinism, recompute rollups from JSONL, exercise
+  the qualification rule, and prove the unhappy path has no traceback.
+  *(R-SDK-004)*
