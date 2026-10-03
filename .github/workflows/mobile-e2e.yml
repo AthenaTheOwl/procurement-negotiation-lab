@@ -102,8 +102,11 @@ jobs:
           disable-animations: true
           script: |
             adb install -r "${{ steps.locate-apk.outputs.apk }}"
-            cd apps/mobile
-            maestro test .maestro/level-1-walkthrough.yaml --debug-output maestro-debug-output
+            # reactivecircus/android-emulator-runner runs each line in its own shell, so a
+            # bare `cd apps/mobile` on the previous line does not carry over and maestro
+            # looked for .maestro/ at the repo root ("Flow path does not exist"). Keep the
+            # cd and the test in one command.
+            cd apps/mobile && maestro test .maestro/level-1-walkthrough.yaml --debug-output maestro-debug-output
 
       - name: upload maestro debug output
         if: failure()
