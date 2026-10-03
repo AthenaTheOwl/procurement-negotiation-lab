@@ -31,4 +31,26 @@ config.resolver.nodeModulesPaths = [
 //    npm workspaces, hoisting plus the nodeModulesPaths order above already
 //    keeps one React copy.
 
+// 4. Hide the stray react-native copy nested under expo. `@expo/vector-icons`
+//    peer-depends on `react-native: *`, so npm installs the latest release
+//    (0.85.3) beside expo even though this app pins 0.74.0. With the walk-up
+//    re-enabled above, Metro would resolve react-native to that copy and fail on
+//    its newer Flow syntax ("Missing semicolon" in its index.js). Blocking the
+//    path leaves the install tree alone — pinning react-native in the root
+//    overrides instead broke expo's gradle autolinking during configuration.
+const strayReactNative = path.resolve(
+  workspaceRoot,
+  "node_modules/expo/node_modules/react-native",
+);
+config.resolver.blockList = [
+  ...(Array.isArray(config.resolver.blockList)
+    ? config.resolver.blockList
+    : config.resolver.blockList
+      ? [config.resolver.blockList]
+      : []),
+  new RegExp(
+    `^${strayReactNative.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\\/g, "[\\\\/]")}[\\\\/].*$`,
+  ),
+];
+
 module.exports = config;

@@ -9,8 +9,7 @@
   ],
   "overrides": {
     "expo-constants": "~16.0.2",
-    "expo-linking": "~6.3.1",
-    "react-native": "0.74.0"
+    "expo-linking": "~6.3.1"
   },
   "scripts": {
     "dev": "npm run dev --workspace=@lab/web",
