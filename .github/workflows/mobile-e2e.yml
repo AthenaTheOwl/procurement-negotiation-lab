@@ -96,6 +96,33 @@ jobs:
           echo "apk=$APK" >> "$GITHUB_OUTPUT"
           echo "found apk: $APK"
 
+      # The emulator runner executes each `script:` line in its own shell, so a
+      # shell variable set on one line (the old MAESTRO_FAILED) never reached the
+      # final `exit` and a failing flow still reported green. Keep the whole run
+      # in one script file so the exit code is real.
+      - name: write maestro runner script
+        run: |
+          cat > "$RUNNER_TEMP/run-maestro.sh" <<'EOS'
+          #!/usr/bin/env bash
+          set -u
+          APK="$1"
+          adb install -r "$APK"
+          adb logcat -c
+          cd apps/mobile
+          mkdir -p maestro-debug-output
+          # Every flow in .maestro/ runs (maestro continues past a failed flow).
+          maestro test .maestro/ --format junit --output maestro-report.xml --debug-output maestro-debug-output
+          RC=$?
+          # On failure the JS exception is only in logcat; without this the job
+          # reports a missing element and gives no way to tell why.
+          adb logcat -d -t 2000 > maestro-debug-output/logcat.txt 2>&1 || true
+          TOTAL=$(grep -o '<testcase ' maestro-report.xml 2>/dev/null | wc -l)
+          FAILED=$(grep -o '<failure' maestro-report.xml 2>/dev/null | wc -l)
+          echo "maestro: $((TOTAL - FAILED))/$TOTAL flows passed"
+          exit $RC
+          EOS
+          chmod +x "$RUNNER_TEMP/run-maestro.sh"
+
       - name: run maestro on android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -106,26 +133,16 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: |
-            adb install -r "${{ steps.locate-apk.outputs.apk }}"
-            # reactivecircus/android-emulator-runner runs each line in its own shell, so a
-            # bare `cd apps/mobile` on the previous line does not carry over and maestro
-            # looked for .maestro/ at the repo root ("Flow path does not exist"). Keep the
-            # cd and the test in one command.
-            adb logcat -c
-            cd apps/mobile && maestro test .maestro/level-1-walkthrough.yaml --debug-output maestro-debug-output || MAESTRO_FAILED=1
-            # On failure the JS exception is only in logcat; without this the job
-            # reports a missing element and gives no way to tell why.
-            adb logcat -d -t 2000 > apps/mobile/maestro-debug-output/logcat.txt 2>&1 || true
-            exit ${MAESTRO_FAILED:-0}
+          script: bash ${{ runner.temp }}/run-maestro.sh ${{ steps.locate-apk.outputs.apk }}
 
       - name: upload maestro debug output
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: maestro-debug-output-api-${{ matrix.api-level }}
           path: |
             apps/mobile/maestro-debug-output
+            apps/mobile/maestro-report.xml
             apps/mobile/*.log
           if-no-files-found: ignore
           retention-days: 14

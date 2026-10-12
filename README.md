@@ -108,7 +108,7 @@ If Python 3.11 is not installed locally, Python 3.12 or 3.13 also works. The hos
 
 ## Mobile
 
-Native iOS and Android port via Expo + EAS, mirroring the web learn flow. Tier 0-3 proof ladder (unit logic, lint+typecheck, Android emulator E2E, TestFlight). Spec 0012 documents the discipline; the hosted `mobile-e2e.yml` workflow runs Maestro flows on a KVM-accelerated runner.
+Native iOS and Android port via Expo + EAS, mirroring the web learn flow. Tier 0-3 proof ladder (unit logic, lint+typecheck, Android emulator E2E, TestFlight). Spec 0012 documents the discipline; the hosted `mobile-e2e.yml` workflow runs all seven Maestro walkthroughs (levels 1, 3, 6, 8, 9, 10 and 11) on a KVM-accelerated Android runner on every mobile change.
 
 ## What it doesn't do
 

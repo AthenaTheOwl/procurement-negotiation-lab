@@ -43,8 +43,8 @@ If a flow fails, Maestro writes screenshots and a trace under
 ## CI
 
 `.github/workflows/mobile-e2e.yml` boots a hosted Android emulator via
-`reactivecircus/android-emulator-runner`, builds the debug APK, installs it,
-and runs the flows. On any failure the workflow uploads
+`reactivecircus/android-emulator-runner`, builds the release APK, installs it,
+and runs every flow in this directory (`maestro test .maestro/`). The workflow always uploads `maestro-report.xml` and, on failure,
 `maestro-debug-output/` so failures are reviewable without re-running.
 
 Trigger the hosted path from the repo root:
