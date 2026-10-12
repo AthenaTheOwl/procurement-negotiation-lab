@@ -43,6 +43,7 @@
 | **R-FACTORY-RUN-EVIDENCE-033** AGENTS.md names the systems-thinking discipline (owner_role: control.coordinator) | N2, N5 | `AGENTS.md` carries the "Systems-thinking discipline (per DEC-CDCP-020)" section that names the four fields and the 30-day warning-to-failure ratchet | [DEC-FACTORY-015](../../decisions/DEC-FACTORY-015-systems-thinking-discipline-adoption.md) | done |
 | **R-FACTORY-RUN-EVIDENCE-034** validator warns on missing fields (owner_role: control.coordinator) | N3, N5 | `scripts/validate_decisions.py` collects missing fields per approved DEC, emits `validate_decisions: systems-thinking discipline warnings (non-fatal; see DEC-CDCP-020)` to stderr followed by per-DEC `missing systems-thinking field(s): ...` lines, and stays exit 0 when only warnings are present | [DEC-FACTORY-015](../../decisions/DEC-FACTORY-015-systems-thinking-discipline-adoption.md) | done |
 | **R-FACTORY-RUN-EVIDENCE-035** recent DECs retrofitted (owner_role: control.coordinator) | N4, N5 | DEC-FACTORY-012, DEC-FACTORY-013, DEC-FACTORY-014 carry populated `systems_map`, `transferable_principle`, `falsification_test`, and `adoption_ladder` fields; `validate_decisions.py` emits no warning for these three DECs | [DEC-FACTORY-015](../../decisions/DEC-FACTORY-015-systems-thinking-discipline-adoption.md) | done |
+| **R-FACTORY-RUN-EVIDENCE-036** scheduled replay commits a dated replay record (owner_role: control.coordinator) | O1, O2 | `.github/workflows/replay-freshness.yml` runs on `17 6 1,15 * *` and `workflow_dispatch`, replays `run-960d6b107160` at its sandbox SHA, and commits only the new report plus the ledger whose `packet_ref` names it; `spec_check.py` finds the workflow's proof tokens | [DEC-FACTORY-020](../../decisions/DEC-FACTORY-020-scheduled-replay-freshness-commit.md) | done |
 | **R-SPEC-009** spec discipline (owner_role: product.spec-writer) | S1, S2, S3 | registered spec, spec_check, run ledger | (allowlisted) | done |
 
 ## Status snapshot
@@ -62,5 +63,6 @@ Pass K - replay-determinism test fixture done
 Pass L - addendum-6 emission slice + replay timestamp fix done
 Pass M - chaos test suite      done
 Pass N - systems-thinking adoption done
+Pass O - scheduled replay freshness done
 Spec discipline                done
 ```

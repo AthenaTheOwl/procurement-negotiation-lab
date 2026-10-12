@@ -761,6 +761,30 @@ Acceptance:
 - `python scripts/validate_decisions.py` emits no
   systems-thinking warning for any of the three retrofitted DECs.
 
+### R-FACTORY-RUN-EVIDENCE-036: scheduled replay commits a dated replay record
+
+WHEN the 1st or 15th of a month arrives, or a maintainer dispatches
+`.github/workflows/replay-freshness.yml`, THE SYSTEM SHALL replay the
+canonical sample `run-960d6b107160` with the replay sequence from
+`run-evidence-gates.yml` (finalized Run record and current
+`scripts/replay_run.py` overlaid at the sandbox SHA) and, only when
+the replay exits 0, commit the new replay record and its per-replay
+ledger to `main`.
+
+Acceptance:
+- The workflow carries `schedule` (`cron: "17 6 1,15 * *"`) and
+  `workflow_dispatch`, `permissions: contents: write`, and a
+  concurrency group.
+- The commit adds exactly two files: one
+  `ops/replay-records/run-960d6b107160/<replay-event-id>.json` whose
+  `finished_at` is the replay time, and the
+  `ops/event-ledger/replay-run-960d6b107160-*.jsonl` file whose event
+  `packet_ref` names that report. The step never runs `git add -A`.
+- A replay that exits non-zero commits nothing, and no Run record
+  carrying `@PENDING` is replayed or edited.
+- `scripts/spec_check.py` lists the workflow in
+  `REQUIRED_WORKFLOW_PROOFS`, so deleting it fails spec-check.
+
 ### R-SPEC-009: spec discipline
 
 Standard.
