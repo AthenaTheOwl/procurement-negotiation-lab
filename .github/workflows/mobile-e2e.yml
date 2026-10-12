@@ -106,6 +106,13 @@ jobs:
           #!/usr/bin/env bash
           set -u
           APK="$1"
+          # A freshly booted software-rendered emulator often shows a
+          # "Pixel Launcher isn't responding" ANR dialog over the app, which
+          # fails the first assertion of every flow (seen in the failure
+          # screenshots). Suppress error dialogs and let the launcher settle.
+          adb shell settings put global hide_error_dialogs 1 || true
+          adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS || true
+          sleep 45
           adb install -r "$APK"
           adb logcat -c
           cd apps/mobile
