@@ -144,5 +144,8 @@ jobs:
             apps/mobile/maestro-debug-output
             apps/mobile/maestro-report.xml
             apps/mobile/*.log
+          # Maestro writes screenshots and the UI hierarchy under a hidden
+          # .maestro/ directory, which upload-artifact skips by default.
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 14
