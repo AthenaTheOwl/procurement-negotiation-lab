@@ -102,6 +102,16 @@ REQUIRED_WORKFLOW_PROOFS = {
         "chaos-validation",
         "tests/factory/test_chaos_run_evidence.py",
     ],
+    ".github/workflows/replay-freshness.yml": [
+        "schedule",
+        "workflow_dispatch",
+        "contents: write",
+        "concurrency",
+        "fetch-depth: 0",
+        "run-960d6b107160",
+        "scripts/replay_run.py",
+        'git add -- "$NEW_REPORT" "$NEW_LEDGER"',
+    ],
     ".github/workflows/engine-properties.yml": [
         "pull_request",
         "paths:",

@@ -322,6 +322,20 @@
   fields on the DEC itself so the discipline is self-applying.
   *(R-FACTORY-RUN-EVIDENCE-032..035)*
 
+## Pass O - scheduled replay freshness (DEC-FACTORY-020)
+
+- [x] **O1**: Add `.github/workflows/replay-freshness.yml` on
+  `cron: "17 6 1,15 * *"` plus `workflow_dispatch` with
+  `contents: write` and a concurrency group. Copy the replay
+  sequence from `run-evidence-gates.yml`, then return to `main` and
+  commit only the new replay record and its ledger as
+  `github-actions[bot]`; open an issue when the run fails.
+  *(R-FACTORY-RUN-EVIDENCE-036)*
+- [x] **O2**: Register the workflow's proof tokens in
+  `scripts/spec_check.py::REQUIRED_WORKFLOW_PROOFS` so a deleted or
+  gutted workflow fails spec-check.
+  *(R-FACTORY-RUN-EVIDENCE-036)*
+
 ## Spec discipline
 
 - [x] **S1**: Register the spec in `specs/README.md`. *(R-SPEC-009)*
