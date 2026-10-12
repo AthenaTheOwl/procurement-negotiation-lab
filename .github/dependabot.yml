@@ -52,8 +52,6 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "react-dom"
         update-types: ["version-update:semver-major"]
-      - dependency-name: "react-native"
-        update-types: ["version-update:semver-major"]
       - dependency-name: "@types/react"
         update-types: ["version-update:semver-major"]
       - dependency-name: "@types/react-dom"
@@ -72,29 +70,32 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@types/cytoscape"
         update-types: ["version-update:semver-major"]
+      # Expo SDK 51 pins its native modules to exact versions (expo's own
+      # bundledNativeModules.json). A *minor* bump outside that set is enough
+      # to break the native build: a stray expo-constants 55 and react-native
+      # 0.85 each did, in 2026-10, and the mobile-e2e job was red for months.
+      # Patch releases still flow; anything larger lands with the SDK upgrade
+      # via `npx expo install --fix`, never as a single Dependabot PR.
       - dependency-name: "expo"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "expo-router"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "expo-status-bar"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "jest-expo"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint-config-expo"
-        update-types: ["version-update:semver-major"]
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "expo-*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "react-native-*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "@react-native/*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
       - dependency-name: "@react-native-async-storage/async-storage"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-native-gesture-handler"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-native-reanimated"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-native-safe-area-context"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-native-screens"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-native-svg"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-native-web"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "jest-expo"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "eslint-config-expo"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "@expo/*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # Babel 8 is a coordinated migration with babel-preset-expo.
+      - dependency-name: "@babel/core"
         update-types: ["version-update:semver-major"]
       - dependency-name: "@playwright/test"
         update-types: ["version-update:semver-major"]
