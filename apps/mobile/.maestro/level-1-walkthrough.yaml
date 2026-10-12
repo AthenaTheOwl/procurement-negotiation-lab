@@ -33,21 +33,46 @@ tags:
 # 3. Intro card is present before any interaction.
 - assertVisible:
     id: "level1-intro"
+- scrollUntilVisible:
+    element:
+      id: "settle-button"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "settle-button"
 
 # 4. Settle now -> surplus bar appears in place of the button.
+- scrollUntilVisible:
+    element:
+      id: "settle-button"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "settle-button"
+- scrollUntilVisible:
+    element:
+      id: "level1-surplus"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level1-surplus"
 
 # 5. The reveal beat (REVEAL_BEAT_MS = 600ms) flips the Continue button to
 #    enabled state. We wait briefly, then assert the reveal copy + Continue.
+- scrollUntilVisible:
+    element:
+      id: "level-reveal"
+    direction: DOWN
+    timeout: 10000
 - extendedWaitUntil:
     visible:
       id: "level-reveal"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level-continue"
 - assertVisible:

@@ -22,12 +22,27 @@ tags:
 # Fast path through Levels 1-8.
 - assertVisible:
     id: "level-shell-1"
+- scrollUntilVisible:
+    element:
+      id: "settle-button"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "settle-button"
+- scrollUntilVisible:
+    element:
+      id: "level-reveal"
+    direction: DOWN
+    timeout: 10000
 - extendedWaitUntil:
     visible:
       id: "level-reveal"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -40,6 +55,11 @@ tags:
     id: "predict-reveal-button"
 - assertVisible:
     id: "predict-reveal-truth"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -56,6 +76,11 @@ tags:
     id: "predict-reveal-button"
 - assertVisible:
     id: "predict-reveal-truth"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -71,6 +96,11 @@ tags:
     id: "predict-reveal-button"
 - assertVisible:
     id: "predict-reveal-truth"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -81,6 +111,11 @@ tags:
     id: "run-all"
 - assertVisible:
     id: "level5-reveal"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -89,6 +124,11 @@ tags:
     timeout: 5000
 - tapOn:
     id: "split-rule-equal"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -99,6 +139,11 @@ tags:
     id: "honesty-toggle"
 - assertVisible:
     id: "level7-reveal"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -116,6 +161,11 @@ tags:
       id: "graduation-card"
     direction: DOWN
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "level-continue"
 
@@ -135,6 +185,11 @@ tags:
     id: "level9-reveal"
 - assertVisible:
     id: "level9-reveal-text"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "level-continue"
 
@@ -166,5 +221,10 @@ tags:
     id: "certification-results"
 - assertVisible:
     id: "cleared-agreement"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level-continue"

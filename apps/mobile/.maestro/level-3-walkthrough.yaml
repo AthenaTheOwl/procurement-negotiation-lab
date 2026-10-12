@@ -24,14 +24,34 @@ tags:
     id: "level-shell-1"
 - assertVisible:
     id: "level1-intro"
+- scrollUntilVisible:
+    element:
+      id: "settle-button"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "settle-button"
+- scrollUntilVisible:
+    element:
+      id: "level1-surplus"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level1-surplus"
+- scrollUntilVisible:
+    element:
+      id: "level-reveal"
+    direction: DOWN
+    timeout: 10000
 - extendedWaitUntil:
     visible:
       id: "level-reveal"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "level-continue"
 
@@ -48,6 +68,11 @@ tags:
     id: "predict-reveal-button"
 - assertVisible:
     id: "predict-reveal-truth"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "level-continue"
 
@@ -77,5 +102,10 @@ tags:
     id: "predict-reveal-button"
 - assertVisible:
     id: "predict-reveal-truth"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level-continue"
