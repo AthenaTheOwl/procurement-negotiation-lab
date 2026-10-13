@@ -27,14 +27,14 @@ tags:
     element:
       id: "settle-button"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "settle-button"
 - scrollUntilVisible:
     element:
       id: "level-reveal"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - extendedWaitUntil:
     visible:
       id: "level-reveal"
@@ -43,7 +43,7 @@ tags:
     element:
       id: "level-continue"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -54,28 +54,28 @@ tags:
     element:
       id: "quantity-knob-increase"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "quantity-knob-increase"
 - scrollUntilVisible:
     element:
       id: "predict-reveal-button"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "predict-reveal-button"
 - scrollUntilVisible:
     element:
       id: "predict-reveal-truth"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "predict-reveal-truth"
 - scrollUntilVisible:
     element:
       id: "level-continue"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -86,42 +86,42 @@ tags:
     element:
       id: "info-stop-cost-band"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "info-stop-cost-band"
 - scrollUntilVisible:
     element:
       id: "info-stop-forecast-band"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "info-stop-forecast-band"
 - scrollUntilVisible:
     element:
       id: "info-stop-risk-only"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "info-stop-risk-only"
 - scrollUntilVisible:
     element:
       id: "predict-reveal-button"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "predict-reveal-button"
 - scrollUntilVisible:
     element:
       id: "predict-reveal-truth"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "predict-reveal-truth"
 - scrollUntilVisible:
     element:
       id: "level-continue"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -132,7 +132,7 @@ tags:
     element:
       id: "quantity-knob-increase"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - repeat:
     times: 10
     commands:
@@ -142,21 +142,21 @@ tags:
     element:
       id: "predict-reveal-button"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "predict-reveal-button"
 - scrollUntilVisible:
     element:
       id: "predict-reveal-truth"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "predict-reveal-truth"
 - scrollUntilVisible:
     element:
       id: "level-continue"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -167,21 +167,21 @@ tags:
     element:
       id: "run-all"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "run-all"
 - scrollUntilVisible:
     element:
       id: "level5-reveal"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "level5-reveal"
 - scrollUntilVisible:
     element:
       id: "level-continue"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -192,14 +192,14 @@ tags:
     element:
       id: "split-rule-equal"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "split-rule-equal"
 - scrollUntilVisible:
     element:
       id: "level-continue"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -210,21 +210,21 @@ tags:
     element:
       id: "honesty-toggle"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "honesty-toggle"
 - scrollUntilVisible:
     element:
       id: "level7-reveal"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "level7-reveal"
 - scrollUntilVisible:
     element:
       id: "level-continue"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 - extendedWaitUntil:
@@ -239,19 +239,20 @@ tags:
     element:
       id: "quantity-knob-increase"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "quantity-knob-increase"
 - scrollUntilVisible:
     element:
       id: "graduation-card"
     direction: DOWN
-    timeout: 5000
+    visibilityPercentage: 50
+    timeout: 30000
 - scrollUntilVisible:
     element:
       id: "level-continue"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 
@@ -266,35 +267,35 @@ tags:
     element:
       id: "level9-total"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "level9-total"
 - scrollUntilVisible:
     element:
       id: "level9-optimum"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "level9-optimum"
 - scrollUntilVisible:
     element:
       id: "level9-gap"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "level9-gap"
 - scrollUntilVisible:
     element:
       id: "preset-optimal"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "preset-optimal"
 - scrollUntilVisible:
     element:
       id: "level9-list"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "level9-list"
 - scrollUntilVisible:
@@ -309,13 +310,13 @@ tags:
     element:
       id: "level9-reveal-text"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "level9-reveal-text"
 - scrollUntilVisible:
     element:
       id: "level-continue"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "level-continue"

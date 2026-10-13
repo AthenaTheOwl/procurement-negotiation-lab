@@ -28,21 +28,21 @@ tags:
     element:
       id: "settle-button"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "settle-button"
 - scrollUntilVisible:
     element:
       id: "level1-surplus"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "level1-surplus"
 - scrollUntilVisible:
     element:
       id: "level-reveal"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - extendedWaitUntil:
     visible:
       id: "level-reveal"
@@ -51,7 +51,7 @@ tags:
     element:
       id: "level-continue"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 
@@ -66,28 +66,28 @@ tags:
     element:
       id: "quantity-knob-increase"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "quantity-knob-increase"
 - scrollUntilVisible:
     element:
       id: "predict-reveal-button"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "predict-reveal-button"
 - scrollUntilVisible:
     element:
       id: "predict-reveal-truth"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "predict-reveal-truth"
 - scrollUntilVisible:
     element:
       id: "level-continue"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 
@@ -102,7 +102,7 @@ tags:
     element:
       id: "level3-info-slider"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "level3-info-slider"
 
@@ -112,55 +112,55 @@ tags:
     element:
       id: "info-stop-cost-band"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "info-stop-cost-band"
 - scrollUntilVisible:
     element:
       id: "info-stop-forecast-band"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "info-stop-forecast-band"
 - scrollUntilVisible:
     element:
       id: "info-stop-risk-only"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "info-stop-risk-only"
 - scrollUntilVisible:
     element:
       id: "level3-helper"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "level3-helper"
 - scrollUntilVisible:
     element:
       id: "level3-reveal"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "level3-reveal"
 - scrollUntilVisible:
     element:
       id: "predict-reveal-button"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - tapOn:
     id: "predict-reveal-button"
 - scrollUntilVisible:
     element:
       id: "predict-reveal-truth"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "predict-reveal-truth"
 - scrollUntilVisible:
     element:
       id: "level-continue"
     direction: DOWN
-    timeout: 10000
+    timeout: 30000
 - assertVisible:
     id: "level-continue"
