@@ -62,10 +62,25 @@ tags:
     timeout: 5000
 - assertVisible:
     id: "level2-intro"
+- scrollUntilVisible:
+    element:
+      id: "quantity-knob-increase"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "quantity-knob-increase"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-button"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "predict-reveal-button"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-truth"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "predict-reveal-truth"
 - scrollUntilVisible:
@@ -88,18 +103,43 @@ tags:
 
 # The gate is revealed && visited.size >= 3. Private is the default, so
 # these three taps also prove the info-stop controls are live.
+- scrollUntilVisible:
+    element:
+      id: "info-stop-cost-band"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "info-stop-cost-band"
+- scrollUntilVisible:
+    element:
+      id: "info-stop-forecast-band"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "info-stop-forecast-band"
+- scrollUntilVisible:
+    element:
+      id: "info-stop-risk-only"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "info-stop-risk-only"
 - assertVisible:
     id: "level3-helper"
 - assertVisible:
     id: "level3-reveal"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-button"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "predict-reveal-button"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-truth"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "predict-reveal-truth"
 - scrollUntilVisible:

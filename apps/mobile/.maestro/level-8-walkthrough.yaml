@@ -52,10 +52,25 @@ tags:
     visible:
       id: "level-shell-2"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "quantity-knob-increase"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "quantity-knob-increase"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-button"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "predict-reveal-button"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-truth"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "predict-reveal-truth"
 - scrollUntilVisible:
@@ -71,14 +86,39 @@ tags:
     visible:
       id: "level-shell-3"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "info-stop-cost-band"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "info-stop-cost-band"
+- scrollUntilVisible:
+    element:
+      id: "info-stop-forecast-band"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "info-stop-forecast-band"
+- scrollUntilVisible:
+    element:
+      id: "info-stop-risk-only"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "info-stop-risk-only"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-button"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "predict-reveal-button"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-truth"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "predict-reveal-truth"
 - scrollUntilVisible:
@@ -99,8 +139,18 @@ tags:
     commands:
       - tapOn:
           id: "quantity-knob-increase"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-button"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "predict-reveal-button"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-truth"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "predict-reveal-truth"
 - scrollUntilVisible:
@@ -116,6 +166,11 @@ tags:
     visible:
       id: "level-shell-5"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "run-all"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "run-all"
 - assertVisible:
@@ -133,6 +188,11 @@ tags:
     visible:
       id: "level-shell-6"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "split-rule-equal"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "split-rule-equal"
 - scrollUntilVisible:
@@ -155,6 +215,11 @@ tags:
     visible:
       id: "level-shell-7"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "honesty-toggle"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "honesty-toggle"
 - assertVisible:
@@ -178,8 +243,18 @@ tags:
     id: "formula-editor"
 - assertVisible:
     id: "param-sliders"
+- scrollUntilVisible:
+    element:
+      id: "role-chip-supplier"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "role-chip-supplier"
+- scrollUntilVisible:
+    element:
+      id: "role-chip-buyer"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "role-chip-buyer"
 - scrollUntilVisible:
@@ -188,6 +263,11 @@ tags:
     direction: DOWN
 - assertVisible:
     id: "param-urgency"
+- scrollUntilVisible:
+    element:
+      id: "quantity-knob-increase"
+    direction: DOWN
+    timeout: 10000
 - tapOn:
     id: "quantity-knob-increase"
 - assertVisible:

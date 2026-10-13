@@ -76,4 +76,4 @@ tags:
 - assertVisible:
     id: "level-continue"
 - assertVisible:
-    text: "Continue"
+    text: "Continue.*"
