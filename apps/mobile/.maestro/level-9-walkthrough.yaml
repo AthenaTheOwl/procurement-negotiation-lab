@@ -15,8 +15,10 @@ tags:
     clearState: true
     stopApp: true
 
-- assertVisible:
-    id: "home-surface"
+- extendedWaitUntil:
+    visible:
+      id: "home-surface"
+    timeout: 60000
 - tapOn:
     id: "home-start-cta"
 

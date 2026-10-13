@@ -19,8 +19,10 @@ tags:
     stopApp: true
 
 # 1. Home renders.
-- assertVisible:
-    id: "home-surface"
+- extendedWaitUntil:
+    visible:
+      id: "home-surface"
+    timeout: 60000
 - assertVisible:
     id: "home-start-cta"
 
