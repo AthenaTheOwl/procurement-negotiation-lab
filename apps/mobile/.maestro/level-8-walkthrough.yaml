@@ -15,20 +15,37 @@ tags:
     clearState: true
     stopApp: true
 
-- assertVisible:
-    id: "home-surface"
+- extendedWaitUntil:
+    visible:
+      id: "home-surface"
+    timeout: 60000
 - tapOn:
     id: "home-start-cta"
 
 # Level 1.
 - assertVisible:
     id: "level-shell-1"
+- scrollUntilVisible:
+    element:
+      id: "settle-button"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "settle-button"
+- scrollUntilVisible:
+    element:
+      id: "level-reveal"
+    direction: DOWN
+    timeout: 30000
 - extendedWaitUntil:
     visible:
       id: "level-reveal"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 
@@ -37,12 +54,32 @@ tags:
     visible:
       id: "level-shell-2"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "quantity-knob-increase"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "quantity-knob-increase"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-button"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "predict-reveal-button"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-truth"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "predict-reveal-truth"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 
@@ -51,16 +88,46 @@ tags:
     visible:
       id: "level-shell-3"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "info-stop-cost-band"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "info-stop-cost-band"
+- scrollUntilVisible:
+    element:
+      id: "info-stop-forecast-band"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "info-stop-forecast-band"
+- scrollUntilVisible:
+    element:
+      id: "info-stop-risk-only"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "info-stop-risk-only"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-button"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "predict-reveal-button"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-truth"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "predict-reveal-truth"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 
@@ -69,15 +136,35 @@ tags:
     visible:
       id: "level-shell-4"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "quantity-knob-increase"
+    direction: DOWN
+    timeout: 30000
 - repeat:
     times: 10
     commands:
       - tapOn:
           id: "quantity-knob-increase"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-button"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "predict-reveal-button"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-truth"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "predict-reveal-truth"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 
@@ -86,10 +173,25 @@ tags:
     visible:
       id: "level-shell-5"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "run-all"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "run-all"
+- scrollUntilVisible:
+    element:
+      id: "level5-reveal"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "level5-reveal"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 
@@ -98,10 +200,25 @@ tags:
     visible:
       id: "level-shell-6"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "split-rule-equal"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "split-rule-equal"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "level-continue"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 
@@ -110,10 +227,25 @@ tags:
     visible:
       id: "level-shell-7"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "honesty-toggle"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "honesty-toggle"
+- scrollUntilVisible:
+    element:
+      id: "level7-reveal"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "level7-reveal"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 
@@ -124,12 +256,32 @@ tags:
     timeout: 5000
 - assertVisible:
     id: "level8-intro"
+- scrollUntilVisible:
+    element:
+      id: "formula-editor"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "formula-editor"
+- scrollUntilVisible:
+    element:
+      id: "param-sliders"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "param-sliders"
+- scrollUntilVisible:
+    element:
+      id: "role-chip-supplier"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "role-chip-supplier"
+- scrollUntilVisible:
+    element:
+      id: "role-chip-buyer"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "role-chip-buyer"
 - scrollUntilVisible:
@@ -138,16 +290,32 @@ tags:
     direction: DOWN
 - assertVisible:
     id: "param-urgency"
+- scrollUntilVisible:
+    element:
+      id: "quantity-knob-increase"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "quantity-knob-increase"
+- scrollUntilVisible:
+    element:
+      id: "level8-surplus"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "level8-surplus"
 - scrollUntilVisible:
     element:
       id: "graduation-card"
     direction: DOWN
-    timeout: 5000
+    visibilityPercentage: 50
+    timeout: 30000
 - assertVisible:
     id: "graduation-card"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "level-continue"

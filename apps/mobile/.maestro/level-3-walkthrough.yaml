@@ -14,8 +14,10 @@ tags:
     clearState: true
     stopApp: true
 
-- assertVisible:
-    id: "home-surface"
+- extendedWaitUntil:
+    visible:
+      id: "home-surface"
+    timeout: 60000
 - tapOn:
     id: "home-start-cta"
 
@@ -24,14 +26,34 @@ tags:
     id: "level-shell-1"
 - assertVisible:
     id: "level1-intro"
+- scrollUntilVisible:
+    element:
+      id: "settle-button"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "settle-button"
+- scrollUntilVisible:
+    element:
+      id: "level1-surplus"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "level1-surplus"
+- scrollUntilVisible:
+    element:
+      id: "level-reveal"
+    direction: DOWN
+    timeout: 30000
 - extendedWaitUntil:
     visible:
       id: "level-reveal"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 
@@ -42,12 +64,32 @@ tags:
     timeout: 5000
 - assertVisible:
     id: "level2-intro"
+- scrollUntilVisible:
+    element:
+      id: "quantity-knob-increase"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "quantity-knob-increase"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-button"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "predict-reveal-button"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-truth"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "predict-reveal-truth"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "level-continue"
 
@@ -58,24 +100,69 @@ tags:
     timeout: 5000
 - assertVisible:
     id: "level3-intro"
+- scrollUntilVisible:
+    element:
+      id: "level3-info-slider"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "level3-info-slider"
 
 # The gate is revealed && visited.size >= 3. Private is the default, so
 # these three taps also prove the info-stop controls are live.
+- scrollUntilVisible:
+    element:
+      id: "info-stop-cost-band"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "info-stop-cost-band"
+- scrollUntilVisible:
+    element:
+      id: "info-stop-forecast-band"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "info-stop-forecast-band"
+- scrollUntilVisible:
+    element:
+      id: "info-stop-risk-only"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "info-stop-risk-only"
+- scrollUntilVisible:
+    element:
+      id: "level3-helper"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "level3-helper"
+- scrollUntilVisible:
+    element:
+      id: "level3-reveal"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "level3-reveal"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-button"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
     id: "predict-reveal-button"
+- scrollUntilVisible:
+    element:
+      id: "predict-reveal-truth"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "predict-reveal-truth"
+- scrollUntilVisible:
+    element:
+      id: "level-continue"
+    direction: DOWN
+    timeout: 30000
 - assertVisible:
     id: "level-continue"
