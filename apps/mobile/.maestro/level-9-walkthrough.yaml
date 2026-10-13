@@ -301,7 +301,8 @@ tags:
     element:
       id: "level9-reveal"
     direction: DOWN
-    timeout: 5000
+    visibilityPercentage: 50
+    timeout: 30000
 - tapOn:
     id: "level9-reveal"
 - scrollUntilVisible:
