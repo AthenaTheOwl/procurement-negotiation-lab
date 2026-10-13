@@ -134,6 +134,11 @@ tags:
     visible:
       id: "level-shell-4"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "quantity-knob-increase"
+    direction: DOWN
+    timeout: 10000
 - repeat:
     times: 10
     commands:
@@ -173,6 +178,11 @@ tags:
     timeout: 10000
 - tapOn:
     id: "run-all"
+- scrollUntilVisible:
+    element:
+      id: "level5-reveal"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level5-reveal"
 - scrollUntilVisible:
@@ -222,6 +232,11 @@ tags:
     timeout: 10000
 - tapOn:
     id: "honesty-toggle"
+- scrollUntilVisible:
+    element:
+      id: "level7-reveal"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level7-reveal"
 - scrollUntilVisible:
@@ -239,8 +254,18 @@ tags:
     timeout: 5000
 - assertVisible:
     id: "level8-intro"
+- scrollUntilVisible:
+    element:
+      id: "formula-editor"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "formula-editor"
+- scrollUntilVisible:
+    element:
+      id: "param-sliders"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "param-sliders"
 - scrollUntilVisible:
@@ -270,6 +295,11 @@ tags:
     timeout: 10000
 - tapOn:
     id: "quantity-knob-increase"
+- scrollUntilVisible:
+    element:
+      id: "level8-surplus"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level8-surplus"
 - scrollUntilVisible:

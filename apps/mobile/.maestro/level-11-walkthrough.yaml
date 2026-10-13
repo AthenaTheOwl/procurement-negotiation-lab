@@ -127,6 +127,11 @@ tags:
     visible:
       id: "level-shell-4"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "quantity-knob-increase"
+    direction: DOWN
+    timeout: 10000
 - repeat:
     times: 10
     commands:
@@ -164,6 +169,11 @@ tags:
     timeout: 10000
 - tapOn:
     id: "run-all"
+- scrollUntilVisible:
+    element:
+      id: "level5-reveal"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level5-reveal"
 - scrollUntilVisible:
@@ -202,6 +212,11 @@ tags:
     timeout: 10000
 - tapOn:
     id: "honesty-toggle"
+- scrollUntilVisible:
+    element:
+      id: "level7-reveal"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level7-reveal"
 - scrollUntilVisible:
@@ -256,6 +271,11 @@ tags:
     timeout: 5000
 - tapOn:
     id: "level9-reveal"
+- scrollUntilVisible:
+    element:
+      id: "level9-reveal-text"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level9-reveal-text"
 - scrollUntilVisible:
@@ -278,6 +298,11 @@ tags:
     timeout: 5000
 - tapOn:
     id: "certify-model"
+- scrollUntilVisible:
+    element:
+      id: "certification-results"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "certification-results"
 - scrollUntilVisible:
@@ -295,6 +320,11 @@ tags:
     timeout: 5000
 - assertVisible:
     id: "level11-intro"
+- scrollUntilVisible:
+    element:
+      id: "level11-mobile-grid"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level11-mobile-grid"
 - scrollUntilVisible:
@@ -318,10 +348,25 @@ tags:
     timeout: 10000
 - tapOn:
     id: "mechanism-rfq"
+- scrollUntilVisible:
+    element:
+      id: "level11-mobile-detail"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level11-mobile-detail"
+- scrollUntilVisible:
+    element:
+      id: "level11-mobile-exchanges"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level11-mobile-exchanges"
+- scrollUntilVisible:
+    element:
+      id: "level11-mobile-leaks"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level11-mobile-leaks"
 - scrollUntilVisible:
@@ -331,6 +376,11 @@ tags:
     timeout: 5000
 - tapOn:
     id: "level11-mobile-got-it"
+- scrollUntilVisible:
+    element:
+      id: "level11-mobile-reveal"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level11-mobile-reveal"
 - scrollUntilVisible:

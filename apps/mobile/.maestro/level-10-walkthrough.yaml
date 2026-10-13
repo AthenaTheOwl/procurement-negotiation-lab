@@ -127,6 +127,11 @@ tags:
     visible:
       id: "level-shell-4"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "quantity-knob-increase"
+    direction: DOWN
+    timeout: 10000
 - repeat:
     times: 10
     commands:
@@ -164,6 +169,11 @@ tags:
     timeout: 10000
 - tapOn:
     id: "run-all"
+- scrollUntilVisible:
+    element:
+      id: "level5-reveal"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level5-reveal"
 - scrollUntilVisible:
@@ -202,6 +212,11 @@ tags:
     timeout: 10000
 - tapOn:
     id: "honesty-toggle"
+- scrollUntilVisible:
+    element:
+      id: "level7-reveal"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level7-reveal"
 - scrollUntilVisible:
@@ -258,6 +273,11 @@ tags:
     timeout: 5000
 - tapOn:
     id: "level9-reveal"
+- scrollUntilVisible:
+    element:
+      id: "level9-reveal-text"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level9-reveal-text"
 - scrollUntilVisible:
@@ -275,8 +295,18 @@ tags:
     timeout: 5000
 - assertVisible:
     id: "level10-intro"
+- scrollUntilVisible:
+    element:
+      id: "selected-model"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "selected-model"
+- scrollUntilVisible:
+    element:
+      id: "capacity-down"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "capacity-down"
 - scrollUntilVisible:
@@ -286,8 +316,18 @@ tags:
     timeout: 10000
 - tapOn:
     id: "capacity-up"
+- scrollUntilVisible:
+    element:
+      id: "menu-option-A"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "menu-option-A"
+- scrollUntilVisible:
+    element:
+      id: "option-A-fee"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "option-A-fee"
 - scrollUntilVisible:
@@ -297,8 +337,18 @@ tags:
     timeout: 5000
 - tapOn:
     id: "certify-model"
+- scrollUntilVisible:
+    element:
+      id: "certification-results"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "certification-results"
+- scrollUntilVisible:
+    element:
+      id: "cleared-agreement"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "cleared-agreement"
 - scrollUntilVisible:

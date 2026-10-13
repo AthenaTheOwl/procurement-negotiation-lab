@@ -128,6 +128,11 @@ tags:
     visible:
       id: "level-shell-4"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "quantity-knob-increase"
+    direction: DOWN
+    timeout: 10000
 - repeat:
     times: 10
     commands:
@@ -165,6 +170,11 @@ tags:
     timeout: 10000
 - tapOn:
     id: "run-all"
+- scrollUntilVisible:
+    element:
+      id: "level5-reveal"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level5-reveal"
 - scrollUntilVisible:
@@ -203,6 +213,11 @@ tags:
     timeout: 10000
 - tapOn:
     id: "honesty-toggle"
+- scrollUntilVisible:
+    element:
+      id: "level7-reveal"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level7-reveal"
 - scrollUntilVisible:
@@ -247,10 +262,25 @@ tags:
     timeout: 5000
 - assertVisible:
     id: "level9-intro"
+- scrollUntilVisible:
+    element:
+      id: "level9-total"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level9-total"
+- scrollUntilVisible:
+    element:
+      id: "level9-optimum"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level9-optimum"
+- scrollUntilVisible:
+    element:
+      id: "level9-gap"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level9-gap"
 - scrollUntilVisible:
@@ -260,6 +290,11 @@ tags:
     timeout: 10000
 - tapOn:
     id: "preset-optimal"
+- scrollUntilVisible:
+    element:
+      id: "level9-list"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level9-list"
 - scrollUntilVisible:
@@ -269,6 +304,11 @@ tags:
     timeout: 5000
 - tapOn:
     id: "level9-reveal"
+- scrollUntilVisible:
+    element:
+      id: "level9-reveal-text"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level9-reveal-text"
 - scrollUntilVisible:

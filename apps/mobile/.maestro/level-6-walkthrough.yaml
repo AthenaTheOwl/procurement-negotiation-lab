@@ -134,11 +134,21 @@ tags:
     visible:
       id: "level-shell-4"
     timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "quantity-knob-increase"
+    direction: DOWN
+    timeout: 10000
 - repeat:
     times: 10
     commands:
       - tapOn:
           id: "quantity-knob-increase"
+- scrollUntilVisible:
+    element:
+      id: "level4-status"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level4-status"
 - scrollUntilVisible:
@@ -175,6 +185,11 @@ tags:
     timeout: 10000
 - tapOn:
     id: "run-all"
+- scrollUntilVisible:
+    element:
+      id: "level5-reveal"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level5-reveal"
 - scrollUntilVisible:
@@ -192,8 +207,18 @@ tags:
     timeout: 5000
 - assertVisible:
     id: "level6-intro"
+- scrollUntilVisible:
+    element:
+      id: "level6-capacity"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level6-capacity"
+- scrollUntilVisible:
+    element:
+      id: "level6-rule"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level6-rule"
 - scrollUntilVisible:
@@ -203,12 +228,32 @@ tags:
     timeout: 10000
 - tapOn:
     id: "quantity-knob-decrease"
+- scrollUntilVisible:
+    element:
+      id: "level6-table"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level6-table"
+- scrollUntilVisible:
+    element:
+      id: "row-buyer"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "row-buyer"
+- scrollUntilVisible:
+    element:
+      id: "row-supplier"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "row-supplier"
+- scrollUntilVisible:
+    element:
+      id: "row-packager"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "row-packager"
 - scrollUntilVisible:
@@ -218,6 +263,11 @@ tags:
     timeout: 10000
 - tapOn:
     id: "split-rule-equal"
+- scrollUntilVisible:
+    element:
+      id: "level6-helper"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level6-helper"
 - scrollUntilVisible:

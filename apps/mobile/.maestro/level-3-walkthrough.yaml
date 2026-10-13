@@ -98,6 +98,11 @@ tags:
     timeout: 5000
 - assertVisible:
     id: "level3-intro"
+- scrollUntilVisible:
+    element:
+      id: "level3-info-slider"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level3-info-slider"
 
@@ -124,8 +129,18 @@ tags:
     timeout: 10000
 - tapOn:
     id: "info-stop-risk-only"
+- scrollUntilVisible:
+    element:
+      id: "level3-helper"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level3-helper"
+- scrollUntilVisible:
+    element:
+      id: "level3-reveal"
+    direction: DOWN
+    timeout: 10000
 - assertVisible:
     id: "level3-reveal"
 - scrollUntilVisible:
