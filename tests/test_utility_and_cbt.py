@@ -4,15 +4,38 @@ from __future__ import annotations
 
 import pytest
 
+from procurement_lab.engine import utility as utility_module
 from procurement_lab.engine.cbt import compute_transfer
 from procurement_lab.engine.schemas import Scenario, UtilityLedger
-from procurement_lab.engine.utility import build_ledger
+from procurement_lab.engine.utility import build_ledger, evaluate_participant_utility
 
 
 def test_ledger_global_matches_local_sum(scenario: Scenario) -> None:
     quantities = {p.id: [400.0] for p in scenario.participants}
     ledger = build_ledger(scenario, quantities)
     assert ledger.global_utility == pytest.approx(sum(ledger.local.values()))
+
+
+def test_utility_formula_is_parsed_once_per_source(
+    scenario: Scenario, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[str] = []
+    real_compile = utility_module.compile_formula
+
+    def counting_compile(source: str) -> utility_module.CompiledFormula:
+        calls.append(source)
+        return real_compile(source)
+
+    monkeypatch.setattr(utility_module, "compile_formula", counting_compile)
+    utility_module._compiled_utility_formula.cache_clear()
+    buyer = scenario.participants[0]
+    values = {
+        evaluate_participant_utility(buyer, scenario, [float(q)]) for q in range(0, 50)
+    }
+    utility_module._compiled_utility_formula.cache_clear()
+
+    assert calls == [buyer.utility_formula]
+    assert len(values) > 1
 
 
 def test_ledger_capacity_violation_marked_infeasible(scenario: Scenario) -> None:
