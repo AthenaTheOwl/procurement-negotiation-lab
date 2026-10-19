@@ -58,7 +58,7 @@ python -m procurement_mechanism_sdk.demo
 }
 ```
 
-The oracle and ADMM both land on the full $35,000. Consensus averaging stops 56.875 short of convergence and a $6,175 oracle gap. That last row is the whole lesson in one object.
+The oracle and ADMM both land on the full $35,000. Both search in 1-unit steps and the oracle never goes past capacity, so that zero gap is ADMM finding the optimum, not two coarse grids agreeing. Consensus averaging stops 56.875 short of convergence and a $6,175 oracle gap. That last row is the whole lesson in one object.
 
 Run the multi-party weighted-Nash demo:
 
