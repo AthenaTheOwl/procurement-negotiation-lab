@@ -10,6 +10,18 @@ v1: discrete grid search per subproblem; n_periods=1; multi-party N>=2
 supported. The averaging and dual-update loops are N-general; the
 prior 2-party guard (a v0 caution) is retired in W4 of the 2026-06-01
 reset. Gradient-based subproblem solvers + multi-period remain v2.
+
+The subproblem grid uses the same 1-unit resolution as the centralized
+oracle, so an oracle gap measures coordination rather than grid width.
+Stopping follows Boyd et al. section 3.3: both the primal residual (how
+far parties sit from consensus) and the dual residual (rho times how far
+the consensus moved this round) must fall within tolerance. On a fine
+grid the primal residual alone hits zero as soon as every party picks
+the same quantity, which can happen before the prices have moved the
+consensus to the joint optimum.
+
+Capacity is not a constraint inside ADMM's subproblems. When the
+consensus exceeds capacity the ledger marks the allocation infeasible.
 """
 
 from __future__ import annotations
@@ -40,7 +52,7 @@ class ADMM:
         self,
         *,
         rho: float = 1.5,
-        grid_step: float = 25.0,
+        grid_step: float = 1.0,
     ) -> None:
         self.rho = rho
         self.grid_step = grid_step
@@ -108,6 +120,7 @@ class ADMM:
             qs = list(new_quantities.values())
             new_z = sum(qs) / len(qs)
             residual = max(abs(q - new_z) for q in qs)
+            dual_residual = rho * abs(new_z - z)
 
             # Dual update
             for pid, q in new_quantities.items():
@@ -124,7 +137,7 @@ class ADMM:
             )
 
             z = new_z
-            if residual <= tolerance:
+            if residual <= tolerance and dual_residual <= tolerance:
                 convergence = Convergence.CONVERGED
                 break
         else:

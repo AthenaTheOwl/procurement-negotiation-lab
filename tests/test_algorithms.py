@@ -94,6 +94,31 @@ def test_admm_close_to_oracle(scenario: Scenario) -> None:
     assert relative_gap < 0.10, f"ADMM is {relative_gap:.1%} away from oracle"
 
 
+def test_admm_reaches_oracle_on_off_grid_demand() -> None:
+    """Same resolution as the oracle: a zero gap means coordination, not grid luck."""
+    scenario = build_procurement_scenario(demand_mean=540.0, capacity=800.0, risk_score=0.1)
+    oracle_run = CentralizedOracle().run(scenario)
+    admm_run = ADMM().run(scenario, max_iter=80, tolerance=0.5)
+
+    assert admm_run.convergence == Convergence.CONVERGED
+    assert admm_run.iterations[-1].consensus[0] == pytest.approx(540.0, abs=0.5)
+    assert admm_run.ledger.global_utility == pytest.approx(
+        oracle_run.ledger.global_utility, abs=1.0
+    )
+
+
+def test_admm_stops_only_when_consensus_has_settled() -> None:
+    """Convergence needs the dual residual (rho * consensus move) within tolerance."""
+    scenario = build_procurement_scenario(demand_mean=540.0, capacity=800.0, risk_score=0.1)
+    admm = ADMM()
+    run = admm.run(scenario, max_iter=80, tolerance=0.5)
+    last, previous = run.iterations[-1], run.iterations[-2]
+
+    assert run.convergence == Convergence.CONVERGED
+    assert last.residual <= 0.5
+    assert admm.rho * abs(last.consensus[0] - previous.consensus[0]) <= 0.5
+
+
 def test_admm_returns_consistent_quantities(scenario: Scenario) -> None:
     run = ADMM().run(scenario)
     final = run.iterations[-1]
