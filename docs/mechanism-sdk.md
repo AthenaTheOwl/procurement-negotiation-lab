@@ -69,9 +69,16 @@ procurement-mechanism-sdk-demo
 The demo prints JSON with scenario id, mechanism results, oracle gap, residual,
 no-worse-off transfer status, and a selector block ranking the non-oracle
 mechanisms. The selector is intentionally simple: an eligible mechanism must
-converge and produce a feasible transfer, then the ranking sorts by oracle gap,
-residual, and global utility. That makes the recommendation explainable enough
-for the web mechanism selector instead of hiding the choice behind a label.
+fit capacity, converge, and produce a feasible transfer, then the ranking sorts
+by oracle gap, residual, and global utility. That makes the recommendation
+explainable enough for the web mechanism selector instead of hiding the choice
+behind a label.
+
+The oracle searches every whole unit from zero to capacity, plus the demand
+and capacity breakpoints, so it is the exact optimum for the shipped utility
+formulas. An allocation above capacity gets no oracle gap
+(`utility_gap_vs_oracle` is `None`) because its utility describes a plan the
+supplier cannot deliver. Every scored gap is therefore zero or positive.
 
 Weighted-Nash mechanisms are available through the same selector:
 

@@ -10,14 +10,43 @@ import pytest
 
 from procurement_lab.algorithms.admm import ADMM
 from procurement_lab.algorithms.oracle import CentralizedOracle
+from procurement_lab.scorecard import fixed_scenarios
+from procurement_lab.sensitivity import build_stress_grid
 from procurement_mechanism_sdk import (
+    DEFAULT_MECHANISMS,
     InformationMode,
+    Scenario,
+    build_procurement_scenario,
     compare_mechanisms,
     compute_participation_report,
     sample_scenario,
     select_mechanism,
     solve_allocation,
 )
+
+
+def _tight_capacity_scenario() -> Scenario:
+    return build_procurement_scenario(
+        scenario_id="sdk-tight-capacity-test",
+        demand_mean=620.0,
+        capacity=360.0,
+        risk_score=0.25,
+    )
+
+
+def _report_scenarios() -> list[Scenario]:
+    scenarios = [scenario for _name, scenario in fixed_scenarios()]
+    for cell in build_stress_grid():
+        scenarios.append(
+            build_procurement_scenario(
+                scenario_id=f"sdk-test-{cell['scenario_name']}",
+                demand_mean=cell["stress_demand"],
+                demand_std=cell["demand_volatility"],
+                capacity=cell["capacity"],
+                risk_score=cell["supplier_risk"],
+            )
+        )
+    return scenarios
 
 
 def test_sample_scenario_exposes_reference_engine_shape() -> None:
@@ -148,6 +177,64 @@ def test_select_mechanism_recommends_best_eligible_non_oracle() -> None:
     assert selection.ranking[-1].mechanism == "consensus_averaging"
     assert selection.ranking[-1].eligible is False
     assert "not_converged:not_converged" in selection.ranking[-1].reasons
+
+
+def test_no_mechanism_beats_the_oracle_in_any_report_scenario() -> None:
+    """Every scored run sits at or below the oracle; over-capacity runs are unscored."""
+    checked = 0
+    for scenario in _report_scenarios():
+        for mechanism in DEFAULT_MECHANISMS:
+            try:
+                comparison = compare_mechanisms(
+                    scenario, mechanisms=(mechanism,), max_iter=80, tolerance=0.5
+                )
+            except NotImplementedError:
+                continue  # two-party baselines do not run on the multi-party sample
+            run = comparison.by_mechanism[mechanism]
+            oracle_utility = comparison.oracle_run.ledger.global_utility
+            assert comparison.oracle_run.ledger.feasible is True
+            if not run.ledger.feasible:
+                assert run.utility_gap_vs_oracle is None, (scenario.id, mechanism)
+                continue
+            assert run.utility_gap_vs_oracle is not None
+            assert run.utility_gap_vs_oracle >= -1e-6, (scenario.id, mechanism)
+            assert run.ledger.global_utility <= oracle_utility + 1e-6
+            checked += 1
+
+    assert checked > 0
+
+
+def test_over_capacity_allocation_is_not_scored() -> None:
+    scenario = _tight_capacity_scenario()
+
+    comparison = compare_mechanisms(
+        scenario,
+        mechanisms=("admm", "weighted_nash_plaintext"),
+        max_iter=80,
+        tolerance=0.5,
+    )
+    admm_run = comparison.by_mechanism["admm"]
+    report = compute_participation_report(admm_run, oracle_run=comparison.oracle_run)
+
+    assert comparison.oracle_run.iterations[0].consensus[0] == pytest.approx(360.0)
+    assert admm_run.ledger.feasible is False
+    assert admm_run.ledger.global_utility > comparison.oracle_run.ledger.global_utility
+    assert admm_run.utility_gap_vs_oracle is None
+    assert report.oracle_gap is None
+    assert comparison.best_non_oracle is None
+
+
+def test_select_mechanism_never_recommends_an_over_capacity_plan() -> None:
+    selection = select_mechanism(
+        _tight_capacity_scenario(),
+        mechanisms=("centralized_oracle", "admm", "weighted_nash_plaintext"),
+        max_iter=80,
+        tolerance=0.5,
+    )
+
+    assert selection.recommended is None
+    assert all(not score.eligible for score in selection.ranking)
+    assert all("allocation_infeasible" in score.reasons for score in selection.ranking)
 
 
 def test_select_mechanism_can_rank_non_converged_when_allowed() -> None:
