@@ -13,6 +13,7 @@ from typing import TypedDict
 
 from procurement_mechanism_sdk import (
     DEFAULT_MECHANISMS,
+    InformationMode,
     MechanismName,
     Scenario,
     build_procurement_scenario,
@@ -53,6 +54,7 @@ class SensitivityRow(StressCell):
     oracle_gap: float | None
     transfer_feasible: bool | None
     allocation_feasible: bool
+    disclosure_limited: bool
 
 
 class MechanismRollup(TypedDict):
@@ -66,6 +68,7 @@ class MechanismRollup(TypedDict):
     transfer_feasible_rate: float
     allocation_feasible_count: int
     allocation_feasible_rate: float
+    disclosure_limited_count: int
     mean_oracle_gap: float | None
     worst_oracle_gap: float | None
     mean_utility: float | None
@@ -121,24 +124,50 @@ def rollups(rows: Sequence[SensitivityRow]) -> tuple[MechanismRollup, ...]:
     return tuple(_rollup(mechanism, grouped[mechanism]) for mechanism in DEFAULT_MECHANISMS)
 
 
-def recommendation(rows: Sequence[SensitivityRow]) -> str | None:
-    """Return the best all-cells-qualified non-oracle mechanism, if any."""
+def ranked_qualifiers(rows: Sequence[SensitivityRow]) -> tuple[tuple[str, ...], ...]:
+    """Rank qualifying non-oracle mechanisms into tie groups, best first.
+
+    Qualification (DEC-SDK-004): converged with a feasible transfer in every
+    cell. Ranking (DEC-SDK-005), each key breaking ties left by the previous:
+
+    1. more cells whose allocation fits capacity;
+    2. lower worst oracle gap over those cells;
+    3. lower mean oracle gap over those cells;
+    4. more cells run disclosure-limited (private mode with a transcript-
+       exposure report), because equal outcomes reached while revealing less
+       leave participants better off.
+
+    Mechanisms equal on every key share a group. The rule never orders
+    mechanisms by name; within a group they keep registry order for display.
+    """
 
     qualified = [
         rollup
         for rollup in rollups(rows)
         if rollup["mechanism"] != "centralized_oracle" and rollup["qualifies"]
     ]
-    if not qualified:
-        return None
-    return min(
-        qualified,
-        key=lambda rollup: (
-            _sort_metric(rollup["worst_oracle_gap"]),
-            _sort_metric(rollup["mean_oracle_gap"]),
-            rollup["mechanism"],
-        ),
-    )["mechanism"]
+    groups: dict[tuple[float, float, float, int], list[str]] = defaultdict(list)
+    for rollup in qualified:
+        groups[_rank_key(rollup)].append(rollup["mechanism"])
+    return tuple(tuple(groups[key]) for key in sorted(groups))
+
+
+def recommended_mechanisms(rows: Sequence[SensitivityRow]) -> tuple[str, ...]:
+    """Return every qualifying mechanism tied for first place, or ``()``."""
+
+    ranked = ranked_qualifiers(rows)
+    return ranked[0] if ranked else ()
+
+
+def recommendation(rows: Sequence[SensitivityRow]) -> str | None:
+    """Return the single top-ranked qualifying mechanism.
+
+    Returns ``None`` when no mechanism qualifies or when the ranking rule
+    leaves a tie for first place; ``recommended_mechanisms`` names the tie.
+    """
+
+    top = recommended_mechanisms(rows)
+    return top[0] if len(top) == 1 else None
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -149,8 +178,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         rows = run_sensitivity(args.reports_dir)
-        selected = recommendation(rows)
-        print(f"wrote {len(rows)} rows; recommendation: {selected or 'none'}")
+        top = recommended_mechanisms(rows)
+        label = " = ".join(top) if top else "none"
+        print(f"wrote {len(rows)} rows; recommendation: {label}")
     except Exception as exc:  # pragma: no cover - exercised by shell gates
         print(f"ERROR[sensitivity]: {exc}", file=sys.stderr)
         return 1
@@ -200,6 +230,7 @@ def _row_for_mechanism(
             "oracle_gap": None,
             "transfer_feasible": False,
             "allocation_feasible": False,
+            "disclosure_limited": False,
         }
     failure = None if run.failure is None else run.failure.reason.value
     if failure is None and not run.ledger.feasible:
@@ -215,6 +246,10 @@ def _row_for_mechanism(
         "oracle_gap": run.utility_gap_vs_oracle,
         "transfer_feasible": None if run.transfer is None else run.transfer.feasible,
         "allocation_feasible": run.ledger.feasible,
+        "disclosure_limited": (
+            run.information_mode == InformationMode.PRIVATE
+            and run.leakage_report is not None
+        ),
     }
 
 
@@ -223,8 +258,15 @@ def _rollup(mechanism: str, rows: Sequence[SensitivityRow]) -> MechanismRollup:
     convergence_count = sum(row["convergence"] == "converged" for row in rows)
     transfer_count = sum(row["transfer_feasible"] is True for row in rows)
     allocation_count = sum(row["allocation_feasible"] for row in rows)
+    disclosure_count = sum(row["disclosure_limited"] for row in rows)
+    # The SDK leaves oracle_gap unset for allocations above capacity, and the
+    # utility of such a plan is not achievable, so neither one is averaged.
     gaps = [row["oracle_gap"] for row in rows if row["oracle_gap"] is not None]
-    utilities = [row["global_utility"] for row in rows if row["global_utility"] is not None]
+    utilities = [
+        row["global_utility"]
+        for row in rows
+        if row["global_utility"] is not None and row["allocation_feasible"]
+    ]
     return {
         "mechanism": mechanism,
         "scenario_count": count,
@@ -234,6 +276,7 @@ def _rollup(mechanism: str, rows: Sequence[SensitivityRow]) -> MechanismRollup:
         "transfer_feasible_rate": transfer_count / count if count else 0.0,
         "allocation_feasible_count": allocation_count,
         "allocation_feasible_rate": allocation_count / count if count else 0.0,
+        "disclosure_limited_count": disclosure_count,
         "mean_oracle_gap": sum(gaps) / len(gaps) if gaps else None,
         "worst_oracle_gap": max(gaps) if gaps else None,
         "mean_utility": sum(utilities) / len(utilities) if utilities else None,
@@ -242,7 +285,8 @@ def _rollup(mechanism: str, rows: Sequence[SensitivityRow]) -> MechanismRollup:
 
 
 def _markdown_report(rows: Sequence[SensitivityRow]) -> str:
-    selected = recommendation(rows)
+    ranked = ranked_qualifiers(rows)
+    by_mechanism = {rollup["mechanism"]: rollup for rollup in rollups(rows)}
     lines = [
         "# Mechanism Sensitivity Report",
         "",
@@ -254,17 +298,17 @@ def _markdown_report(rows: Sequence[SensitivityRow]) -> str:
         "",
         (
             "| Mechanism | Scenarios | Converged | Transfer feasible | "
-            "Allocation feasible | Mean oracle gap | "
-            "Worst oracle gap | Mean utility | Qualifies |"
+            "Allocation feasible | Disclosure-limited | Mean oracle gap | "
+            "Worst oracle gap | Mean utility (fits capacity) | Qualifies |"
         ),
-        "| --- | ---: | --- | --- | --- | ---: | ---: | ---: | --- |",
+        "| --- | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | --- |",
     ]
     for rollup in rollups(rows):
         lines.append(
             "| {mechanism} | {scenario_count} | {convergence_count} ({convergence_rate:.0%}) | "
             "{transfer_feasible_count} ({transfer_feasible_rate:.0%}) | "
             "{allocation_feasible_count} ({allocation_feasible_rate:.0%}) | "
-            "{mean_gap} | {worst_gap} | "
+            "{disclosure_limited_count} | {mean_gap} | {worst_gap} | "
             "{mean_utility} | {qualifies} |".format(
                 mechanism=rollup["mechanism"],
                 scenario_count=rollup["scenario_count"],
@@ -274,6 +318,7 @@ def _markdown_report(rows: Sequence[SensitivityRow]) -> str:
                 transfer_feasible_rate=rollup["transfer_feasible_rate"],
                 allocation_feasible_count=rollup["allocation_feasible_count"],
                 allocation_feasible_rate=rollup["allocation_feasible_rate"],
+                disclosure_limited_count=rollup["disclosure_limited_count"],
                 mean_gap=_format_metric(rollup["mean_oracle_gap"]),
                 worst_gap=_format_metric(rollup["worst_oracle_gap"]),
                 mean_utility=_format_metric(rollup["mean_utility"]),
@@ -285,23 +330,63 @@ def _markdown_report(rows: Sequence[SensitivityRow]) -> str:
             "",
             (
                 "Interpretation: oracle gap is the SDK field `oracle utility - "
-                "mechanism utility`. A negative value means the mechanism scored "
-                "higher under the current utility accounting; it is not a certified "
-                "global-optimality result."
+                "mechanism utility`. The oracle searches every whole unit from zero "
+                "to capacity plus the demand and capacity breakpoints, which is the "
+                "exact optimum for these utility formulas, so no scored gap is "
+                "negative. A cell whose allocation exceeds capacity is not scored: "
+                "its oracle gap is null in the JSONL and its utility is left out of "
+                "the mean."
             ),
             "",
             (
-                f"Recommendation: {selected}."
-                if selected is not None
-                else (
-                    "Recommendation: none; no non-oracle mechanism converged, had feasible "
-                    "transfers in every stress cell."
-                )
+                "Ranking rule (DEC-SDK-005): a mechanism qualifies when it converges "
+                "with a feasible transfer in every cell. Qualifying mechanisms rank by "
+                "allocation-feasible cells (more first), worst oracle gap, mean oracle "
+                "gap, then disclosure-limited cells (more first). A tie that survives "
+                "every key is reported as a tie, never broken by mechanism name."
             ),
             "",
         ]
     )
+    if ranked:
+        lines.append("Ranking of qualifying mechanisms:")
+        lines.append("")
+        position = 1
+        for group in ranked:
+            tied = " (tied)" if len(group) > 1 else ""
+            lines.append(f"{position}. {', '.join(group)}{tied}")
+            position += len(group)
+        lines.append("")
+    top = ranked[0] if ranked else ()
+    if not top:
+        lines.append(
+            "Recommendation: none; no non-oracle mechanism converged with feasible "
+            "transfers in every stress cell."
+        )
+    else:
+        fits = by_mechanism[top[0]]["allocation_feasible_count"]
+        cells = by_mechanism[top[0]]["scenario_count"]
+        named = (
+            top[0] if len(top) == 1 else "tie between " + ", ".join(top)
+        )
+        caveat = (
+            f" It fits capacity in {fits} of {cells} cells; the other cells are "
+            "unscored because the allocation exceeds capacity."
+            if fits < cells
+            else ""
+        )
+        lines.append(f"Recommendation: {named}.{caveat}")
+    lines.append("")
     return "\n".join(lines)
+
+
+def _rank_key(rollup: MechanismRollup) -> tuple[float, float, float, int]:
+    return (
+        -rollup["allocation_feasible_count"],
+        _sort_metric(rollup["worst_oracle_gap"]),
+        _sort_metric(rollup["mean_oracle_gap"]),
+        -rollup["disclosure_limited_count"],
+    )
 
 
 def _sort_metric(value: float | None) -> float:

@@ -55,5 +55,13 @@ Recommendation is a narrow decision rule. A non-oracle mechanism qualifies
 only when every cell converges and every transfer is feasible. Allocation
 feasibility is recorded independently so a reader can see capacity failures
 without silently changing the ratified recommendation rule. Ranking among
-qualifying mechanisms uses worst oracle gap, mean oracle gap, then mechanism
-name.
+qualifying mechanisms uses allocation-feasible cells, worst oracle gap, mean
+oracle gap, then disclosure-limited cells (DEC-SDK-005, amending
+DEC-SDK-004). Mechanisms equal on every key are reported as a tie; the name
+never orders them.
+
+The centralized oracle searches every whole unit from zero to capacity plus
+the demand and capacity breakpoints, which is the exact optimum for the
+shipped piecewise-linear utilities. The SDK leaves `utility_gap_vs_oracle`
+unset for an allocation above capacity, so oracle gaps and mean utilities
+cover deliverable plans only.

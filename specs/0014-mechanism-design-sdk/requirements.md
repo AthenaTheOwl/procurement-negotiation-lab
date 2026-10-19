@@ -58,5 +58,11 @@ Acceptance:
 - A non-oracle mechanism is recommended only when it converges and has feasible
   transfers in every stress cell. Allocation feasibility remains visible as
   separate evidence and does not change that qualification rule.
+- Qualifying mechanisms rank by allocation-feasible cells, worst oracle gap,
+  mean oracle gap, then disclosure-limited cells (DEC-SDK-005). A tie that
+  survives every key is reported as a tie and is never broken by mechanism
+  name.
+- The oracle is the capacity-constrained optimum, an allocation above capacity
+  is not scored against it, and no scored oracle gap is negative.
 - The JSONL and Markdown reports are byte-for-byte deterministic for identical
   inputs, and operational failures return a typed error without a traceback.

@@ -15,6 +15,9 @@
   command over the existing SDK. *(R-SDK-004)*
 - [x] **A7**: Commit canonical JSONL and Markdown sensitivity artifacts.
   *(R-SDK-004)*
+- [x] **A8**: Make the oracle the exact capacity-constrained optimum, leave
+  over-capacity allocations unscored, and rank qualifiers feasibility first
+  with no name tie-break (DEC-SDK-005). *(R-SDK-004)*
 
 ## Documentation and decisions
 
