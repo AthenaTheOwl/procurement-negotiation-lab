@@ -123,3 +123,7 @@ This repository contains no real purchase orders, internal supplier records, int
 ## License
 
 Apache-2.0 for code. Credits the [amzn/FloPro](https://github.com/amzn/FloPro) public repo (Apache-2.0) as a reference implementation only.
+
+## Method update
+
+[October method update: A three-role pilot for one existing mechanism](docs/bounded-product-team-pilot.md).
