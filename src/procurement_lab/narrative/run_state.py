@@ -151,7 +151,7 @@ def evaluate_option(
     quantities = {participant.id: [plan_quantity] for participant in scenario.participants}
     ledger = build_ledger(scenario, quantities)
     transfer = compute_transfer(ledger)
-    oracle = CentralizedOracle(grid_step=25.0).run(
+    oracle = CentralizedOracle().run(
         scenario,
         information_mode=InformationMode.FULL_ORACLE,
     )

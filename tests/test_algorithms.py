@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from procurement_lab.algorithms.admm import ADMM
 from procurement_lab.algorithms.oracle import CentralizedOracle
 from procurement_lab.engine.schemas import (
@@ -9,6 +11,8 @@ from procurement_lab.engine.schemas import (
     Convergence,
     Scenario,
 )
+from procurement_lab.engine.utility import evaluate_participant_utility
+from procurement_mechanism_sdk import build_procurement_scenario
 
 
 def test_oracle_runs_and_is_feasible(scenario: Scenario) -> None:
@@ -24,6 +28,41 @@ def test_oracle_picks_quantity_within_capacity(scenario: Scenario) -> None:
     cap = scenario.capacity[scenario.products[0].id]
     consensus_q = run.iterations[0].consensus[0]
     assert 0 <= consensus_q <= cap
+
+
+def test_oracle_lands_on_off_grid_demand() -> None:
+    """Demand 540 is not a multiple of 25; the optimum is q = demand exactly."""
+    scenario = build_procurement_scenario(demand_mean=540.0, capacity=800.0, risk_score=0.1)
+    run = CentralizedOracle().run(scenario)
+
+    assert run.iterations[0].consensus[0] == pytest.approx(540.0)
+    # Joint margin per unit at q = demand: 100 - 50 + (50 - 30) - 8 * 0.1.
+    assert run.ledger.global_utility == pytest.approx(69.2 * 540.0)
+
+
+def test_oracle_capacity_binds() -> None:
+    """With capacity below demand the oracle ships capacity, not demand."""
+    tight = build_procurement_scenario(demand_mean=540.0, capacity=360.0, risk_score=0.1)
+    loose = build_procurement_scenario(demand_mean=540.0, capacity=800.0, risk_score=0.1)
+    tight_run = CentralizedOracle().run(tight)
+    loose_run = CentralizedOracle().run(loose)
+
+    assert tight_run.iterations[0].consensus[0] == pytest.approx(360.0)
+    assert tight_run.ledger.feasible is True
+    assert tight_run.ledger.global_utility < loose_run.ledger.global_utility
+
+
+def test_oracle_dominates_every_feasible_consensus_quantity() -> None:
+    """No quantity inside capacity, on a 0.25-unit sweep, beats the oracle."""
+    scenario = build_procurement_scenario(demand_mean=537.5, capacity=600.0, risk_score=0.3)
+    run = CentralizedOracle().run(scenario)
+    sweep = [i * 0.25 for i in range(int(600.0 / 0.25) + 1)]
+    best = max(
+        sum(evaluate_participant_utility(p, scenario, [q]) for p in scenario.participants)
+        for q in sweep
+    )
+
+    assert run.ledger.global_utility >= best - 1e-9
 
 
 def test_admm_converges_on_base_case(scenario: Scenario) -> None:

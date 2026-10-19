@@ -5,10 +5,22 @@ utility functions and picks the joint quantity vector that maximizes
 sum-of-utilities subject to capacity. Other algorithms are graded against
 this oracle's global utility.
 
-v1 supports N>=2 participants and n_periods=1 via grid search over a
-single consensus quantity. Multi-period oracle is a later extension
-that can move to a proper LP/MIP via SciPy or HiGHS once the allocation
-vector has more than one decision variable.
+v1 supports N>=2 participants and n_periods=1 via search over a single
+consensus quantity. The candidate set is every ``grid_step`` (default 1
+unit) from 0 up to the product's capacity, plus the forecast demand and
+the capacity itself. Quantities above capacity are never candidates, so
+an allocation the ledger would mark infeasible cannot score.
+
+Why 1 unit is enough: every shipped utility formula is piecewise linear
+in ``q`` with kinks only at ``demand``, at whole-unit parameters such as
+a packager's ``soft_capacity``, or at the capacity bound. A concave
+piecewise-linear sum peaks on a kink or a bound, and all of those are in
+the candidate set, so the search returns the exact optimum for those
+formulas. For an arbitrary authored formula it is a 1-unit search.
+
+Multi-period oracle is a later extension that can move to a proper
+LP/MIP via SciPy or HiGHS once the allocation vector has more than one
+decision variable.
 """
 
 from __future__ import annotations
@@ -34,7 +46,7 @@ class CentralizedOracle:
 
     name = "centralized_oracle"
 
-    def __init__(self, *, grid_step: float = 25.0) -> None:
+    def __init__(self, *, grid_step: float = 1.0) -> None:
         self.grid_step = grid_step
 
     def run(
@@ -49,21 +61,22 @@ class CentralizedOracle:
         overrides = overrides_for_mode(scenario, information_mode)
 
         product = scenario.products[0]
-        cap = scenario.capacity.get(product.id, product.demand_mean * 2.0)
-        upper = max(cap, product.demand_mean * 1.5)
-        # build a discrete grid of candidate quantities per period
-        grid = _grid(0.0, upper, self.grid_step)
+        # Capacity is a hard constraint: the search never leaves [0, capacity].
+        # Without a declared capacity the ledger has no bound, so search up to
+        # twice the forecast as before.
+        upper = scenario.capacity.get(product.id, product.demand_mean * 2.0)
+        grid = _candidates(upper, self.grid_step, breakpoints=(product.demand_mean,))
 
         # W4 lifts participant count; this remains single-period.
         if scenario.n_periods != 1:
             raise NotImplementedError("oracle v0 supports n_periods=1 only")
 
         # search: pick the consensus quantity that maximizes sum of utilities
-        # (assuming both participants must agree on the same quantity)
+        # (assuming both participants must agree on the same quantity).
+        # Ties keep the smaller quantity because candidates ascend.
         best_q = grid[0]
         best_u = -float("inf")
         for q in grid:
-            quantities = {p.id: [q] for p in scenario.participants}
             total = sum(
                 evaluate_participant_utility(
                     p, scenario, [q], overrides=overrides.get(p.id)
@@ -102,10 +115,21 @@ class CentralizedOracle:
         )
 
 
-def _grid(lo: float, hi: float, step: float) -> list[float]:
+def _candidates(
+    upper: float,
+    step: float,
+    *,
+    breakpoints: tuple[float, ...] = (),
+) -> list[float]:
+    """Return ascending candidates in [0, upper]: a ``step`` grid, the bound
+    itself, and any breakpoints that fall inside the range."""
+
     if step <= 0:
         raise ValueError(f"step must be > 0 (got {step})")
-    if hi < lo:
-        raise ValueError(f"hi ({hi}) must be >= lo ({lo})")
-    n = int((hi - lo) / step) + 1
-    return [round(lo + i * step, 6) for i in range(n + 1)]
+    if upper < 0:
+        raise ValueError(f"upper ({upper}) must be >= 0")
+    n = int(upper / step + 1e-9)
+    points = {round(i * step, 6) for i in range(n + 1)}
+    points.add(upper)
+    points.update(b for b in breakpoints if 0.0 <= b <= upper)
+    return sorted(points)
