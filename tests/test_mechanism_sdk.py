@@ -89,6 +89,18 @@ def test_solve_allocation_matches_existing_admm_behavior() -> None:
     assert sdk_run.ledger.global_utility == pytest.approx(direct_run.ledger.global_utility)
 
 
+@pytest.mark.parametrize("demand", [537.5, 512.3, 362.5])
+def test_admm_reaches_a_non_integer_demand_optimum_exactly(demand: float) -> None:
+    scenario = build_procurement_scenario(demand_mean=demand, capacity=800, risk_score=0.3)
+
+    comparison = compare_mechanisms(scenario, mechanisms=("centralized_oracle", "admm"))
+    admm_run = comparison.by_mechanism["admm"]
+
+    assert admm_run.convergence.value == "converged"
+    assert admm_run.iterations[-1].consensus == [pytest.approx(demand)]
+    assert admm_run.utility_gap_vs_oracle == pytest.approx(0.0)
+
+
 def test_sdk_runs_weighted_nash_bounded_on_multi_party_sample() -> None:
     scenario = sample_scenario("multi_party")
 
