@@ -9,8 +9,8 @@ The headless mechanism-sensitivity report runs the public SDK across eight deter
 The report is a learning-lab stress test with public synthetic inputs; it is not a production procurement recommendation system.
 The centralized oracle searches every whole unit from zero to capacity plus the
 demand and capacity breakpoints. That is the exact optimum for the shipped
-piecewise-linear utilities and a 1-unit search for an arbitrary authored
-formula. Allocations above capacity carry no oracle gap, so no scored gap is
+utilities, which are piecewise linear on [0, capacity], and a 1-unit search
+for an arbitrary authored formula. Allocations above capacity carry no oracle gap, so no scored gap is
 negative.
 No non-oracle mechanism enforces capacity in its own search, so every one of
 them is unscored in the capacity-360 stress cells.

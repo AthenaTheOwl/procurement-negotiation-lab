@@ -12,8 +12,10 @@ the capacity itself. Quantities above capacity are never candidates, so
 an allocation the ledger would mark infeasible cannot score.
 
 Why 1 unit is enough: every shipped utility formula is piecewise linear
-in ``q`` with kinks only at ``demand``, at whole-unit parameters such as
-a packager's ``soft_capacity``, or at the capacity bound. A concave
+in ``q`` on ``[0, capacity]`` (the story supplier's quadratic overtime
+term only applies above capacity, outside the search range), with kinks
+only at ``demand``, at whole-unit parameters such as a packager's
+``soft_capacity``, or at the capacity bound. A concave
 piecewise-linear sum peaks on a kink or a bound, and all of those are in
 the candidate set, so the search returns the exact optimum for those
 formulas. For an arbitrary authored formula it is a 1-unit search.

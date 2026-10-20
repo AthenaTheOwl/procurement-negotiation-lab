@@ -62,6 +62,7 @@ never orders them.
 
 The centralized oracle searches every whole unit from zero to capacity plus
 the demand and capacity breakpoints, which is the exact optimum for the
-shipped piecewise-linear utilities. The SDK leaves `utility_gap_vs_oracle`
+shipped utilities because they are piecewise linear on [0, capacity] (the
+story supplier's quadratic overtime term applies only above capacity). The SDK leaves `utility_gap_vs_oracle`
 unset for an allocation above capacity, so oracle gaps and mean utilities
 cover deliverable plans only.
