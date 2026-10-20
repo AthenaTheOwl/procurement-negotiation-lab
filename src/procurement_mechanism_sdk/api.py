@@ -372,8 +372,10 @@ def select_mechanism(
     The selector is deterministic and deliberately plain: non-oracle mechanisms
     are eligible only when their allocation fits capacity and they satisfy the
     requested convergence and transfer constraints, then ranked by oracle gap,
-    residual, and utility. The web surface can explain this ranking instead of
-    hiding another mechanism behind a dropdown label.
+    residual, and utility. Runs equal on all three are ordered by mechanism
+    name, so ``recommended`` is the alphabetically first of a tie. The web
+    surface can explain this ranking instead of hiding another mechanism
+    behind a dropdown label.
     """
 
     comparison = compare_mechanisms(

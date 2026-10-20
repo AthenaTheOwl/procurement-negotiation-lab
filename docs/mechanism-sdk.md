@@ -70,7 +70,10 @@ The demo prints JSON with scenario id, mechanism results, oracle gap, residual,
 no-worse-off transfer status, and a selector block ranking the non-oracle
 mechanisms. The selector is intentionally simple: an eligible mechanism must
 fit capacity, converge, and produce a feasible transfer, then the ranking sorts
-by oracle gap, residual, and global utility. That makes the recommendation
+by oracle gap, residual, and global utility. Runs still equal on all three are
+ordered by mechanism name, so `recommended` is the alphabetically first of a
+tie; the sensitivity report's no-name rule (DEC-SDK-005) is not yet applied
+here. That makes the recommendation
 explainable enough for the web mechanism selector instead of hiding the choice
 behind a label.
 
