@@ -96,6 +96,33 @@ def test_rollups_recompute_from_jsonl(
         assert rollup["mean_utility"] == pytest.approx(sum(utilities) / len(utilities))
 
 
+def test_mean_utility_never_exceeds_the_oracle_on_the_same_cells(
+    sensitivity_reports: tuple[Path, Path, list[SensitivityRow]],
+) -> None:
+    _first, _second, rows = sensitivity_reports
+    oracle = {
+        row["scenario_id"]: row["global_utility"]
+        for row in rows
+        if row["mechanism"] == "centralized_oracle"
+    }
+
+    for rollup in rollups(rows):
+        if rollup["mean_utility"] is None:
+            continue
+        mechanism_rows = [
+            row
+            for row in rows
+            if row["mechanism"] == rollup["mechanism"]
+            and row["allocation_feasible"]
+            and row["global_utility"] is not None
+        ]
+        same_cells = [oracle[row["scenario_id"]] for row in mechanism_rows]
+        assert rollup["oracle_mean_utility"] == pytest.approx(
+            sum(same_cells) / len(same_cells)
+        )
+        assert rollup["mean_utility"] <= rollup["oracle_mean_utility"] + 1e-6, rollup
+
+
 def test_recommendation_requires_every_stress_cell_to_qualify(
     sensitivity_reports: tuple[Path, Path, list[SensitivityRow]],
 ) -> None:

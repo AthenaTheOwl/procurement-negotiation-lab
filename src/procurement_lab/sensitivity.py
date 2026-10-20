@@ -72,6 +72,7 @@ class MechanismRollup(TypedDict):
     mean_oracle_gap: float | None
     worst_oracle_gap: float | None
     mean_utility: float | None
+    oracle_mean_utility: float | None
     qualifies: bool
 
 
@@ -121,7 +122,15 @@ def rollups(rows: Sequence[SensitivityRow]) -> tuple[MechanismRollup, ...]:
     grouped: dict[str, list[SensitivityRow]] = defaultdict(list)
     for row in rows:
         grouped[row["mechanism"]].append(row)
-    return tuple(_rollup(mechanism, grouped[mechanism]) for mechanism in DEFAULT_MECHANISMS)
+    oracle_utility = {
+        row["scenario_id"]: utility
+        for row in grouped["centralized_oracle"]
+        if (utility := row["global_utility"]) is not None and row["allocation_feasible"]
+    }
+    return tuple(
+        _rollup(mechanism, grouped[mechanism], oracle_utility)
+        for mechanism in DEFAULT_MECHANISMS
+    )
 
 
 def ranked_qualifiers(rows: Sequence[SensitivityRow]) -> tuple[tuple[str, ...], ...]:
@@ -253,7 +262,11 @@ def _row_for_mechanism(
     }
 
 
-def _rollup(mechanism: str, rows: Sequence[SensitivityRow]) -> MechanismRollup:
+def _rollup(
+    mechanism: str,
+    rows: Sequence[SensitivityRow],
+    oracle_utility: dict[str, float],
+) -> MechanismRollup:
     count = len(rows)
     convergence_count = sum(row["convergence"] == "converged" for row in rows)
     transfer_count = sum(row["transfer_feasible"] is True for row in rows)
@@ -262,10 +275,18 @@ def _rollup(mechanism: str, rows: Sequence[SensitivityRow]) -> MechanismRollup:
     # The SDK leaves oracle_gap unset for allocations above capacity, and the
     # utility of such a plan is not achievable, so neither one is averaged.
     gaps = [row["oracle_gap"] for row in rows if row["oracle_gap"] is not None]
+    scored = [
+        row for row in rows if row["global_utility"] is not None and row["allocation_feasible"]
+    ]
     utilities = [
-        row["global_utility"]
-        for row in rows
-        if row["global_utility"] is not None and row["allocation_feasible"]
+        utility for row in scored if (utility := row["global_utility"]) is not None
+    ]
+    # The oracle's mean over the same cells, so a row's mean utility is only
+    # ever compared with the oracle on the cells that row was scored on.
+    oracle_utilities = [
+        oracle_utility[row["scenario_id"]]
+        for row in scored
+        if row["scenario_id"] in oracle_utility
     ]
     return {
         "mechanism": mechanism,
@@ -280,6 +301,9 @@ def _rollup(mechanism: str, rows: Sequence[SensitivityRow]) -> MechanismRollup:
         "mean_oracle_gap": sum(gaps) / len(gaps) if gaps else None,
         "worst_oracle_gap": max(gaps) if gaps else None,
         "mean_utility": sum(utilities) / len(utilities) if utilities else None,
+        "oracle_mean_utility": (
+            sum(oracle_utilities) / len(oracle_utilities) if oracle_utilities else None
+        ),
         "qualifies": count > 0 and convergence_count == count and transfer_count == count,
     }
 
@@ -299,9 +323,10 @@ def _markdown_report(rows: Sequence[SensitivityRow]) -> str:
         (
             "| Mechanism | Scenarios | Converged | Transfer feasible | "
             "Allocation feasible | Disclosure-limited | Mean oracle gap | "
-            "Worst oracle gap | Mean utility (fits capacity) | Qualifies |"
+            "Worst oracle gap | Mean utility (fits capacity) | "
+            "Oracle mean utility (same cells) | Qualifies |"
         ),
-        "| --- | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | --- |",
+        "| --- | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     for rollup in rollups(rows):
         lines.append(
@@ -309,7 +334,7 @@ def _markdown_report(rows: Sequence[SensitivityRow]) -> str:
             "{transfer_feasible_count} ({transfer_feasible_rate:.0%}) | "
             "{allocation_feasible_count} ({allocation_feasible_rate:.0%}) | "
             "{disclosure_limited_count} | {mean_gap} | {worst_gap} | "
-            "{mean_utility} | {qualifies} |".format(
+            "{mean_utility} | {oracle_mean_utility} | {qualifies} |".format(
                 mechanism=rollup["mechanism"],
                 scenario_count=rollup["scenario_count"],
                 convergence_count=rollup["convergence_count"],
@@ -322,6 +347,7 @@ def _markdown_report(rows: Sequence[SensitivityRow]) -> str:
                 mean_gap=_format_metric(rollup["mean_oracle_gap"]),
                 worst_gap=_format_metric(rollup["worst_oracle_gap"]),
                 mean_utility=_format_metric(rollup["mean_utility"]),
+                oracle_mean_utility=_format_metric(rollup["oracle_mean_utility"]),
                 qualifies=rollup["qualifies"],
             )
         )
@@ -335,7 +361,10 @@ def _markdown_report(rows: Sequence[SensitivityRow]) -> str:
                 "exact optimum for these utility formulas, so no scored gap is "
                 "negative. A cell whose allocation exceeds capacity is not scored: "
                 "its oracle gap is null in the JSONL and its utility is left out of "
-                "the mean."
+                "the mean. Each row's mean utility covers only the cells where that "
+                "row fits capacity, so rows cover different cells; the oracle mean "
+                "beside it is taken over the same cells and is the figure to compare "
+                "against."
             ),
             "",
             (
