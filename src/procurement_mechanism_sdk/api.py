@@ -68,7 +68,13 @@ class _AlgorithmRunner(Protocol):
 
 @dataclass(frozen=True)
 class MechanismComparison:
-    """Result of comparing mechanisms against the centralized oracle."""
+    """Result of comparing mechanisms against the centralized oracle.
+
+    The oracle maximizes joint utility inside capacity, so a run whose
+    allocation exceeds capacity carries ``utility_gap_vs_oracle=None``: its
+    utility describes a plan the supplier cannot deliver and is not scored.
+    ``best_non_oracle`` considers scored runs only.
+    """
 
     scenario: Scenario
     oracle_run: AlgorithmRun
@@ -270,7 +276,12 @@ def compare_mechanisms(
     tolerance: float = 0.01,
     transfer_rule: str = "proportional",
 ) -> MechanismComparison:
-    """Run mechanisms and attach oracle-gap plus CBT participation data."""
+    """Run mechanisms and attach oracle-gap plus CBT participation data.
+
+    The oracle gap is attached only to capacity-feasible allocations; an
+    allocation the ledger marks infeasible keeps ``utility_gap_vs_oracle``
+    as ``None`` so it cannot appear to beat the oracle.
+    """
 
     selected_mechanisms = (
         tuple(mechanisms)
@@ -296,7 +307,11 @@ def compare_mechanisms(
             run = _with_gap_and_transfer(run, oracle_run, transfer_rule=transfer_rule)
         runs.append(run)
 
-    candidates = [run for run in runs if run.algorithm != "centralized_oracle"]
+    candidates = [
+        run
+        for run in runs
+        if run.algorithm != "centralized_oracle" and run.utility_gap_vs_oracle is not None
+    ]
     best_non_oracle = min(
         candidates,
         key=lambda run: run.utility_gap_vs_oracle
@@ -318,13 +333,17 @@ def compute_participation_report(
     oracle_run: AlgorithmRun | None = None,
     transfer_rule: str = "proportional",
 ) -> ParticipationReport:
-    """Compute no-worse-off transfer status and optional oracle gap."""
+    """Compute no-worse-off transfer status and optional oracle gap.
+
+    The oracle gap is ``None`` without an oracle run or when the run's
+    allocation exceeds capacity.
+    """
 
     transfer = run.transfer or compute_transfer(run.ledger, rule=transfer_rule)
     oracle_utility = oracle_run.ledger.global_utility if oracle_run is not None else None
     oracle_gap = (
         None
-        if oracle_utility is None
+        if oracle_utility is None or not run.ledger.feasible
         else oracle_utility - run.ledger.global_utility
     )
     return ParticipationReport(
@@ -351,10 +370,12 @@ def select_mechanism(
     """Rank mechanisms for a scenario without hard-coding a winner.
 
     The selector is deterministic and deliberately plain: non-oracle mechanisms
-    are eligible only when they satisfy the requested convergence and transfer
-    constraints, then ranked by oracle gap, residual, and utility. The web
-    surface can explain this ranking instead of hiding another mechanism behind
-    a dropdown label.
+    are eligible only when their allocation fits capacity and they satisfy the
+    requested convergence and transfer constraints, then ranked by oracle gap,
+    residual, and utility. Runs equal on all three are ordered by mechanism
+    name, so ``recommended`` is the alphabetically first of a tie. The web
+    surface can explain this ranking instead of hiding another mechanism
+    behind a dropdown label.
     """
 
     comparison = compare_mechanisms(
@@ -399,7 +420,11 @@ def _with_gap_and_transfer(
     *,
     transfer_rule: str,
 ) -> AlgorithmRun:
-    gap = oracle_run.ledger.global_utility - run.ledger.global_utility
+    gap = (
+        oracle_run.ledger.global_utility - run.ledger.global_utility
+        if run.ledger.feasible
+        else None
+    )
     transfer = compute_transfer(run.ledger, rule=transfer_rule)
     return run.model_copy(
         update={
@@ -470,6 +495,8 @@ def _run_is_eligible(
 ) -> bool:
     if run.failure is not None:
         return False
+    if not run.ledger.feasible:
+        return False
     if require_converged and run.convergence != Convergence.CONVERGED:
         return False
     if require_transfer_feasible and (run.transfer is None or not run.transfer.feasible):
@@ -487,6 +514,8 @@ def _selection_reasons(
     reasons: list[str] = []
     if run.failure is not None:
         reasons.append(f"failure:{run.failure.reason.value}")
+    if not run.ledger.feasible:
+        reasons.append("allocation_infeasible")
     if require_converged and run.convergence != Convergence.CONVERGED:
         reasons.append(f"not_converged:{run.convergence.value}")
     if require_transfer_feasible and (run.transfer is None or not run.transfer.feasible):

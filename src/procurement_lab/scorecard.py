@@ -37,6 +37,8 @@ class ScorecardRow(TypedDict):
     global_utility: float | None
     oracle_gap: float | None
     transfer_feasible: bool | None
+    allocation_feasible: bool | None
+    failure_note: str | None
 
 
 def fixed_scenarios() -> tuple[tuple[str, Scenario], ...]:
@@ -80,9 +82,12 @@ def overall_best_mechanism(rows: Sequence[ScorecardRow]) -> str:
     """Return the best non-oracle mechanism by scenario wins."""
 
     winners = [
-        _best_row(scenario_rows)["mechanism"]
+        best["mechanism"]
         for scenario_rows in _by_scenario(rows).values()
+        if (best := _best_row(scenario_rows)) is not None
     ]
+    if not winners:
+        return "none"
     return Counter(winners).most_common(1)[0][0]
 
 
@@ -134,6 +139,8 @@ def _row_for_mechanism(
             "global_utility": None,
             "oracle_gap": None,
             "transfer_feasible": False,
+            "allocation_feasible": None,
+            "failure_note": str(exc) or None,
         }
 
     failure = None if run.failure is None else run.failure.reason.value
@@ -148,6 +155,8 @@ def _row_for_mechanism(
         "global_utility": run.ledger.global_utility,
         "oracle_gap": run.utility_gap_vs_oracle,
         "transfer_feasible": transfer_feasible,
+        "allocation_feasible": run.ledger.feasible,
+        "failure_note": None if run.failure is None else run.failure.note or None,
     }
 
 
@@ -157,44 +166,81 @@ def _markdown_report(rows: Sequence[ScorecardRow]) -> str:
         "",
         (
             "| Scenario | Mechanism | Convergence | Oracle gap | Residual | "
-            "Utility | Transfer | Failure |"
+            "Utility | Fits capacity | Transfer | Failure |"
         ),
-        "| --- | --- | --- | ---: | ---: | ---: | --- | --- |",
+        "| --- | --- | --- | ---: | ---: | ---: | --- | --- | --- |",
     ]
     for row in rows:
         lines.append(
             "| {scenario_name} | {mechanism} | {convergence} | {oracle_gap} | "
-            "{final_residual} | {global_utility} | {transfer_feasible} | {failure} |".format(
+            "{final_residual} | {global_utility} | {allocation_feasible} | "
+            "{transfer_feasible} | {failure} |".format(
                 scenario_name=row["scenario_name"],
                 mechanism=row["mechanism"],
                 convergence=row["convergence"],
                 oracle_gap=_format_metric(row["oracle_gap"]),
                 final_residual=_format_metric(row["final_residual"]),
                 global_utility=_format_metric(row["global_utility"]),
+                allocation_feasible=_format_optional(row["allocation_feasible"]),
                 transfer_feasible=_format_optional(row["transfer_feasible"]),
                 failure=_format_optional(row["failure"]),
             )
         )
-    lines.append("")
+    lines.extend(
+        [
+            "",
+            (
+                "Oracle gap is `oracle utility - mechanism utility`. The oracle is the "
+                "capacity-constrained optimum, so a scored gap is never negative. A row "
+                "whose allocation does not fit capacity has no gap (n/a): its utility "
+                "describes a plan the supplier cannot deliver."
+            ),
+            "",
+            (
+                "A no_deal row reports the ledger at the walk-away allocation of zero "
+                "units, so its utility is the cost of not trading (shortage and stockout "
+                "penalties), not a negotiated outcome. An error row is a mechanism that "
+                "does not run on that scenario shape. Both mark a mechanism outside its "
+                "contract: the MPC path is two-party only by design (DEC-MPC-001), as "
+                "are the simple baselines."
+            ),
+            "",
+        ]
+    )
+    noted = [row for row in rows if row["failure_note"]]
+    if noted:
+        lines.append("Failure notes:")
+        lines.append("")
+        for row in noted:
+            lines.append(
+                f"- {row['scenario_name']} / {row['mechanism']} "
+                f"({row['convergence']}, {row['failure']}): {row['failure_note']}"
+            )
+        lines.append("")
     for scenario_name, scenario_rows in _by_scenario(rows).items():
         best = _best_row(scenario_rows)
-        lines.append(f"Best mechanism for {scenario_name}: {best['mechanism']}")
+        label = (
+            best["mechanism"]
+            if best is not None
+            else "none (no non-oracle allocation fits capacity)"
+        )
+        lines.append(f"Best mechanism for {scenario_name}: {label}")
     lines.append("")
     return "\n".join(lines)
 
 
-def _best_row(rows: Sequence[ScorecardRow]) -> ScorecardRow:
+def _best_row(rows: Sequence[ScorecardRow]) -> ScorecardRow | None:
+    """Return the best scored non-oracle row, or ``None`` when none is scored.
+
+    Rows above capacity carry no oracle gap, so they are never the best.
+    """
+
     candidates = [
         row
         for row in rows
         if row["mechanism"] != "centralized_oracle" and row["oracle_gap"] is not None
     ]
-    if not candidates:
-        candidates = [row for row in rows if row["oracle_gap"] is not None]
-    return min(
-        candidates,
-        key=_best_sort_key,
-    )
+    return min(candidates, key=_best_sort_key, default=None)
 
 
 def _best_sort_key(row: ScorecardRow) -> tuple[float, float, float, str]:

@@ -58,7 +58,7 @@ python -m procurement_mechanism_sdk.demo
 }
 ```
 
-The oracle and ADMM both land on the full $35,000. Consensus averaging stops 56.875 short of convergence and a $6,175 oracle gap. That last row is the whole lesson in one object.
+The oracle and ADMM both land on the full $35,000. Both search in 1-unit steps and the oracle never goes past capacity, so that zero gap is ADMM finding the optimum, not two coarse grids agreeing. Consensus averaging stops 56.875 short of convergence and a $6,175 oracle gap. That last row is the whole lesson in one object.
 
 Run the multi-party weighted-Nash demo:
 
@@ -84,7 +84,7 @@ What it teaches, in order: why two locally rational agents pick a bad plan, how 
 
 ## How it connects
 
-The repo runs the [Cognitive Delivery Control Plane](https://github.com/AthenaTheOwl/athena-site/blob/main/ops/control-plane.md) operating model — 19 specs with R-PREFIX requirements, 44 decisions under `decisions/`, weekly dream-job retrospectives, and twelve executable gate scripts that fail the build when any record drifts. The factory subsystem under `scripts/factory/` is a durable agent-orchestration runtime (checkpoint interrupts, per-task git worktrees, artifact-as-refs, trace IDs); Spec 0009 and DEC-FACTORY-001..005 document the contract, and [`docs/factory.md`](docs/factory.md) is the adoption guide for other repos.
+The repo runs the [Cognitive Delivery Control Plane](https://github.com/AthenaTheOwl/athena-site/blob/main/ops/control-plane.md) operating model — 19 specs with R-PREFIX requirements, 45 decisions under `decisions/`, weekly dream-job retrospectives, and twelve executable gate scripts that fail the build when any record drifts. The factory subsystem under `scripts/factory/` is a durable agent-orchestration runtime (checkpoint interrupts, per-task git worktrees, artifact-as-refs, trace IDs); Spec 0009 and DEC-FACTORY-001..005 document the contract, and [`docs/factory.md`](docs/factory.md) is the adoption guide for other repos.
 
 A scheduled workflow, `.github/workflows/replay-freshness.yml`, replays the canonical sample twice a month and commits the dated replay record, so the reproducibility claim is re-checked on a fixed schedule instead of when someone remembers.
 
@@ -123,7 +123,3 @@ This repository contains no real purchase orders, internal supplier records, int
 ## License
 
 Apache-2.0 for code. Credits the [amzn/FloPro](https://github.com/amzn/FloPro) public repo (Apache-2.0) as a reference implementation only.
-
-## Method update
-
-[October method update: A three-role pilot for one existing mechanism](docs/bounded-product-team-pilot.md).

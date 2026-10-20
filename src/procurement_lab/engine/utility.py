@@ -8,7 +8,9 @@ yields the global utility ledger.
 
 from __future__ import annotations
 
-from procurement_lab.engine.formula import compile_formula
+from functools import lru_cache
+
+from procurement_lab.engine.formula import CompiledFormula, compile_formula
 from procurement_lab.engine.schemas import (
     Participant,
     Scenario,
@@ -54,7 +56,7 @@ def evaluate_participant_utility(
     if overrides:
         base_namespace.update(overrides)
 
-    compiled = compile_formula(participant.utility_formula)
+    compiled = _compiled_utility_formula(participant.utility_formula)
 
     if scenario.n_periods == 1:
         namespace = {**base_namespace, "q": float(quantity_vector[0])}
@@ -69,6 +71,20 @@ def evaluate_participant_utility(
         }
         total += float(compiled.evaluate(period_namespace))
     return total
+
+
+@lru_cache(maxsize=256)
+def _compiled_utility_formula(source: str) -> CompiledFormula:
+    """Parse and validate each distinct utility formula once.
+
+    Fine-grained searches (the 1-unit centralized oracle, ADMM's local
+    solves) evaluate the same formula thousands of times per run. Parsing
+    dominates the per-call cost, and a ``CompiledFormula`` is immutable, so
+    reusing it by source text changes no result. Invalid formulas raise on
+    every call because ``lru_cache`` does not store exceptions.
+    """
+
+    return compile_formula(source)
 
 
 def build_ledger(

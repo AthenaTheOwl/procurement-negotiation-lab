@@ -36,4 +36,9 @@
 - Recommendation eligibility depends only on all-cell convergence and transfer
   feasibility. Allocation feasibility and typed capacity failures remain
   visible as separate evidence.
+- Qualifying mechanisms rank by allocation-feasible cells, worst gap, mean gap,
+  then disclosure-limited cells; relabelling two mechanisms swaps their ranks
+  and an exact tie is reported as a tie.
+- No row has a negative oracle gap, and the oracle's capacity-360 utility is
+  below its capacity-800 utility for the same demand and risk.
 - An invalid report path exits one with `ERROR[sensitivity]:` and no traceback.

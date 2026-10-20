@@ -10,6 +10,19 @@ v1: discrete grid search per subproblem; n_periods=1; multi-party N>=2
 supported. The averaging and dual-update loops are N-general; the
 prior 2-party guard (a v0 caution) is retired in W4 of the 2026-06-01
 reset. Gradient-based subproblem solvers + multi-period remain v2.
+
+The subproblem grid uses the same candidates as the centralized oracle
+(1-unit steps plus the demand and capacity breakpoints), so an oracle gap
+measures coordination rather than grid width.
+Stopping follows Boyd et al. section 3.3: both the primal residual (how
+far parties sit from consensus) and the dual residual (rho times how far
+the consensus moved this round) must fall within tolerance. On a fine
+grid the primal residual alone hits zero as soon as every party picks
+the same quantity, which can happen before the prices have moved the
+consensus to the joint optimum.
+
+Capacity is not a constraint inside ADMM's subproblems. When the
+consensus exceeds capacity the ledger marks the allocation infeasible.
 """
 
 from __future__ import annotations
@@ -17,6 +30,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable
 
+from procurement_lab.algorithms.oracle import _candidates
 from procurement_lab.engine.information import overrides_for_mode
 from procurement_lab.engine.schemas import (
     AlgorithmRun,
@@ -40,7 +54,7 @@ class ADMM:
         self,
         *,
         rho: float = 1.5,
-        grid_step: float = 25.0,
+        grid_step: float = 1.0,
     ) -> None:
         self.rho = rho
         self.grid_step = grid_step
@@ -66,7 +80,9 @@ class ADMM:
         product = scenario.products[0]
         cap = scenario.capacity.get(product.id, product.demand_mean * 2.0)
         upper = max(cap, product.demand_mean * 1.5)
-        grid = _grid(0.0, upper, self.grid_step)
+        # Same candidates as the oracle: the step grid plus the demand and
+        # capacity breakpoints, so a non-integer demand is reachable exactly.
+        grid = _candidates(upper, self.grid_step, breakpoints=(product.demand_mean, cap))
 
         z = product.demand_mean * 0.8  # start near forecast
         duals: dict[str, float] = {p.id: 0.0 for p in scenario.participants}
@@ -108,6 +124,7 @@ class ADMM:
             qs = list(new_quantities.values())
             new_z = sum(qs) / len(qs)
             residual = max(abs(q - new_z) for q in qs)
+            dual_residual = rho * abs(new_z - z)
 
             # Dual update
             for pid, q in new_quantities.items():
@@ -124,7 +141,7 @@ class ADMM:
             )
 
             z = new_z
-            if residual <= tolerance:
+            if residual <= tolerance and dual_residual <= tolerance:
                 convergence = Convergence.CONVERGED
                 break
         else:
@@ -168,9 +185,3 @@ def _argmax(grid: list[float], fn: Callable[[float], float]) -> float:
             best_v = v
     return best_q
 
-
-def _grid(lo: float, hi: float, step: float) -> list[float]:
-    if step <= 0:
-        raise ValueError(f"step must be > 0 (got {step})")
-    n = int((hi - lo) / step) + 1
-    return [round(lo + i * step, 6) for i in range(n + 1)]

@@ -136,7 +136,7 @@ def evaluate_option(
     buyer = next(p for p in scenario.participants if p.role.value == "buyer")
     supplier = next(p for p in scenario.participants if p.role.value == "supplier")
     buyer_quantity = product.demand_mean * option.quantity_multiplier
-    admm_run = ADMM(grid_step=25.0).run(
+    admm_run = ADMM().run(
         scenario,
         information_mode=option.information_mode,
         max_iter=80,
@@ -151,7 +151,7 @@ def evaluate_option(
     quantities = {participant.id: [plan_quantity] for participant in scenario.participants}
     ledger = build_ledger(scenario, quantities)
     transfer = compute_transfer(ledger)
-    oracle = CentralizedOracle(grid_step=25.0).run(
+    oracle = CentralizedOracle().run(
         scenario,
         information_mode=InformationMode.FULL_ORACLE,
     )
