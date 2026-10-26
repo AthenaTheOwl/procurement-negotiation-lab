@@ -16,7 +16,7 @@
     "@lab/engine": "*",
     "@types/cytoscape": "^3.31.0",
     "@vitejs/plugin-react": "^5.1.2",
-    "acorn": "^8.16.0",
+    "acorn": "^8.19.0",
     "cytoscape": "^3.33.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
